@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useDrag } from 'react-use-gesture';
 import { useSelector } from 'react-redux';
 import { itemData } from '../../store/slices/itemSlice';
-import { SearchData } from '../../store/slices/searchSlice';
 import InputFormContainer from '../forms/inputForm/InputFormContainer';
 import EditFormContainer from "../forms/editForm/EditFormContainer";
 import CardContainer from '../common/card/CardContainer';
@@ -26,14 +25,6 @@ type Props = {
 const IsettingComponent: React.FC<Props> = ({ input, edit, relate, openForm, changePosition, picker }) => {
     const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
     const { items } = useSelector(itemData);
-    const { search } = useSelector(SearchData);
-
-    const hasActiveFilters = Boolean(
-        !search.all.typeALL ||
-        !search.all.setALL ||
-        !search.all.groupALL ||
-        (search.sort && Object.values(search.sort).some((s: any) => s.active))
-    );
 
 
     const inputPos = useDrag(params => {
@@ -119,15 +110,6 @@ const IsettingComponent: React.FC<Props> = ({ input, edit, relate, openForm, cha
                 <div className="actions-area">
                     <button
                         type="button"
-                        className={`btn-search-toggle ${isFilterDrawerOpen ? 'active' : ''}`}
-                        onClick={() => setIsFilterDrawerOpen(!isFilterDrawerOpen)}
-                    >
-                        <span className="icon">🔍</span>
-                        <span>{isFilterDrawerOpen ? '검색창 닫기' : '품목 검색 & 필터'}</span>
-                        {hasActiveFilters && <span className="active-badge">적용중</span>}
-                    </button>
-                    <button
-                        type="button"
                         className="btn-create"
                         onClick={() => openForm('input')}
                     >
@@ -148,6 +130,7 @@ const IsettingComponent: React.FC<Props> = ({ input, edit, relate, openForm, cha
             {/* 오른쪽 끝에서 슥 하고 나타나는 슬라이드 필터 드로어 */}
             <ItemFilterDrawer
                 isOpen={isFilterDrawerOpen}
+                onToggle={() => setIsFilterDrawerOpen(!isFilterDrawerOpen)}
                 onClose={() => setIsFilterDrawerOpen(false)}
                 placeholder="전체 품목 마스터 검색 (완성품/조립품/원자재)..."
                 title="품목 마스터 검색 & 필터"

@@ -116,7 +116,7 @@
     width: calc(100% - 420px);
     display: flex;
     flex-direction: column;
-    padding: 1.25rem 2rem;
+    padding: 0.5rem 1.5rem;
     box-sizing: border-box;
 
     .cards {
@@ -124,7 +124,7 @@
       background-color: transparent;
 
       .item-list {
-        margin: 0.5rem 0 0 0;
+        margin: 0;
         width: 100%;
       }
     }

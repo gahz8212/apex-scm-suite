@@ -5,6 +5,7 @@ import { itemData } from '../../store/slices/itemSlice';
 
 type Props = {
     isOpen: boolean;
+    onToggle: () => void;
     onClose: () => void;
     hideSetFilter?: boolean;
     placeholder?: string;
@@ -13,6 +14,7 @@ type Props = {
 
 const ItemFilterDrawer: React.FC<Props> = ({
     isOpen,
+    onToggle,
     onClose,
     hideSetFilter = false,
     placeholder = '품목명 또는 규격 검색...',
@@ -170,8 +172,31 @@ const ItemFilterDrawer: React.FC<Props> = ({
         ]);
     };
 
+    const hasActiveFilters = Boolean(
+        !search.all.typeALL ||
+        !search.all.setALL ||
+        !search.all.groupALL ||
+        (search.sort && Object.values(search.sort).some((s: any) => s.active)) ||
+        searchText.trim().length > 0
+    );
+
     return (
         <>
+            {/* 오른쪽 화면 끝에 붙어있는 슬라이드 토글 탭 버튼 (서랍 손잡이 역할) */}
+            <button
+                type="button"
+                className={`floating-search-tab ${isOpen ? 'open' : ''}`}
+                onClick={onToggle}
+                style={{
+                    right: isOpen ? 'min(440px, 90vw)' : '0px',
+                }}
+                title={isOpen ? '검색 패널 닫기' : '검색 및 정렬 필터 열기'}
+            >
+                <span className="icon">{isOpen ? '✕' : '🔍'}</span>
+                <span className="text">{isOpen ? '닫기' : '검색 & 필터'}</span>
+                {hasActiveFilters && !isOpen && <span className="active-dot" />}
+            </button>
+
             {/* 반투명 백드롭 오버레이 (클릭 시 닫기) */}
             <div
                 className={`filter-drawer-backdrop ${isOpen ? 'open' : ''}`}
