@@ -277,6 +277,8 @@
               }
             }
             .articles {
+              overflow-y: auto;
+              max-height: 350px;
               .items {
                 display: flex;
                 align-items: center;
