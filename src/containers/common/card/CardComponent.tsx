@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { select_modelname } from '../../../lib/utils/parseModelName'
+import { formatCurrencySymbol } from '../../../lib/utils/formatCurrency';
 type Props = {
     items: {
         id: number,
@@ -117,12 +117,12 @@ const CardComponent: React.FC<Props> = ({ items, selectItem, dragItem, onDrop, v
                             {/* {item.type !== 'SET' && <div>{item.unit === '\\' ? '￦' : item.unit}{item.im_price}</div>} */}
                             {item.type !== 'SET' &&
                                 <>
-                                    {item.im_price > 0 && <div><div>입고단가:</div>{item.unit === '\\' ? '￦' : item.unit}{item.im_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>}
+                                    {item.im_price > 0 && <div><div>입고단가:</div>{formatCurrencySymbol(item.unit)}{item.im_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>}
                                     <div className="badge">
                                         <div className='point'>x{item.point}</div>
                                     </div>
                                 </>}
-                            {item.type !== 'PARTS' && <div><div>합산단가:</div> {item.unit}{totalPrice && totalPrice[item.id] > 0 ? totalPrice && totalPrice[item.id].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : 0}</div>}
+                            {item.type !== 'PARTS' && <div><div>합산단가:</div> {formatCurrencySymbol(item.unit)}{totalPrice && totalPrice[item.id] > 0 ? totalPrice && totalPrice[item.id].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : 0}</div>}
 
                             {item.ex_price > 0 && <div><div>수출단가:</div>${item.ex_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>}
 
@@ -175,8 +175,8 @@ const CardComponent: React.FC<Props> = ({ items, selectItem, dragItem, onDrop, v
                                 {/* <div>{select_modelname(item.itemName) || (item.itemName)}</div> */}
                                 <div>{(item.itemName)}</div>
 
-                                {item.type !== 'PARTS' && <div>합산단가: {item.unit}{totalPrice && totalPrice[item.id] > 0 ? totalPrice && totalPrice[item.id].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : 0}</div>}
-                                {item.im_price > 0 && <div>입고단가: \{item.im_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>}
+                                {item.type !== 'PARTS' && <div>합산단가: {formatCurrencySymbol(item.unit)}{totalPrice && totalPrice[item.id] > 0 ? totalPrice && totalPrice[item.id].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : 0}</div>}
+                                {item.im_price > 0 && <div>입고단가: {formatCurrencySymbol(item.unit)}{item.im_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>}
                                 {item.ex_price > 0 && <div>수출단가: ${item.ex_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>}
                                 <div className="footer">
                                     <div className="edit">

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { formatCurrencySymbol } from '../../lib/utils/formatCurrency';
 type Props = {
     items: {
         id: number,
@@ -85,7 +86,7 @@ const LeftComponent: React.FC<Props> = ({ items, dragItems, addCount, removeCoun
                             <div className='info'>
                                 <div>카테고리: {item.category}</div>
                                 <div>출고 가격: ${item.ex_price}</div>
-                                <div>합산 가격: {item.unit}{totalPrice && totalPrice[item.id] > 0 ? totalPrice[item.id].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : 0}</div>
+                                <div>합산 가격: {formatCurrencySymbol(item.unit)}{totalPrice && totalPrice[item.id] > 0 ? totalPrice[item.id].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : 0}</div>
                                 <div>설명: {item.descript}</div>
                             </div>
                         </div>

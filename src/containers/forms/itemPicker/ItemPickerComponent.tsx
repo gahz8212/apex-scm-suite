@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrencySymbol } from '../../../lib/utils/formatCurrency';
 type Props = {
     addPicked: (picked: {}) => void;
     removePicked: (id: number) => void;
@@ -46,7 +47,7 @@ const ItemPickerComponent: React.FC<Props> = ({ addPicked, removePicked, pickedD
 
                     {/* <div>{picked.ItemId}</div> */}
                     <div>{picked.itemName}</div>
-                    <div>{picked.unit}{picked.im_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
+                    <div>{formatCurrencySymbol(picked.unit)}{picked.im_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
                     <div>${picked.ex_price}</div>
                     <div><input type='text' name='quantity' min={0} value={picked.quantity} id={picked.ItemId.toString()} placeholder='수량을 입력 하세요' onChange={onChange} /></div>
                     <div className='trashBtn'
