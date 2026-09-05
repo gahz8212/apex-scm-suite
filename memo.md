@@ -96,8 +96,39 @@
 
 ---
 
+### ✅ Phase 4. 무역 물류(Export Logistics) & 팔레트(Pallet) 실무 기능 고도화 (2026-09-05)
+> **목표**: 실무자가 사용하기에 자연스러운 Pallet D&D 적재 로직 완성 및 Export Logistics 화면 제어 안정화
+
+- [x] **1. 발주서 월(Month) 탭 동적 표시 및 순서 보존**
+  - [x] 발주서에 최초 입력된 월부터 입력 순서를 유지하며 동적으로 라디오 탭 생성 (`ExportComponent.tsx`)
+- [x] **2. Item Master & Item Picker 필터링 정상화**
+  - [x] SET 품목을 제외하고 실제 수리/출고 가능한 부자재만 선택되도록 필터링 및 하드코딩 더미 데이터 정리
+- [x] **3. Export Logistics 화면 레이아웃 & 모달 계층 구조 개선**
+  - [x] `<, >` 화면 전환 화살표를 폼 좌우에 일치하도록 정렬 (`export.scss`)
+  - [x] 좌측 전환 화면 타이틀 명칭을 `제품`에서 실무에 맞는 `부자재`로 변경
+  - [x] Invoice, Packing, Pallet 모달이 우측 폼과 겹칠 때 위에 올라오도록 z-index 스택 및 클릭 시 최상단 활성화(`bringToFront`) 구현
+- [x] **4. Pallet(팔레트) 드래그 앤 드롭 & 수량 제어 로직 완성 (★검증 완료)**
+  - [x] Pallet 폼의 하드코딩 시드 데이터 전면 제거 (Packing 폼에서 D&D로만 입력받도록 순수화)
+  - [x] 품목별 인덱스(`itemIndex`) 타겟팅 버그 수정: 아래 품목의 +/- 버튼을 눌러도 상단 품목이 변경되던 현상 해결
+  - [x] Packing ➔ Pallet 드랍 시 잔여 카톤 수량 차감 계산:
+    - Packing의 카톤이 19개이고 이미 Pallet에 5개가 담겨있을 때, 추가 드랍 시 14개(19-5)로 자동 계산되어 적재
+  - [x] `+` 버튼 카톤 수량 상한선 제한:
+    - Pallet의 카톤 수량이 Packing 원본 카톤 수량에 도달하면 `+` 버튼이 더 이상 눌리지 않도록 방어 로직 적용
+  - [x] 사용자 직접 테스트 및 실무 기능 동작 검증 완료
+- [x] **5. Export Logistics 우측 출고 폼 분석 및 초기화(원복) 이력**
+  - [x] **초기 소스 코드 구조 분석**:
+    - 원래 우측 화면의 두 폼(`modelTable`, `partsTable`)은 발주서의 제품이 아니라 **Item Master에서 선택한 부자재(`pickedData`)만** 출력되는 구조였음 확인.
+  - [x] **제품 표시 및 편집 기능 작업 경과**:
+    - 좌측 발주서의 제품 목록(`productPackingData`)을 우측 출고 폼 상단에 연동하고, 수량/CBM 편집 및 헤더 위치 정렬 작업을 진행함.
+    - 헤더-데이터 오른쪽 끝 정렬 작업 중 사용자 요청에 따라 Export Logistics 메뉴 관련 파일들을 작업 전 안정 시점([`a20a7b3`](file:///home/gahz/apex-scm-suite/src/containers/export/ExportComponent.tsx))으로 깨끗하게 원복(`0c9e410`) 완료.
+  - [x] **현재 상태**:
+    - 팔레트 핵심 기능(카톤 차감 및 상한선 제한)은 손실 없이 온전히 보존됨.
+    - Export Logistics 화면은 이전 안정 상태를 유지하고 있으며, 필요 시 제품/부자재 통합 폼을 완벽한 정렬로 재구성할 준비 완료.
+
+---
+
 ## 💡 최종 완료 후 전환 방법
-모든 작업(Phase 2, 3)이 완료되어 최종 푸시되면, 기존 작업 폴더 대신:
+모든 작업(Phase 2, 3, 4)이 완료되어 최종 푸시되면, 기존 작업 폴더 대신:
 ```bash
 git clone https://github.com/gahz8212/apex-scm-suite.git
 ```
