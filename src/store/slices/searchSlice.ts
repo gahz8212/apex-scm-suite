@@ -137,8 +137,8 @@ const searchSlice = createSlice({
   name: "search",
   initialState,
   reducers: {
-    initState: (state) => {
-      state = initialState;
+    initState: () => {
+      return initialState;
     },
     typeCheckAll: (state, { payload: value }) => {
       state.all.typeALL = value;
