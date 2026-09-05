@@ -1,61 +1,77 @@
 .form-type {
   user-select: none;
   position: relative;
-  width: 300px;
+  width: 320px;
   font-size: 0.9rem;
-  border: 3px solid red;
-  // border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  background-color: #ffffff;
+  overflow: hidden;
 
   .title {
-    &.SET {
-      background-color: darkcyan;
-    }
-    &.ASSY {
-      background-color: tomato;
-    }
-    &.PARTS {
-      background-color: orange;
-    }
-    color: black;
+    color: #ffffff;
     font-weight: 700;
-    // background-color: white;
-    height: 35px;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
+    background-color: #1e293b;
+
+    &.SET {
+      background-color: #1e40af;
+    }
+    &.ASSY {
+      background-color: #0f766e;
+    }
+    &.PARTS {
+      background-color: #475569;
+    }
   }
   .input-form,
   .edit-form {
     .form-category {
       &.회로 {
-        background-color: cornflowerblue;
+        background-color: #dbeafe;
+        color: #1e40af;
       }
       &.전장 {
-        background-color: lightpink;
+        background-color: #e0e7ff;
+        color: #3730a3;
       }
       &.기구 {
-        background-color: khaki;
+        background-color: #f1f5f9;
+        color: #334155;
       }
       &.포장 {
-        background-color: yellowgreen;
+        background-color: #ecfdf5;
+        color: #065f46;
       }
       &.기타 {
-        background-color: lightgray;
+        background-color: #f8fafc;
+        color: #64748b;
       }
       &.EDT {
-        background-color: cornflowerblue;
+        background-color: #dbeafe;
+        color: #1e40af;
       }
       &.NOBARK {
-        background-color: lightgoldenrodyellow;
+        background-color: #e0e7ff;
+        color: #3730a3;
       }
       &.LAUNCHER {
-        background-color: khaki;
+        background-color: #f1f5f9;
+        color: #334155;
       }
       &.RDT {
-        background-color: yellowgreen;
+        background-color: #ecfdf5;
+        color: #065f46;
       }
       &.기타 {
-        background-color: lightgray;
+        background-color: #f8fafc;
+        color: #64748b;
       }
       .selection {
         // margin-top: 30px;
@@ -229,7 +245,7 @@
                       height: 15px;
                       border-radius: 50%;
                       left: -18px;
-                      background-color: yellowgreen;
+                      background-color: #10b981;
                     }
                   }
                   &.기타 {
@@ -407,7 +423,7 @@
                       height: 15px;
                       border-radius: 50%;
                       left: -18px;
-                      background-color: yellowgreen;
+                      background-color: #10b981;
                     }
                   }
                   &.기타 {
@@ -538,14 +554,18 @@
         text-align: center;
         margin-top: 0.5rem;
         cursor: pointer;
-        background-color: darkcyan;
-        padding: 0.3rem;
-        color: white;
+        background-color: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        padding: 0.4rem 0.6rem;
+        color: #334155;
+        font-weight: 600;
+        font-size: 0.85rem;
         width: 80px;
-        border-radius: 4px;
-        transition: 0.4s;
+        border-radius: 6px;
+        transition: all 0.2s ease;
         &:hover {
-          background-color: cyan;
+          background-color: #e2e8f0;
+          color: #0f172a;
         }
       }
       margin: 1rem;
@@ -557,7 +577,7 @@
         display: none;
       }
       text-align: right;
-      padding: 0.3rem;
+      padding: 0.5rem 1rem;
       display: flex;
       justify-content: flex-end;
       align-items: center;
@@ -570,21 +590,28 @@
         border: none;
         outline: none;
         cursor: pointer;
-        background-color: darkcyan;
-        padding: 0.3rem;
+        background-color: #2563eb;
+        padding: 0.45rem 1rem;
         color: white;
-        width: 80px;
-        border-radius: 4px;
-        transition: 0.4s;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
         & + button {
           margin-left: 0.5rem;
         }
         &:hover {
-          background-color: cyan;
+          background-color: #1d4ed8;
         }
       }
       [type="button"] {
-        background-color: cornflowerblue;
+        background-color: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        &:hover {
+          background-color: #e2e8f0;
+          color: #0f172a;
+        }
       }
     }
     .imageList {

@@ -94,17 +94,17 @@
         // height: 40px;
         line-height: 2;
         &:nth-child(2n + 1) {
-          background-color: lightyellow;
+          background-color: #f8fafc;
         }
       }
     }
-    // background-color: yellow;
 
     .tfoot {
-      border-top: 2px solid cornflowerblue;
-      // font-weight: 700;
+      border-top: 2px solid #2563eb;
       .tr {
-        background: yellowgreen;
+        background: #f1f5f9;
+        color: #1e293b;
+        font-weight: 700;
         padding: 0 1rem;
         display: flex;
         justify-content: space-between;

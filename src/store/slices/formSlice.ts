@@ -16,14 +16,14 @@ type State = {
 };
 
 const initialState: State = {
-  input: { visible: false, position: { x: 250, y: 300 } },
-  relate: { visible: false, position: { x: 250, y: 300 } },
-  edit: { visible: false, position: { x: 250, y: 300 } },
-  invoice: { visible: false, position: { x: 100, y: 200 } },
-  packing: { visible: false, position: { x: 820, y: 200 } },
-  pallet: { visible: false, position: { x: 1400, y: 200 } },
-  addItem: { visible: false, position: { x: 100, y: 200 } },
-  picker: { visible: false, position: { x: 250, y: 300 } },
+  input: { visible: false, position: { x: 180, y: 120 } },
+  relate: { visible: false, position: { x: 180, y: 120 } },
+  edit: { visible: false, position: { x: 180, y: 120 } },
+  invoice: { visible: false, position: { x: 60, y: 120 } },
+  packing: { visible: false, position: { x: 500, y: 120 } },
+  pallet: { visible: false, position: { x: 720, y: 120 } },
+  addItem: { visible: false, position: { x: 100, y: 120 } },
+  picker: { visible: false, position: { x: 200, y: 120 } },
 };
 const inputFormSelector = (state: RootState) => {
   return state.form.input;

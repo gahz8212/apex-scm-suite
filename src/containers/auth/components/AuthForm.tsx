@@ -1,5 +1,5 @@
 import React from 'react';
-import Styled, { css } from 'styled-components'
+import Styled from 'styled-components'
 import { Link } from 'react-router-dom';
 type Props = {
     type: string;
@@ -9,17 +9,19 @@ type Props = {
     onSubmit: () => void;
 }
 const StyledButton = Styled.button <{ option: string }>`
-    ${props => props.option === 'login' ? css`
-    background:darkcyan;
-    &:hover{
-        background:cyan;
+    width: 100%;
+    height: 44px;
+    border-radius: 6px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    background-color: ${props => props.option === 'login' ? '#2563eb' : '#0f172a'};
+    color: #ffffff;
+    &:hover {
+        background-color: ${props => props.option === 'login' ? '#1d4ed8' : '#334155'};
     }
-    ` : css`
-    background:darkgreen;
-    &:hover{
-        background:green;
-    }
-    `}
 `
 const StyledFooter = Styled.div`
 text-align:right;

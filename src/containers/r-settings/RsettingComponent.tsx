@@ -72,9 +72,11 @@ const RsettingComponent: React.FC<Props> = ({ input,
     , selectItem, onDrop, dragItem, dragItems, addCount, removeCount, drag_on, dragedItem, viewRelation, relate_view,
     addRelateGood, relations, changeView, viewMode, setOpenBasket, totalPrice, insertRelation_view, setSelectedItemId, setViewMode, inputDragItems_edit }) => {
 
-    const editPos = useDrag(params => { changePosition('edit', { x: params.offset[0] + 250, y: params.offset[1] + 300 }) })
-    // const inputPos = useDrag(params => { changePosition('input', { x: params.offset[0] + 250, y: params.offset[1] + 300 }) })
-    // const relatePos = useDrag(params => { changePosition('relate', { x: params.offset[0] + 250, y: params.offset[1] + 300 }) })
+    const editPos = useDrag(params => {
+        const nextX = Math.max(10, Math.min(window.innerWidth - 340, params.offset[0] + 180));
+        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+        changePosition('edit', { x: nextX, y: nextY });
+    });
 
 
 

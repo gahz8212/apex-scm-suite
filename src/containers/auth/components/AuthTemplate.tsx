@@ -6,7 +6,7 @@ const AuthTemplate: React.FC<Props> = ({ children }) => {
     return (
         <div className='authTemplate'>
             <div className="whitebox">
-                <div className="logo-area">REACT</div>
+                <div className="logo-area">APEX SCM SUITE</div>
                 {children}
             </div>
         </div>

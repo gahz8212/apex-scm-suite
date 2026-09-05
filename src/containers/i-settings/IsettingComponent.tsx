@@ -22,10 +22,21 @@ type Props = {
 const IsettingComponent: React.FC<Props> = ({ input, edit, relate, openForm, changePosition, picker }) => {
 
 
-    const inputPos = useDrag(params => { changePosition('input', { x: params.offset[0] + 250, y: params.offset[1] + 300 }) })
-    const editPos = useDrag(params => { changePosition('edit', { x: params.offset[0] + 250, y: params.offset[1] + 300 }) })
-    const pickerPos = useDrag(params => { changePosition('picker', { x: params.offset[0] + 250, y: params.offset[1] + 300 }) })
-    // const relatePos = useDrag(params => { changePosition('relate', { x: params.offset[0] + xy.x, y: params.offset[1] + xy.y }) })
+    const inputPos = useDrag(params => {
+        const nextX = Math.max(10, Math.min(window.innerWidth - 340, params.offset[0] + 180));
+        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+        changePosition('input', { x: nextX, y: nextY });
+    });
+    const editPos = useDrag(params => {
+        const nextX = Math.max(10, Math.min(window.innerWidth - 340, params.offset[0] + 180));
+        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+        changePosition('edit', { x: nextX, y: nextY });
+    });
+    const pickerPos = useDrag(params => {
+        const nextX = Math.max(10, Math.min(window.innerWidth - 450, params.offset[0] + 200));
+        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+        changePosition('picker', { x: nextX, y: nextY });
+    });
 
 
 

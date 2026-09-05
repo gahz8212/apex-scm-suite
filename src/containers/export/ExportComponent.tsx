@@ -94,10 +94,26 @@ const ExportComponent: React.FC<Props> = ({
     const dragItem: any = useRef();
     const dragOverItem: any = useRef();
     const dispatch = useDispatch();
-    const invoicePos = useDrag((params => { changePosition('invoice', { x: params.offset[0] + 100, y: params.offset[1] + 200 }) }))
-    const packingPos = useDrag((params => { changePosition('packing', { x: params.offset[0] + 820, y: params.offset[1] + 200 }) }))
-    const palletPos = useDrag((params => { changePosition('pallet', { x: params.offset[0] + 1400, y: params.offset[1] + 200 }) }))
-    const addItemPos = useDrag((params => { changePosition('addItem', { x: params.offset[0] + 100, y: params.offset[1] + 200 }) }))
+    const invoicePos = useDrag(params => {
+        const nextX = Math.max(10, Math.min(window.innerWidth - 550, params.offset[0] + 60));
+        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+        changePosition('invoice', { x: nextX, y: nextY });
+    });
+    const packingPos = useDrag(params => {
+        const nextX = Math.max(10, Math.min(window.innerWidth - 550, params.offset[0] + 500));
+        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+        changePosition('packing', { x: nextX, y: nextY });
+    });
+    const palletPos = useDrag(params => {
+        const nextX = Math.max(10, Math.min(window.innerWidth - 680, params.offset[0] + 720));
+        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+        changePosition('pallet', { x: nextX, y: nextY });
+    });
+    const addItemPos = useDrag(params => {
+        const nextX = Math.max(10, Math.min(window.innerWidth - 400, params.offset[0] + 100));
+        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+        changePosition('addItem', { x: nextX, y: nextY });
+    });
     // let dragItemKey = '';
     // let dragOverItemKey = ''
     // console.log(pickedData)

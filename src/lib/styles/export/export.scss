@@ -71,7 +71,7 @@
               background: rgba(128, 128, 128, 0.1);
             }
             &:hover {
-              background: yellow;
+              background: #f1f5f9;
             }
             .td {
               text-align: right;
@@ -346,30 +346,32 @@
             }
           }
           .btns {
-            // background: yellow;
             text-align: right;
             margin-right: 0.5rem;
             margin-bottom: 0.5rem;
             button {
-              font-size: 0.9rem;
-              margin-left: 1rem;
-              padding: 0.3rem 0.5rem;
+              font-size: 0.85rem;
+              font-weight: 600;
+              margin-left: 0.75rem;
+              padding: 0.4rem 0.85rem;
               border: none;
-              border-radius: 8px;
-              background: yellowgreen;
-              transition: 0.4s;
+              border-radius: 6px;
+              background: #2563eb;
+              color: #ffffff;
+              transition: all 0.2s ease;
               cursor: pointer;
               &:hover {
-                background-color: green;
-                color: white;
+                background-color: #1d4ed8;
               }
               &:first-of-type {
               }
               &:last-of-type {
-                background: pink;
+                background: #f1f5f9;
+                border: 1px solid #cbd5e1;
+                color: #475569;
                 &:hover {
-                  background-color: hotpink;
-                  color: white;
+                  background-color: #e2e8f0;
+                  color: #0f172a;
                 }
               }
             }
