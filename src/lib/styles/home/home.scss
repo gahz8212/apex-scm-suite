@@ -1,5 +1,8 @@
 .isetting-wraper {
-  width: 90%;
+  width: 92%;
+  max-width: 1400px;
+  margin: 140px auto 3rem auto;
+  box-sizing: border-box;
 
   .material-symbols-outlined.write {
     position: fixed;
@@ -7,25 +10,26 @@
     right: 100px;
     font-size: 3rem;
     cursor: pointer;
-    transition: 0.5s;
+    transition: 0.3s;
     user-select: none;
+    color: #2563eb;
     &:hover {
-      color: black;
-      transform: scale(1.4);
+      color: #1d4ed8;
+      transform: scale(1.15);
     }
   }
   .material-symbols-outlined.picker {
     position: fixed;
     bottom: 100px;
-    right: 50px;
+    right: 40px;
     font-size: 3rem;
     cursor: pointer;
-    transition: 0.5s;
-    color: red;
+    transition: 0.3s;
+    color: #0f766e;
     user-select: none;
     &:hover {
-      color: red;
-      transform: scale(1.4);
+      color: #115e59;
+      transform: scale(1.15);
     }
   }
 }

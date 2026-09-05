@@ -1,14 +1,18 @@
 .rsettingComponent {
   display: flex;
+  margin-top: 126px;
+  width: 100%;
 
   .left {
-    width: 450px;
-    height: 85%;
-    // background: yellow;
-    border-right: 5px solid black;
+    width: 420px;
+    height: calc(100vh - 126px);
+    border-right: 1px solid #e2e8f0;
     position: fixed;
-    top: 10rem;
+    top: 126px;
+    left: 0;
     overflow-y: auto;
+    background-color: #ffffff;
+    z-index: 2;
     .items {
       width: 100%;
       margin-left: 2rem;
@@ -108,10 +112,16 @@
     }
   }
   .right {
-    margin-left: 450px;
+    margin-left: 420px;
+    width: calc(100% - 420px);
     display: flex;
+    flex-direction: column;
+    padding: 1.25rem 2rem;
+    box-sizing: border-box;
+
     .cards {
-      background-color: white;
+      width: 100%;
+      background-color: transparent;
     }
   }
 }
