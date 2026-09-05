@@ -248,138 +248,125 @@
               display: flex;
               align-items: center;
               height: 2rem;
+
               border-top: 1px solid black;
               border-bottom: 1px solid black;
-              box-sizing: border-box;
-
               .title {
-                font-size: 0.85rem;
-                font-weight: 700;
-                padding: 0 0.2rem;
-                box-sizing: border-box;
-
-                &.check {
-                  width: 6%;
+                text-align: center; //부자재
+                &:first-of-type {
+                  width: 300px;
+                }
+                &:nth-of-type(2) {
+                  //수량
+                  width: 10%;
                   text-align: center;
                 }
-                &.name {
-                  width: 36%;
-                  text-align: center;
-                }
-                &.qty {
-                  width: 14%;
-                  text-align: right;
-                }
-                &.ct {
+                &:nth-of-type(3) {
+                  //C/T
                   width: 10%;
                   text-align: right;
                 }
-                &.weight {
-                  width: 11%;
-                  text-align: right;
+                &:nth-of-type(4) {
+                  //weight
+                  width: 10%;
                 }
-                &.cbm {
-                  width: 15%;
-                  text-align: right;
-                }
-                &.action {
+                &:last-of-type {
                   width: 8%;
-                  text-align: center;
+                  padding-right: 1.5rem;
                 }
               }
             }
             .articles {
-              overflow-y: auto;
-              max-height: 350px;
               .items {
                 display: flex;
                 align-items: center;
                 height: 30px;
-                font-size: 0.85rem;
-                box-sizing: border-box;
+                font-size: 0.9rem;
                 .selected {
                   font-weight: 800;
                 }
 
                 .item {
-                  padding: 0 0.2rem;
-                  box-sizing: border-box;
-
-                  &.check {
-                    width: 6%;
-                    text-align: center;
-                    input[type="checkbox"] {
-                      margin: 0;
-                    }
+                  padding: 0.3rem;
+                  //check
+                  &:first-of-type {
+                    width: 4%;
                   }
-                  &.name {
-                    width: 36%;
-                    text-align: left;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
+                  //itemName
+                  &:nth-of-type(2) {
+                    width: 50%;
+                    text-align: start;
                     cursor: pointer;
                   }
-                  &.qty {
-                    width: 14%;
-                    text-align: right;
-                    .input_qty {
-                      width: 55px;
-                      text-align: right;
-                      border: none;
-                      border-bottom: 1px solid black;
-                      font-size: 0.8rem;
-                    }
+                  //quantity
+                  &:nth-of-type(3) {
+                    width: 7%;
+                    text-align: end;
                   }
-                  &.ct {
-                    width: 10%;
-                    text-align: right;
+                  &:nth-of-type(4) {
+                    //ct
+                    width: 5%;
+                    text-align: end;
+                    margin-left: 0.3rem;
                     .input_ct {
-                      width: 40px;
+                      width: 30px;
                       text-align: right;
                       border: none;
                       border-bottom: 1px solid black;
                       font-size: 0.8rem;
                     }
                   }
-                  &.weight {
-                    width: 11%;
-                    text-align: right;
+                  &:nth-of-type(5) {
+                    //weight
+                    width: 5%;
+                    text-align: end;
+                    margin-left: 0.3rem;
                     .input_weight {
-                      width: 42px;
+                      width: 30px;
                       text-align: right;
                       border: none;
                       border-bottom: 1px solid black;
                       font-size: 0.8rem;
                     }
                   }
-                  &.cbm {
-                    width: 15%;
-                    text-align: right;
-                    .input_cbm, .sel_cbm {
-                      width: 65px;
-                      text-align: right;
+                  &:nth-of-type(6) {
+                    //cbm
+                    width: 10%;
+                    text-align: end;
+                    margin-left: 0.5rem;
+                    .sel_cbm {
                       border: none;
                       border-bottom: 1px solid black;
                       font-size: 0.8rem;
                     }
                   }
-                  &.action {
-                    width: 8%;
-                    text-align: center;
+                  &:last-of-type {
+                    //trash
+                    width: 5%;
                     .material-symbols-outlined.trash {
                       color: orange;
                       cursor: pointer;
                       user-select: none;
                       transition: 0.4s;
-                      font-size: 1.1rem;
                       &:hover {
                         color: orangered;
                       }
                     }
                   }
-                  &.action.selected {
+                  &:last-of-type.selected {
+                    //trash
+
                     display: none;
+                    .material-symbols-outlined.trash {
+                      display: none;
+                      color: orange;
+                      cursor: pointer;
+                      user-select: none;
+                      transition: 0.4s;
+                      &:hover {
+                        color: orangered;
+                      }
+                    }
                   }
                 }
               }

@@ -589,22 +589,12 @@ const itemSlice = createSlice({
       // console.log("values", values);
       if (state.pickedData) {
         const idx = state.pickedData?.findIndex(
-          (picked) =>
-            (picked.ItemId !== undefined && picked.ItemId !== null && Number(picked.ItemId) === Number(id)) ||
-            (picked.id !== undefined && picked.id !== null && Number(picked.id) === Number(id)) ||
-            String(picked.ItemId) === String(id) ||
-            String(picked.id) === String(id)
+          (picked) => picked.ItemId === Number(id)
         );
-        if (idx !== undefined && idx >= 0 && state.pickedData[idx]) {
-          if (name === "check") {
-            state.pickedData[idx].check = checked;
-          } else if (name === "quantity" || name === "CT_qty") {
-            state.pickedData[idx][name] = value === "" ? "" : Number(value);
-          } else if (name === "weight" || name === "cbm") {
-            state.pickedData[idx][name] = value === "" ? "" : (isNaN(Number(value)) ? value : Number(value));
-          } else {
-            state.pickedData[idx][name] = value;
-          }
+        if (name === "check") {
+          state.pickedData[idx].check = checked;
+        } else {
+          state.pickedData[idx][name] = value;
         }
       }
     },
