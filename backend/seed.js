@@ -485,56 +485,35 @@ async function seed() {
   await Relation.bulkCreate(relationsData);
   console.log(`✅ BOM 부품 관계도(Relation) ${relationsData.length}건 연결 완료`);
 
-  // 6. 월별 수주/발주 데이터 (Order) 생성
+  // 6. 월별 수주/발주 데이터 (Order) 생성 (5~6개월치 롤링 오더: Sep ~ Jan)
   const ordersData = [
     {
       Item: "APEX-1000",
-      Jan: 800,
-      Feb: 1200,
-      Mar: 1500,
-      Apr: 1100,
-      May: 1800,
-      Jun: 1400,
-      Jul: 1600,
-      Aug: 1300,
       Sep: 1900,
       Oct: 2200,
       Nov: 2500,
       Dec: 2100,
+      Jan: 800,
     },
     {
       Item: "APEX-200",
-      Jan: 1200,
-      Feb: 1500,
-      Mar: 2000,
-      Apr: 1800,
-      May: 2400,
-      Jun: 1900,
-      Jul: 2100,
-      Aug: 1700,
       Sep: 2600,
       Oct: 3000,
       Nov: 3500,
       Dec: 2800,
+      Jan: 1200,
     },
     {
       Item: "NEXUS-500",
-      Jan: 400,
-      Feb: 600,
-      Mar: 900,
-      Apr: 850,
-      May: 1200,
-      Jun: 1100,
-      Jul: 1300,
-      Aug: 1000,
       Sep: 1500,
       Oct: 1700,
       Nov: 2000,
       Dec: 1600,
+      Jan: 400,
     },
   ];
   await Order.bulkCreate(ordersData);
-  console.log("✅ 월별 발주 현황(Order) 3건 생성 완료");
+  console.log("✅ 월별 발주 현황(Order) 3건 생성 완료 (Sep ~ Jan)");
 
   // 7. 오더시트(ordersheet) 테이블 생성 및 뷰 동기화
   await sequelize.query(`drop table if exists ordersheet`);
@@ -542,7 +521,7 @@ async function seed() {
     create table ordersheet (
       SELECT 
       G.itemName,
-      O.Jan, O.Feb, O.Mar, O.Apr, O.May, O.Jun, O.Jul, O.Aug, O.Sep, O.Oct, O.Nov, O.Dec,
+      O.Sep, O.Oct, O.Nov, O.Dec, O.Jan,
       L.descript,
       L.category,
       L.unit,
@@ -563,7 +542,7 @@ async function seed() {
       ORDER BY L.number1, L.number2
     )
   `);
-  console.log("✅ 수출 오더시트(ordersheet) 테이블 생성 완료");
+  console.log("✅ 수출 오더시트(ordersheet) 테이블 생성 완료 (Sep ~ Jan)");
 
   // 8. 컨테이너 팔레트(Pallet) 적재 데이터 생성
   const palletsData = [

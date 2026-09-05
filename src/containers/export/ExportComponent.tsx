@@ -170,7 +170,7 @@ const ExportComponent: React.FC<Props> = ({
                     <div style={{ width: '520px', padding: '1rem', userSelect: 'none' }}></div>
                 </div>
                 <div style={{ position: 'fixed', top: invoiceForm.position.y, left: invoiceForm.position.x, zIndex: 2 }}>
-                    <InvoiceContainer selectedMonth={selectedMonth || months![0]} />
+                    <InvoiceContainer selectedMonth={selectedMonth || (months && months.length > 0 ? months[0] : '')} />
                 </div>
             </div>}
             {packingForm.visible && <div>
@@ -188,7 +188,7 @@ const ExportComponent: React.FC<Props> = ({
                 </div>
                 <div style={{ position: 'fixed', top: packingForm.position.y, left: packingForm.position.x, zIndex: 2 }}>
                     <PackingContainer
-                        selectedMonth={selectedMonth || months![0]}
+                        selectedMonth={selectedMonth || (months && months.length > 0 ? months[0] : '')}
                     />
                 </div>
             </div>}
@@ -213,7 +213,7 @@ const ExportComponent: React.FC<Props> = ({
                 </div>
                 <div style={{ position: 'fixed', top: palletForm.position.y, left: palletForm.position.x, zIndex: 2 }}>
                     <PalletContainer
-                        selectedMonth={selectedMonth || months![0]}
+                        selectedMonth={selectedMonth || (months && months.length > 0 ? months[0] : '')}
                     />
                 </div>
             </div>}
@@ -457,7 +457,7 @@ const ExportComponent: React.FC<Props> = ({
                                             ItemId: data.ItemId,
                                             check: data.check,
                                             itemName: data.itemName,
-                                            month: months ? months[0] : '',
+                                            month: months ? (selectedMonth || months[0]) : '',
                                             quantity: data.quantity,
                                             description: '',
                                             category: 'REPAIR',

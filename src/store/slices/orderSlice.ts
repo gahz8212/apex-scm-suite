@@ -1,5 +1,6 @@
 import { createSlice, createSelector, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "..";
+import { extractOrderMonths } from "../../lib/utils/orderMonths";
 type State = {
   orderFile: ArrayBuffer | undefined | null;
   orderData: any[] | null;
@@ -111,7 +112,7 @@ const orderSlice = createSlice({
       state.status.error = "";
       state.orderData = order;
       // state.packingData = order;
-      state.months = Object.keys(order[0]).slice(1, 6);
+      state.months = extractOrderMonths(order[0], 6);
     },
     inputOrderFailure: (state, { payload: error }) => {
       state.status.error = error;
@@ -174,6 +175,9 @@ const orderSlice = createSlice({
       state.status.error = "";
       state.status.loading = false;
       state.orderData = invoiceData;
+      if (invoiceData && invoiceData.length > 0) {
+        state.months = extractOrderMonths(invoiceData[0], 6);
+      }
     },
     getOrderDataFailure: (state, { payload: error }) => {
       state.status.error = error;
