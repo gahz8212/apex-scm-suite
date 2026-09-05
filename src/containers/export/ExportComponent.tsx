@@ -94,17 +94,36 @@ const ExportComponent: React.FC<Props> = ({
     const dragItem: any = useRef();
     const dragOverItem: any = useRef();
     const dispatch = useDispatch();
+    const [formZIndex, setFormZIndex] = useState<{ [key: string]: number }>({
+        invoice: 30,
+        packing: 32,
+        pallet: 34,
+    });
+    const bringToFront = (form: string) => {
+        setFormZIndex(prev => {
+            const currentZ = prev[form] || 30;
+            const maxZ = Math.max(...Object.values(prev));
+            if (currentZ === maxZ) return prev;
+            return {
+                ...prev,
+                [form]: maxZ + 2,
+            };
+        });
+    };
     const invoicePos = useDrag(params => {
+        bringToFront('invoice');
         const nextX = Math.max(10, Math.min(window.innerWidth - 550, params.offset[0] + 60));
         const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
         changePosition('invoice', { x: nextX, y: nextY });
     });
     const packingPos = useDrag(params => {
+        bringToFront('packing');
         const nextX = Math.max(10, Math.min(window.innerWidth - 550, params.offset[0] + 500));
         const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
         changePosition('packing', { x: nextX, y: nextY });
     });
     const palletPos = useDrag(params => {
+        bringToFront('pallet');
         const nextX = Math.max(10, Math.min(window.innerWidth - 680, params.offset[0] + 720));
         const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
         changePosition('pallet', { x: nextX, y: nextY });
@@ -156,50 +175,50 @@ const ExportComponent: React.FC<Props> = ({
     // }
     return (
         <div className='export-wrapper'>
-            {invoiceForm.visible && <div>
+            {invoiceForm.visible && <div onMouseDown={() => bringToFront('invoice')}>
                 <div {...invoicePos()} style={{
                     color: 'black',
                     position: 'fixed',
                     top: invoiceForm.position.y,
                     left: invoiceForm.position.x,
-                    zIndex: 4,
+                    zIndex: formZIndex.invoice + 1,
                     textAlign: 'center',
                     width: '520px',
                     boxSizing: 'border-box'
                 }}>
                     <div style={{ width: '520px', padding: '1rem', userSelect: 'none' }}></div>
                 </div>
-                <div style={{ position: 'fixed', top: invoiceForm.position.y, left: invoiceForm.position.x, zIndex: 2 }}>
+                <div style={{ position: 'fixed', top: invoiceForm.position.y, left: invoiceForm.position.x, zIndex: formZIndex.invoice }}>
                     <InvoiceContainer selectedMonth={selectedMonth || (months && months.length > 0 ? months[0] : '')} />
                 </div>
             </div>}
-            {packingForm.visible && <div>
+            {packingForm.visible && <div onMouseDown={() => bringToFront('packing')}>
                 <div {...packingPos()} style={{
                     color: 'black',
                     width: '520px',
                     position: 'fixed',
                     top: packingForm.position.y,
                     left: packingForm.position.x,
-                    zIndex: 4,
+                    zIndex: formZIndex.packing + 1,
                     textAlign: 'center',
                     boxSizing: 'border-box'
                 }}>
                     <div style={{ width: '520px', padding: '1rem', userSelect: 'none' }}></div>
                 </div>
-                <div style={{ position: 'fixed', top: packingForm.position.y, left: packingForm.position.x, zIndex: 2 }}>
+                <div style={{ position: 'fixed', top: packingForm.position.y, left: packingForm.position.x, zIndex: formZIndex.packing }}>
                     <PackingContainer
                         selectedMonth={selectedMonth || (months && months.length > 0 ? months[0] : '')}
                     />
                 </div>
             </div>}
-            {palletForm.visible && <div>
+            {palletForm.visible && <div onMouseDown={() => bringToFront('pallet')}>
                 <div {...palletPos()} style={{
                     color: 'black',
                     width: '650px',
                     position: 'fixed',
                     top: palletForm.position.y,
                     left: palletForm.position.x,
-                    zIndex: 4,
+                    zIndex: formZIndex.pallet + 1,
                     textAlign: 'center',
                     boxSizing: 'border-box'
 
@@ -211,7 +230,7 @@ const ExportComponent: React.FC<Props> = ({
 
                     }}></div>
                 </div>
-                <div style={{ position: 'fixed', top: palletForm.position.y, left: palletForm.position.x, zIndex: 2 }}>
+                <div style={{ position: 'fixed', top: palletForm.position.y, left: palletForm.position.x, zIndex: formZIndex.pallet }}>
                     <PalletContainer
                         selectedMonth={selectedMonth || (months && months.length > 0 ? months[0] : '')}
                     />
@@ -482,10 +501,17 @@ const ExportComponent: React.FC<Props> = ({
                         </div>
                     </div>
                     <div className='forms'>
-                        {(orderData) && <span className="material-symbols-outlined invoice" onClick={openInvoiceForm}>
+                        {(orderData) && <span className="material-symbols-outlined invoice" onClick={() => {
+                            bringToFront('invoice');
+                            openInvoiceForm();
+                        }}>
                             list_alt_add
                         </span>}
-                        {(orderData) && <span className="material-symbols-outlined packing" onClick={openPackingForm}>
+                        {(orderData) && <span className="material-symbols-outlined packing" onClick={() => {
+                            bringToFront('pallet');
+                            bringToFront('packing');
+                            openPackingForm();
+                        }}>
                             list_alt_add
                         </span>}
                     </div>
