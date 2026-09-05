@@ -206,21 +206,17 @@ const orderSlice = createSlice({
     },
     settingPallet: (state, { payload: packingData }) => {
       const { pNo, itemData } = packingData;
-      // console.log("pNo", pNo + 1, "itemData", itemData);
-      const items = state.palletData[pNo].map((data) => data.item);
-      if (!items.includes(itemData.item)) {
-        state.palletData[pNo] = [itemData, ...state.palletData[pNo]];
+      if (!state.palletData[pNo]) {
+        state.palletData[pNo] = [];
       }
+      state.palletData[pNo] = [itemData, ...state.palletData[pNo]];
     },
     updatePallet: (state, { payload: packingData }) => {
       const { pNo, itemData } = packingData;
-      // console.log("itemData", itemData);
-      //드래그중에 컨트롤키 누르면 복사 아니면 이동
-      //이동일때는 기존의 파렛트 인덱스에서 삭제
-      const items = state.palletData[pNo].map((data) => data.item);
-      if (!items.includes(itemData.item)) {
-        state.palletData[pNo] = [itemData, ...state.palletData[pNo]];
+      if (!state.palletData[pNo]) {
+        state.palletData[pNo] = [];
       }
+      state.palletData[pNo] = [itemData, ...state.palletData[pNo]];
     },
     addCount: (state, { payload: items }) => {
       const { id, item, itemIndex } = items;

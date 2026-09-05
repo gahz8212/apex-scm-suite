@@ -179,13 +179,32 @@ const PalletComponent: React.FC<Props> = ({ palletData, settingPallet, addCount,
                     onDrop={(e) => {
                         const { name, CT_qty, quantity, weight, moq, cbm, sets, mode } = JSON.parse(e.dataTransfer.getData('item'))
 
-                        if (mode === 'move' || mode === 'copy') {
-
-                            // const { summary, key, data, mode } = JSON.parse(e.dataTransfer.getData('item'))
-                            // console.log(summary[0])
-                            drop(index, { name, CT_qty, quantity, weight, moq, cbm, sets, mode })
+                        if (mode === 'move') {
+                            let alreadyPacked = 0;
+                            if (palletData) {
+                                Object.keys(palletData).forEach((key) => {
+                                    const pItems = palletData[Number(key)];
+                                    if (Array.isArray(pItems)) {
+                                        pItems.forEach((pItem) => {
+                                            if (pItem && pItem.item === name) {
+                                                alreadyPacked += Number(pItem.CT_qty || 0);
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                            const remaining = Number(CT_qty || 0) - alreadyPacked;
+                            if (remaining <= 0) {
+                                alert(`이미 해당 품목(${name})의 모든 카톤(${CT_qty} C/T)이 팔레트에 적재되었습니다.`);
+                                e.currentTarget.style.background = "white";
+                                return;
+                            }
+                            const newQuantity = moq ? remaining * moq : remaining;
+                            drop(index, { name, CT_qty: remaining, quantity: newQuantity, weight, moq, cbm, sets, mode });
+                        } else if (mode === 'copy') {
+                            drop(index, { name, CT_qty, quantity, weight, moq, cbm, sets, mode });
                         } else {
-                            const { summary, key, data, mode } = JSON.parse(e.dataTransfer.getData('item'));
+                            const { summary, key, data, mode: repairMode } = JSON.parse(e.dataTransfer.getData('item'));
                             summary.sort((a: { id: number }, b: { id: number }) => b.id - a.id).map((data: {
                                 itemName: string,
                                 CT_qty: number,
@@ -195,10 +214,9 @@ const PalletComponent: React.FC<Props> = ({ palletData, settingPallet, addCount,
                                 cbm: number,
                                 sets: string,
                                 mode: string
-                            }) => drop(index, { name: data.itemName, CT_qty: data.CT_qty, quantity: data.quantity, weight: data.weight, moq: data.moq, cbm: data.cbm, sets: data.sets, mode: data.mode }))
-
+                            }) => drop(index, { name: data.itemName, CT_qty: data.CT_qty, quantity: data.quantity, weight: data.weight, moq: data.moq, cbm: data.cbm, sets: data.sets, mode: data.mode || repairMode }));
                         }
-                        e.currentTarget.style.background = "white"
+                        e.currentTarget.style.background = "white";
                     }}
                 >
                     <div style={{ position: 'absolute', left: index < 9 ? "40%" : "30%", fontSize: '80px', opacity: '.1', userSelect: 'none', pointerEvents: 'none' }}>
