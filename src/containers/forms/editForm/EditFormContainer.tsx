@@ -6,8 +6,7 @@ import { formSelector, formActions } from '../../../store/slices/formSlice';
 import { relateData } from '../../../store/slices/relationSlice';
 import { imageInsert } from '../../../lib/utils/createFormData'
 import EditFormComponent from './EditFormComponent';
-import { makeRelateData_Price } from '../../../lib/utils/createRelateData'
-import { makeRelateData_View } from '../../../lib/utils/createRelateData copy'
+import { makeRelateData_Price, makeRelateData_View } from '../../../lib/utils/createRelateData'
 import { changeRelationToDragItems, returnTotalPrice } from '../../../lib/utils/returnTotalPrice';
 import { relateActions } from '../../../store/slices/relationSlice';
 const EditFormContainer = () => {

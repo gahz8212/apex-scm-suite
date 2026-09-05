@@ -1,4 +1,5 @@
 import { makeRelateData_Price } from "./createRelateData";
+
 export const changeRelationToDragItems = (
   items: {
     id: number;
@@ -13,7 +14,7 @@ export const changeRelationToDragItems = (
     point: number;
   }[]
 ) => {
-  let newArray: {
+  const newArray: {
     [key: string]: number | string;
     id: number;
     point: number;
@@ -23,27 +24,33 @@ export const changeRelationToDragItems = (
     category: string;
     im_price: number;
   }[] = [];
-  relations?.filter((relation) =>
-    items?.filter((item) => {
-      if (relation.LowerId === item.id) {
-        newArray.push({
-          id: relation.LowerId,
-          point: relation.point,
-          targetId: relation.UpperId,
-          itemName: item.itemName,
-          type: item.type,
-          category: item.category,
-          im_price: item.im_price,
-        });
-        return newArray;
-      } else {
-        return null;
-      }
-    })
-  );
+
+  if (!relations || !items) return newArray;
+
+  const itemMap = new Map<number, (typeof items)[0]>();
+  for (let i = 0; i < items.length; i++) {
+    itemMap.set(items[i].id, items[i]);
+  }
+
+  for (let i = 0; i < relations.length; i++) {
+    const relation = relations[i];
+    const item = itemMap.get(relation.LowerId);
+    if (item) {
+      newArray.push({
+        id: relation.LowerId,
+        point: relation.point,
+        targetId: relation.UpperId,
+        itemName: item.itemName,
+        type: item.type,
+        category: item.category,
+        im_price: item.im_price,
+      });
+    }
+  }
+
   return newArray;
-  // dispatch(itemActions.inputDragItems(newArray));
 };
+
 export const returnTotalPrice = (
   items: {
     id: number;
@@ -73,19 +80,21 @@ export const returnTotalPrice = (
         if (curr.type === "SET" || curr.type === "ASSY") {
           if (items) {
             const view = makeRelateData_Price(curr.id, relations, items);
-            const price = view[0].sum_im_price * curr.point;
+            const unitSum = view[0]?.sum_im_price ?? 0;
+            const price = unitSum * curr.point;
 
             if (acc[curr.targetId]) {
-              acc[curr.targetId] = price + acc[curr.targetId];
+              acc[curr.targetId] += price;
             } else {
-              acc[curr.targetId] = price + acc[curr.targetId];
+              acc[curr.targetId] = price;
             }
           }
         } else {
+          const price = curr.im_price * curr.point;
           if (acc[curr.targetId]) {
-            acc[curr.targetId] += curr.im_price * curr.point;
+            acc[curr.targetId] += price;
           } else {
-            acc[curr.targetId] = curr.im_price * curr.point;
+            acc[curr.targetId] = price;
           }
         }
 

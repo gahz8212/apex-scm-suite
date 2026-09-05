@@ -23,36 +23,45 @@ const RsettingContainer = () => {
         dispatch(formActions.changePosition({ form, position }))
     }
     const selectItem = (id: number | '') => {
+        if (relations) {
+            const sourceItems = viewMode ? backup : items;
+            const itemMap = new Map((sourceItems || []).map(item => [item.id, item]));
+            const newItems = relations
+                .filter(relation => relation.UpperId === id)
+                .map(relation => {
+                    const found = itemMap.get(relation.LowerId);
+                    if (found) {
+                        return {
+                            id: found.id,
+                            type: found.type,
+                            category: found.category,
+                            point: relation.point,
+                            im_price: found.im_price,
+                            itemName: found.itemName,
+                            targetId: id,
+                            unit: found.unit,
+                        };
+                    }
+                    return null;
+                })
+                .filter(Boolean);
 
-        const newItems = relations?.filter(relation => relation.UpperId === id)
-            .map(relation => relation.LowerId)
-            .map(id => viewMode ? backup?.filter(item => item.id === id) : items?.filter(item => item.id === id))
-            .flat()
-            .map((arr => {
-                if (arr) {
-                    const point = relations.filter(relation => relation.UpperId === id && relation.LowerId === arr.id).map(relation => relation.point)[0];
-                    return ({
-                        id: arr.id, type: arr.type, category: arr.category, point: point,
-                        im_price: arr.im_price, itemName: arr.itemName, targetId: id, unit: arr.unit
-                    })
-                } else {
-                    return null
-                }
-            })
-            )
-        // console.log('newItems', newItems)
-        dispatch(editActions.inputDragItems(newItems))
+            dispatch(editActions.inputDragItems(newItems));
+        }
+
         if (items) {
-            const item = items.filter(item => item.id === id);
+            const item = items.find(item => item.id === id);
             if (typeof id === 'number') {
-                const result = makeRelateData_View(id, relations, items)
+                const result = makeRelateData_View(id, relations, items);
                 if (result) {
                     if (!openBasket)
-                        dispatch(relateActions.insertRelation_view(result))
+                        dispatch(relateActions.insertRelation_view(result));
                 }
             }
-            dispatch(editActions.selectItem(item[0]));
-            dispatch(formActions.toggle_form({ form: 'edit', value: true }))
+            if (item) {
+                dispatch(editActions.selectItem(item));
+            }
+            dispatch(formActions.toggle_form({ form: 'edit', value: true }));
         }
     }
     const viewRelation = (toggle: boolean) => {

@@ -63,17 +63,20 @@
 
 ---
 
-### ⏳ Phase 2. 데이터 흐름 안정화 & 알고리즘 최적화 (★다음 작업)
+### ✅ Phase 2. 데이터 흐름 안정화 & 알고리즘 최적화 (완료)
 > **목표**: 코드 퀄리티를 시니어급으로 끌어올리고, BOM 트리 렌더링 속도 개선 및 거대 컴포넌트 분리
-- [ ] **BOM 트리 순회 알고리즘 최적화**
-  - [ ] `src/lib/utils/createRelateData.ts`의 O(N×M) 중첩 filter 반복을 `Map` 기반 O(1) 조회로 전면 리팩토링 (BOM 화면 로딩 및 가격 계산 속도 극대화)
-- [ ] **거대 엑셀 생성 로직의 서비스 레이어 분리 (컴포넌트 다이어트)**
-  - [ ] `CartonExcelContainer.tsx` (1,200줄)에서 ExcelJS 생성 로직을 `src/lib/services/excel/cartonService.ts`로 추출
-  - [ ] `InvoiceExcelContainer.tsx` (959줄)에서 ExcelJS 생성 로직을 `src/lib/services/excel/invoiceService.ts`로 추출
-  - [ ] 컴포넌트는 다운로드 버튼 UI 및 로딩 상태 제어만 담당하도록 80% 이상 코드 경량화
-- [ ] **불필요한 레거시/임시 파일 정리**
-  - [ ] 루트의 `test.js` 삭제
-  - [ ] `src/lib/utils/createRelateData copy.ts` 미사용 파일 삭제
+- [x] **BOM 트리 순회 알고리즘 최적화**
+  - [x] `src/lib/utils/createRelateData.ts`의 O(N×M) 중첩 filter 반복을 `Map` 기반 O(1) 조회로 전면 리팩토링 (BOM 화면 로딩 및 가격 계산 속도 극대화)
+  - [x] `src/lib/utils/returnTotalPrice.ts`의 O(N×M) 탐색을 `Map` 기반 O(N+M)으로 최적화 및 `NaN` 가격 계산 버그 수정
+  - [x] `src/containers/r-settings/RsettingContainer.tsx`의 하위 부품 매핑 로직을 `Map` 기반 O(1) 조회로 개선
+- [x] **거대 엑셀 생성 로직의 서비스 레이어 분리 (컴포넌트 다이어트)**
+  - [x] `CartonExcelContainer.tsx` (1,200줄 ➔ 34줄)에서 ExcelJS 생성 로직을 `src/lib/services/excel/cartonService.ts`로 추출
+  - [x] `InvoiceExcelContainer.tsx` (959줄 ➔ 34줄)에서 ExcelJS 생성 로직을 `src/lib/services/excel/invoiceService.ts`로 추출
+  - [x] 컴포넌트는 다운로드 버튼 UI 및 로딩 상태 제어만 담당하도록 95% 이상 코드 경량화
+- [x] **불필요한 레거시/임시 파일 정리**
+  - [x] 루트의 `test.js` 삭제
+  - [x] `src/lib/utils/createRelateData copy.ts` 미사용 파일 삭제 및 `EditFormContainer.tsx` 참조 정상화
+- [x] **프로덕션 빌드 통과 검증 완료 (`npm run build`)**
 
 ---
 
