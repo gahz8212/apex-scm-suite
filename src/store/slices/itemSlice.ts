@@ -511,14 +511,7 @@ const itemSlice = createSlice({
       }
       const exists = state.pickedData.some((p) => p.ItemId === newRepairs.ItemId);
       if (!exists) {
-        state.pickedData.unshift({
-          ...newRepairs,
-          check: false,
-          quantity: newRepairs.quantity || 0,
-          CT_qty: newRepairs.CT_qty || 0,
-          weight: newRepairs.weight || 0,
-          cbm: newRepairs.cbm || 0,
-        });
+        state.pickedData.unshift(newRepairs);
       }
     },
     removePicked: (state, { payload: id }) => {
