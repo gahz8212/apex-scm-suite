@@ -3,84 +3,15 @@ import PackingComponent from './PackingComponent';
 import { useSelector } from 'react-redux'
 import { OrderData } from '../../../store/slices/orderSlice';
 import CartonExcelContainer from '../../excels/export/CartonExcelContainer';
+import { calculatePackingData } from '../../../lib/utils/calculatePackingData';
 type Props = {
 
     selectedMonth: string
 }
 const PackingContainer: React.FC<Props> = ({ selectedMonth }) => {
     const { orderData, palletData } = useSelector(OrderData)
-    // console.log('orderData', orderData)
-    const filteredPackingData = orderData?.filter((data) => data[selectedMonth])
-        .map(data => (
-            {
-                itemName: data.itemName,
-                CT_qty: data.moq ? (data[selectedMonth] / data.moq) : 0,
-                quantity: data[selectedMonth],
-                weight: data.weight,
-                moq: data.moq,
-                cbm: data.cbm,
-                sets: data.sets
+    const filteredPackingData = calculatePackingData(orderData, selectedMonth);
 
-
-            }))
-    // console.log('filteredPackingData', filteredPackingData)
-    if (filteredPackingData) {
-        let selectedapplyMoqData = [...filteredPackingData]
-        selectedapplyMoqData.forEach(data => {
-            if (data.quantity % data.moq) {
-
-                if (data.quantity % data.moq === data.quantity) {
-                    if (data.quantity / data.moq * 100 > 70) {
-                        let idx = filteredPackingData.findIndex(newData => data.itemName === newData.itemName)
-                        const newItem = ({
-                            itemName: data.itemName,
-                            CT_qty: 1,
-                            quantity: data.quantity % data.moq,
-                            weight: data.weight,
-                            moq: data.moq,
-                            cbm: data.cbm,
-                            sets: data.sets
-                        })
-                        filteredPackingData.splice(idx, 1, newItem);
-                    } else {
-                        let idx = filteredPackingData.findIndex(newData => data.itemName === newData.itemName)
-                        filteredPackingData.splice(idx, 1);
-                        filteredPackingData.push({
-                            itemName: data.itemName,
-                            CT_qty: 0,
-                            quantity: data.quantity % data.moq,
-                            weight: data.weight,
-                            moq: data.moq,
-                            cbm: data.cbm,
-                            sets: data.sets
-                        })
-                    }
-                }
-                else {
-                    let idx = filteredPackingData.findIndex(newData => data.itemName === newData.itemName)
-                    const newData = {
-                        itemName: data.itemName,
-                        CT_qty: (data.quantity - (data.quantity % data.moq)) / data.moq,
-                        quantity: data.quantity - (data.quantity % data.moq),
-                        weight: data.weight,
-                        moq: data.moq,
-                        cbm: data.cbm,
-                        sets: data.sets
-                    }
-                    filteredPackingData.splice(idx, 1, newData);
-                    filteredPackingData.push({
-                        itemName: data.itemName,
-                        CT_qty: 0,
-                        quantity: data.quantity % data.moq,
-                        weight: data.weight,
-                        moq: data.moq,
-                        cbm: data.cbm,
-                        sets: data.sets
-                    })
-                }
-            }
-        })
-    }
     let totalResult: { [x: string]: { carton: number; weight: number; cbm: number; price: number; }; }[] = [];
     if (orderData) {
         const headers = Object.keys(orderData[0]).slice(1, 6)

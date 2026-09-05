@@ -58,6 +58,7 @@ const PackingComponent: React.FC<Props> = ({ selectedMonth, packingData, totalRe
                 e.dataTransfer.setDragImage(img, 50, 50)
                 e.dataTransfer.setData('item', JSON.stringify({
                     name: data.itemName,
+                    totalCT_qty: data.CT_qty,
                     CT_qty: data.CT_qty,
                     quantity: data.quantity,
                     weight: data.weight,

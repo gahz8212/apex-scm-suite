@@ -87,7 +87,7 @@ export interface CartonPackingItem {
 
 export type PalletDataType = {
     [key: number]: {
-        [key: string]: string | number;
+        [key: string]: any;
         item: string;
         CT_qty: number;
         weight: number;

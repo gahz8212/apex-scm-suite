@@ -7,13 +7,15 @@ type State = {
   // packingData: any[] | null;
   palletData: {
     [key: number]: {
-      [key: string]: string | number;
+      [key: string]: any;
       item: string;
       CT_qty: number;
+      totalCT_qty?: number;
       sets: string;
       weight: number;
       cbm: number;
       moq: number;
+      quantity?: number;
     }[];
   };
   repairData:
@@ -218,14 +220,36 @@ const orderSlice = createSlice({
       }
       state.palletData[pNo] = [itemData, ...state.palletData[pNo]];
     },
-    addCount: (state, { payload: items }) => {
-      const { id, item, itemIndex } = items;
+    addCount: (
+      state,
+      {
+        payload: items,
+      }: {
+        payload: {
+          id: number;
+          item: string;
+          value?: number;
+          itemIndex?: number;
+          maxAllowed?: number;
+        };
+      }
+    ) => {
+      const { id, item, itemIndex, maxAllowed } = items;
       const targetIdx =
         typeof itemIndex === "number" && itemIndex >= 0
           ? itemIndex
           : state.palletData[id].findIndex((data: any) => data.item === item);
       if (targetIdx >= 0 && state.palletData[id] && state.palletData[id][targetIdx]) {
-        state.palletData[id][targetIdx].CT_qty = Number(state.palletData[id][targetIdx].CT_qty || 0) + 1;
+        const current = Number(state.palletData[id][targetIdx].CT_qty || 0);
+        if (typeof maxAllowed === "number" && current >= maxAllowed) {
+          return;
+        }
+        const newQty = current + 1;
+        state.palletData[id][targetIdx].CT_qty = newQty;
+        if (state.palletData[id][targetIdx].moq) {
+          state.palletData[id][targetIdx].quantity =
+            newQty * Number(state.palletData[id][targetIdx].moq);
+        }
       }
     },
     removeCount: (state, { payload: items }) => {
@@ -236,7 +260,12 @@ const orderSlice = createSlice({
           : state.palletData[id].findIndex((data: any) => data.item === item);
       if (targetIdx >= 0 && state.palletData[id] && state.palletData[id][targetIdx]) {
         const current = Number(state.palletData[id][targetIdx].CT_qty || 1);
-        state.palletData[id][targetIdx].CT_qty = Math.max(1, current - 1);
+        const newQty = Math.max(1, current - 1);
+        state.palletData[id][targetIdx].CT_qty = newQty;
+        if (state.palletData[id][targetIdx].moq) {
+          state.palletData[id][targetIdx].quantity =
+            newQty * Number(state.palletData[id][targetIdx].moq);
+        }
       }
     },
     removeItem: (state, { payload: items }) => {
