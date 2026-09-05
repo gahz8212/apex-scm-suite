@@ -28,32 +28,22 @@
             .th {
               font-weight: 700;
               line-height: 0.7;
-              text-align: center;
-              padding: 1rem;
+              text-align: right;
+              padding: 1rem 0.5rem;
+              box-sizing: border-box;
               &:nth-child(1) {
                 text-align: left;
-
                 width: 330px;
+                padding-left: 0.5rem;
               }
-              &:nth-child(2) {
-                width: 60px;
-                // background-color: yellow;
-              }
-              &:nth-child(3) {
-                width: 60px;
-                // background-color: yellow;
-              }
-              &:nth-child(4) {
-                width: 60px;
-                // background-color: yellow;
-              }
-              &:nth-child(5) {
-                width: 60px;
-                // background-color: yellow;
-              }
+              &:nth-child(2),
+              &:nth-child(3),
+              &:nth-child(4),
+              &:nth-child(5),
               &:nth-child(6) {
                 width: 60px;
-                // background-color: yellow;
+                text-align: right;
+                padding-right: 0.5rem;
               }
             }
           }
@@ -75,27 +65,22 @@
             }
             .td {
               text-align: right;
-              padding: 0.3rem 1rem;
+              padding: 0.3rem 0.5rem;
+              box-sizing: border-box;
 
               &:nth-child(1) {
                 text-align: left;
                 width: 330px;
-                // text-wrap: nowrap;
+                padding-left: 0.5rem;
               }
-              &:nth-child(2) {
-                width: 60px;
-              }
-              &:nth-child(3) {
-                width: 60px;
-              }
-              &:nth-child(4) {
-                width: 60px;
-              }
-              &:nth-child(5) {
-                width: 60px;
-              }
+              &:nth-child(2),
+              &:nth-child(3),
+              &:nth-child(4),
+              &:nth-child(5),
               &:nth-child(6) {
                 width: 60px;
+                text-align: right;
+                padding-right: 0.5rem;
               }
             }
           }
@@ -156,17 +141,21 @@
             transition: 0.5s;
             transform: translateX(200px);
             opacity: 1;
+            pointer-events: auto;
           }
           .partsTable {
             transition: 0.5s;
             transform: translateX(200px);
             opacity: 0;
+            pointer-events: none;
           }
           .back {
-            opacity: 1;
+            opacity: 0;
+            pointer-events: none;
           }
           .forward {
-            opacity: 0;
+            opacity: 1;
+            pointer-events: auto;
           }
         }
         &.parts {
@@ -174,19 +163,23 @@
             transition: 0.5s;
             transform: translateX(-200px);
             opacity: 0;
+            pointer-events: none;
           }
 
           .partsTable {
             transition: 0.5s;
             transform: translateX(-200px);
             opacity: 1;
+            pointer-events: auto;
             // max-height: 500px;
           }
           .back {
-            opacity: 0;
+            opacity: 1;
+            pointer-events: auto;
           }
           .forward {
-            opacity: 1;
+            opacity: 0;
+            pointer-events: none;
           }
         }
 

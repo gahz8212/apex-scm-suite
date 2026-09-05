@@ -263,7 +263,7 @@ const ExportComponent: React.FC<Props> = ({
                             </div>)}
                     </div>
 
-                    <div className={`sumTable  ${model === 'parts' ? "model" : 'parts'}`}>
+                    <div className={`sumTable ${model}`}>
                         <div className="arrow">
                             {<span className="material-symbols-outlined back" onClick={() => {
                                 setModel('model')
@@ -282,7 +282,7 @@ const ExportComponent: React.FC<Props> = ({
                                 </div>
                                 <div className='body'>
                                     <div className="titles">
-                                        <div className='title'>부자재</div>
+                                        <div className='title'>제품</div>
                                         <div className='title'>수량</div>
                                         <div className='title'>C/T</div>
                                         <div className='title'>Kg</div>
@@ -383,7 +383,7 @@ const ExportComponent: React.FC<Props> = ({
                                 <div className='body'>
                                     <div className="titles">
 
-                                        <div className='title'>부자재</div>
+                                        <div className='title'>원/부자재</div>
                                         <div className='title'>수량</div>
                                         <div className='title'>C/T</div>
                                         <div className='title'>Kg</div>
