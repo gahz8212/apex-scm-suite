@@ -5,6 +5,7 @@ import EditFormContainer from "../forms/editForm/EditFormContainer";
 import CardContainer from '../common/card/CardContainer';
 import RelationContainer from '../forms/relationForm/RelationContainer';
 import ItemPickerContainer from '../forms/itemPicker/ItemPickerContainer';
+import ItemFilterToolbar from '../search/ItemFilterToolbar';
 
 type Props = {
 
@@ -96,6 +97,9 @@ const IsettingComponent: React.FC<Props> = ({ input, edit, relate, openForm, cha
                 </div> */}
                 <RelationContainer />
             </div>}
+            <div style={{ maxWidth: '1200px', margin: '1rem auto 0', padding: '0 1rem' }}>
+                <ItemFilterToolbar placeholder="전체 품목 마스터 검색 (완성품/조립품/원자재)..." />
+            </div>
             <CardContainer />
             <div style={{ height: '90px' }}></div>
             <span onClick={() => openForm('input')} className="material-symbols-outlined write">
