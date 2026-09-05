@@ -156,10 +156,25 @@ const ExportComponent: React.FC<Props> = ({
     }, [orderData, activeMonth]);
 
     const [checkedProducts, setCheckedProducts] = useState<{ [itemName: string]: boolean }>({});
+    const [productOverrides, setProductOverrides] = useState<{
+        [itemName: string]: { quantity?: number; cbm?: number }
+    }>({});
 
     useEffect(() => {
         setCheckedProducts({});
+        setProductOverrides({});
     }, [activeMonth]);
+
+    const handleProductOverride = (itemName: string, field: 'quantity' | 'cbm', value: string) => {
+        const num = value === '' ? undefined : Number(value);
+        setProductOverrides(prev => ({
+            ...prev,
+            [itemName]: {
+                ...prev[itemName],
+                [field]: num
+            }
+        }));
+    };
 
     const isProductChecked = (itemName: string): boolean => {
         return checkedProducts[itemName] !== undefined ? checkedProducts[itemName] : true;
@@ -325,6 +340,11 @@ const ExportComponent: React.FC<Props> = ({
                     </div>
 
                     <div className={`sumTable ${model}`}>
+                        <datalist id="cbm-presets">
+                            <option value="0.044">iDT (0.044)</option>
+                            <option value="0.040">CC360 (0.040)</option>
+                            <option value="0.044">SPT (0.044)</option>
+                        </datalist>
                         <div className="arrow">
                             {<span className="material-symbols-outlined back" onClick={() => {
                                 setModel('model')
@@ -343,14 +363,16 @@ const ExportComponent: React.FC<Props> = ({
                                 </div>
                                 <div className='body'>
                                     <div className="titles">
-                                        <div className='title'>부자재</div>
-                                        <div className='title'>수량</div>
-                                        <div className='title'>C/T</div>
-                                        <div className='title'>Kg</div>
-                                        <div className='title'>cbm</div>
+                                        <div className='title check'></div>
+                                        <div className='title name'>부자재</div>
+                                        <div className='title qty'>수량</div>
+                                        <div className='title ct'>C/T</div>
+                                        <div className='title weight'>Kg</div>
+                                        <div className='title cbm'>cbm</div>
+                                        <div className='title action'></div>
                                     </div>
                                     <div className="articles">
-                                        {pickedData?.map((picked, index) => <div className={`items`} key={picked.ItemId}
+                                        {pickedData?.map((picked, index) => <div className={`items`} key={picked.ItemId || picked.id || index}
                                             draggable={!picked.check}
                                             onDragStart={(e) => {
                                                 const img = new Image();
@@ -364,7 +386,7 @@ const ExportComponent: React.FC<Props> = ({
                                             }}
                                             onDragOver={e => { e.preventDefault() }}
                                             onDrop={() => {
-                                                const copyList: { id: number; ItemId: number; check: boolean; itemName: string; unit: string; im_price: number; ex_price: number; quantity: number; CT_qty: number; weight: number; cbm: number; }[] = JSON.parse(JSON.stringify(pickedData));
+                                                const copyList: any[] = JSON.parse(JSON.stringify(pickedData));
                                                 const temp = copyList[dragOverItem.current]
                                                 copyList[dragOverItem.current] = copyList[dragItem.current];
                                                 copyList[dragItem.current] = temp
@@ -374,29 +396,27 @@ const ExportComponent: React.FC<Props> = ({
                                                 dispatch(itemActions.changeRepair(copyList))
                                             }}
                                         >
-                                            <div className='item'><input type="checkbox" name="check" id={String(picked.ItemId)} checked={picked.check}
+                                            <div className='item check'><input type="checkbox" name="check" id={String(picked.ItemId || picked.id)} checked={picked.check}
                                                 onChange={onChangePicked}
                                             /></div>
-                                            <div className={`item ${picked.check ? 'selected' : ''}`}>{picked.itemName}</div>
-                                            <div className='item'>{picked.quantity ? picked.quantity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : 0}</div>
-                                            <div className='item'>{
-                                                picked.check ? <input type='number' name="CT_qty" id={picked.ItemId.toString()} value={picked.CT_qty || ''} onChange={onChangePicked} className='input_ct' /> : (picked.CT_qty ? picked.CT_qty.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-')
+                                            <div className={`item name ${picked.check ? 'selected' : ''}`}>{picked.itemName}</div>
+                                            <div className='item qty'>{
+                                                picked.check ? <input type='number' name="quantity" id={String(picked.ItemId || picked.id)} value={picked.quantity !== undefined && picked.quantity !== null ? picked.quantity : ''} onChange={onChangePicked} className='input_qty' /> : (picked.quantity ? picked.quantity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '0')
                                             }</div>
-                                            <div className='item'>{
-                                                picked.check ? <input type='number' name="weight" id={String(picked.ItemId)} value={picked.weight || ''} onChange={onChangePicked} className='input_weight' /> : (picked.weight ? Number(picked.weight).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-')
+                                            <div className='item ct'>{
+                                                picked.check ? <input type='number' name="CT_qty" id={String(picked.ItemId || picked.id)} value={picked.CT_qty || ''} onChange={onChangePicked} className='input_ct' /> : (picked.CT_qty ? picked.CT_qty.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-')
                                             }</div>
-                                            <div className='item'>{
+                                            <div className='item weight'>{
+                                                picked.check ? <input type='number' name="weight" id={String(picked.ItemId || picked.id)} value={picked.weight || ''} onChange={onChangePicked} className='input_weight' /> : (picked.weight ? Number(picked.weight).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-')
+                                            }</div>
+                                            <div className='item cbm'>{
                                                 picked.check ?
-                                                <select className='sel_cbm' name='cbm' value={picked.cbm || '선택'} id={String(picked.ItemId)} onChange={onChangePicked}>
-                                                    <option value="선택">선택</option>
-                                                    <option value="0.044">iDT</option>
-                                                    <option value="0.04">CC360</option>
-                                                    <option value="0.044">SPT</option>
-                                                </select> : (picked.cbm ? String(picked.cbm) : '-')
+                                                <input type='text' name='cbm' value={picked.cbm !== undefined && picked.cbm !== null ? picked.cbm : ''} id={String(picked.ItemId || picked.id)} onChange={onChangePicked} className='input_cbm' list="cbm-presets" placeholder="0.000" />
+                                                : (picked.cbm ? String(picked.cbm) : '-')
                                             }</div>
-                                            <div className={`item ${picked.check ? 'selected' : ''}`} onClick={() => {
+                                            <div className={`item action ${picked.check ? 'selected' : ''}`} onClick={() => {
                                                 if (!picked.check)
-                                                    removePicked(picked.ItemId)
+                                                    removePicked(picked.ItemId || picked.id)
                                             }}>
                                                 <span className={`material-symbols-outlined trash `}>
                                                     delete
@@ -472,17 +492,28 @@ const ExportComponent: React.FC<Props> = ({
                                 </div>
                                 <div className='body'>
                                     <div className="titles">
-
-                                        <div className='title'>제품/부자재</div>
-                                        <div className='title'>수량</div>
-                                        <div className='title'>C/T</div>
-                                        <div className='title'>Kg</div>
-                                        <div className='title'>cbm</div>
+                                        <div className='title check'></div>
+                                        <div className='title name'>제품/부자재</div>
+                                        <div className='title qty'>수량</div>
+                                        <div className='title ct'>C/T</div>
+                                        <div className='title weight'>Kg</div>
+                                        <div className='title cbm'>cbm</div>
+                                        <div className='title action'></div>
                                     </div>
                                     <div className="articles">
                                         {/* 1. 제품 목록 (좌측 화면의 발주서 제품 및 수량, 패킹 규격) */}
                                         {productPackingData?.map((prod, pIdx) => {
                                             const isChecked = isProductChecked(prod.itemName);
+                                            const currentQty = productOverrides[prod.itemName]?.quantity !== undefined
+                                                ? productOverrides[prod.itemName]?.quantity
+                                                : prod.quantity;
+                                            const currentCbm = productOverrides[prod.itemName]?.cbm !== undefined
+                                                ? productOverrides[prod.itemName]?.cbm
+                                                : prod.cbm;
+                                            const currentCT = prod.moq > 0 ? Math.ceil((Number(currentQty) || 0) / prod.moq) : prod.CT_qty;
+                                            const currentWeight = currentCT && prod.weight ? (currentCT * prod.weight).toFixed(1) : (prod.weight ? String(prod.weight) : '-');
+                                            const calculatedCbm = currentCT && currentCbm ? (currentCT * Number(currentCbm)).toFixed(2) : (currentCbm ? String(currentCbm) : '-');
+
                                             return (
                                                 <div
                                                     className="items product-row"
@@ -495,18 +526,18 @@ const ExportComponent: React.FC<Props> = ({
                                                         e.dataTransfer.setDragImage(img, 50, 50);
                                                         e.dataTransfer.setData('item', JSON.stringify({
                                                             name: prod.itemName,
-                                                            totalCT_qty: prod.CT_qty,
-                                                            CT_qty: prod.CT_qty,
-                                                            quantity: prod.quantity,
+                                                            totalCT_qty: currentCT,
+                                                            CT_qty: currentCT,
+                                                            quantity: Number(currentQty) || 0,
                                                             weight: prod.weight,
                                                             moq: prod.moq,
-                                                            cbm: prod.cbm,
+                                                            cbm: Number(currentCbm) || 0,
                                                             sets: prod.sets,
                                                             mode: 'move'
                                                         }));
                                                     }}
                                                 >
-                                                    <div className='item'>
+                                                    <div className='item check'>
                                                         <input
                                                             type="checkbox"
                                                             name="check"
@@ -516,7 +547,7 @@ const ExportComponent: React.FC<Props> = ({
                                                             style={{ accentColor: '#1976d2', cursor: 'pointer' }}
                                                         />
                                                     </div>
-                                                    <div className={`item ${isChecked ? 'selected' : ''}`} style={{ fontWeight: isChecked ? 700 : 400 }}>
+                                                    <div className={`item name ${isChecked ? 'selected' : ''}`} style={{ fontWeight: isChecked ? 700 : 400 }}>
                                                         <span style={{
                                                             fontSize: '0.7rem',
                                                             padding: '1px 5px',
@@ -529,17 +560,43 @@ const ExportComponent: React.FC<Props> = ({
                                                         }}>제품</span>
                                                         {prod.itemName}
                                                     </div>
-                                                    <div className='item'>{prod.quantity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
-                                                    <div className='item'>{prod.CT_qty ? prod.CT_qty.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-'}</div>
-                                                    <div className='item'>{prod.CT_qty && prod.weight ? (prod.CT_qty * prod.weight).toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ",") : (prod.weight ? String(prod.weight) : '-')}</div>
-                                                    <div className='item'>{prod.CT_qty && prod.cbm ? (prod.CT_qty * prod.cbm).toFixed(2) : (prod.cbm ? String(prod.cbm) : '-')}</div>
-                                                    <div className='item'></div>
+                                                    <div className='item qty'>
+                                                        {isChecked ? (
+                                                            <input
+                                                                type="number"
+                                                                name="quantity"
+                                                                value={currentQty !== undefined && currentQty !== null ? currentQty : ''}
+                                                                onChange={(e) => handleProductOverride(prod.itemName, 'quantity', e.target.value)}
+                                                                className="input_qty"
+                                                            />
+                                                        ) : (
+                                                            currentQty ? currentQty.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '0'
+                                                        )}
+                                                    </div>
+                                                    <div className='item ct'>{currentCT ? currentCT.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-'}</div>
+                                                    <div className='item weight'>{currentWeight.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
+                                                    <div className='item cbm'>
+                                                        {isChecked ? (
+                                                            <input
+                                                                type="text"
+                                                                name="cbm"
+                                                                value={currentCbm !== undefined && currentCbm !== null ? currentCbm : ''}
+                                                                onChange={(e) => handleProductOverride(prod.itemName, 'cbm', e.target.value)}
+                                                                className="input_cbm"
+                                                                list="cbm-presets"
+                                                                placeholder="0.000"
+                                                            />
+                                                        ) : (
+                                                            calculatedCbm
+                                                        )}
+                                                    </div>
+                                                    <div className='item action'></div>
                                                 </div>
                                             );
                                         })}
 
                                         {/* 2. 부자재 목록 (Item Master에서 선택한 부자재 및 C/T, Kg, CBM) */}
-                                        {pickedData?.map((picked, index) => <div className={`items sub-material-row`} key={picked.ItemId}
+                                        {pickedData?.map((picked, index) => <div className={`items sub-material-row`} key={picked.ItemId || picked.id || index}
 
                                             draggable={picked.check}
                                             onDragStart={(e) => {
@@ -567,10 +624,10 @@ const ExportComponent: React.FC<Props> = ({
                                                 dispatch(itemActions.changeRepair(copyList))
                                             }}
                                         >
-                                            <div className='item'><input type="checkbox" name="check" id={String(picked.ItemId)} checked={picked.check}
+                                            <div className='item check'><input type="checkbox" name="check" id={String(picked.ItemId || picked.id)} checked={picked.check}
                                                 onChange={onChangePicked}
                                             /></div>
-                                            <div className={`item ${picked.check ? 'selected' : ''}`}>
+                                            <div className={`item name ${picked.check ? 'selected' : ''}`}>
                                                 <span style={{
                                                     fontSize: '0.7rem',
                                                     padding: '1px 5px',
@@ -583,25 +640,23 @@ const ExportComponent: React.FC<Props> = ({
                                                 }}>부자재</span>
                                                 {picked.itemName}
                                             </div>
-                                            <div className='item'>{picked.quantity ? picked.quantity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : 0}</div>
-                                            <div className='item'>{
-                                                picked.check ? <input type='number' name="CT_qty" id={picked.ItemId.toString()} value={picked.CT_qty || ''} onChange={onChangePicked} className='input_ct' /> : (picked.CT_qty ? picked.CT_qty.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-')
+                                            <div className='item qty'>{
+                                                picked.check ? <input type='number' name="quantity" id={String(picked.ItemId || picked.id)} value={picked.quantity !== undefined && picked.quantity !== null ? picked.quantity : ''} onChange={onChangePicked} className='input_qty' /> : (picked.quantity ? picked.quantity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '0')
                                             }</div>
-                                            <div className='item'>{
-                                                picked.check ? <input type='number' name="weight" id={String(picked.ItemId)} value={picked.weight || ''} onChange={onChangePicked} className='input_weight' /> : (picked.weight ? Number(picked.weight).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-')
+                                            <div className='item ct'>{
+                                                picked.check ? <input type='number' name="CT_qty" id={String(picked.ItemId || picked.id)} value={picked.CT_qty || ''} onChange={onChangePicked} className='input_ct' /> : (picked.CT_qty ? picked.CT_qty.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-')
                                             }</div>
-                                            <div className='item'>{
+                                            <div className='item weight'>{
+                                                picked.check ? <input type='number' name="weight" id={String(picked.ItemId || picked.id)} value={picked.weight || ''} onChange={onChangePicked} className='input_weight' /> : (picked.weight ? Number(picked.weight).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-')
+                                            }</div>
+                                            <div className='item cbm'>{
                                                 picked.check ?
-                                                <select className='sel_cbm' name='cbm' value={picked.cbm || '선택'} id={String(picked.ItemId)} onChange={onChangePicked}>
-                                                    <option value="선택">선택</option>
-                                                    <option value="0.044">iDT</option>
-                                                    <option value="0.04">CC360</option>
-                                                    <option value="0.044">SPT</option>
-                                                </select> : (picked.cbm ? String(picked.cbm) : '-')
+                                                <input type='text' name='cbm' value={picked.cbm !== undefined && picked.cbm !== null ? picked.cbm : ''} id={String(picked.ItemId || picked.id)} onChange={onChangePicked} className='input_cbm' list="cbm-presets" placeholder="0.000" />
+                                                : (picked.cbm ? String(picked.cbm) : '-')
                                             }</div>
-                                            <div className={`item ${picked.check ? 'selected' : ''}`} onClick={() => {
+                                            <div className={`item action ${picked.check ? 'selected' : ''}`} onClick={() => {
                                                 if (!picked.check)
-                                                    removePicked(picked.ItemId)
+                                                    removePicked(picked.ItemId || picked.id)
                                             }}>
                                                 <span className={`material-symbols-outlined trash `}>
                                                     delete

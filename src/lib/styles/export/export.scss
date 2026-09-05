@@ -248,31 +248,43 @@
               display: flex;
               align-items: center;
               height: 2rem;
-
               border-top: 1px solid black;
               border-bottom: 1px solid black;
+              box-sizing: border-box;
+
               .title {
-                text-align: center; //부자재
-                &:first-of-type {
-                  width: 300px;
-                }
-                &:nth-of-type(2) {
-                  //수량
-                  width: 10%;
+                font-size: 0.85rem;
+                font-weight: 700;
+                padding: 0 0.2rem;
+                box-sizing: border-box;
+
+                &.check {
+                  width: 6%;
                   text-align: center;
                 }
-                &:nth-of-type(3) {
-                  //C/T
+                &.name {
+                  width: 36%;
+                  text-align: center;
+                }
+                &.qty {
+                  width: 14%;
+                  text-align: right;
+                }
+                &.ct {
                   width: 10%;
                   text-align: right;
                 }
-                &:nth-of-type(4) {
-                  //weight
-                  width: 10%;
+                &.weight {
+                  width: 11%;
+                  text-align: right;
                 }
-                &:last-of-type {
+                &.cbm {
+                  width: 15%;
+                  text-align: right;
+                }
+                &.action {
                   width: 8%;
-                  padding-right: 1.5rem;
+                  text-align: center;
                 }
               }
             }
@@ -283,92 +295,91 @@
                 display: flex;
                 align-items: center;
                 height: 30px;
-                font-size: 0.9rem;
+                font-size: 0.85rem;
+                box-sizing: border-box;
                 .selected {
                   font-weight: 800;
                 }
 
                 .item {
-                  padding: 0.3rem;
-                  //check
-                  &:first-of-type {
-                    width: 4%;
+                  padding: 0 0.2rem;
+                  box-sizing: border-box;
+
+                  &.check {
+                    width: 6%;
+                    text-align: center;
+                    input[type="checkbox"] {
+                      margin: 0;
+                    }
                   }
-                  //itemName
-                  &:nth-of-type(2) {
-                    width: 50%;
-                    text-align: start;
+                  &.name {
+                    width: 36%;
+                    text-align: left;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
                     cursor: pointer;
                   }
-                  //quantity
-                  &:nth-of-type(3) {
-                    width: 7%;
-                    text-align: end;
-                  }
-                  &:nth-of-type(4) {
-                    //ct
-                    width: 5%;
-                    text-align: end;
-                    margin-left: 0.3rem;
-                    .input_ct {
-                      width: 30px;
+                  &.qty {
+                    width: 14%;
+                    text-align: right;
+                    .input_qty {
+                      width: 55px;
                       text-align: right;
                       border: none;
                       border-bottom: 1px solid black;
                       font-size: 0.8rem;
                     }
                   }
-                  &:nth-of-type(5) {
-                    //weight
-                    width: 5%;
-                    text-align: end;
-                    margin-left: 0.3rem;
-                    .input_weight {
-                      width: 30px;
-                      text-align: right;
-                      border: none;
-                      border-bottom: 1px solid black;
-                      font-size: 0.8rem;
-                    }
-                  }
-                  &:nth-of-type(6) {
-                    //cbm
+                  &.ct {
                     width: 10%;
-                    text-align: end;
-                    margin-left: 0.5rem;
-                    .sel_cbm {
+                    text-align: right;
+                    .input_ct {
+                      width: 40px;
+                      text-align: right;
                       border: none;
                       border-bottom: 1px solid black;
                       font-size: 0.8rem;
                     }
                   }
-                  &:last-of-type {
-                    //trash
-                    width: 5%;
+                  &.weight {
+                    width: 11%;
+                    text-align: right;
+                    .input_weight {
+                      width: 42px;
+                      text-align: right;
+                      border: none;
+                      border-bottom: 1px solid black;
+                      font-size: 0.8rem;
+                    }
+                  }
+                  &.cbm {
+                    width: 15%;
+                    text-align: right;
+                    .input_cbm, .sel_cbm {
+                      width: 65px;
+                      text-align: right;
+                      border: none;
+                      border-bottom: 1px solid black;
+                      font-size: 0.8rem;
+                    }
+                  }
+                  &.action {
+                    width: 8%;
+                    text-align: center;
                     .material-symbols-outlined.trash {
                       color: orange;
                       cursor: pointer;
                       user-select: none;
                       transition: 0.4s;
+                      font-size: 1.1rem;
                       &:hover {
                         color: orangered;
                       }
                     }
                   }
-                  &:last-of-type.selected {
-                    //trash
-
+                  &.action.selected {
                     display: none;
-                    .material-symbols-outlined.trash {
-                      display: none;
-                      color: orange;
-                      cursor: pointer;
-                      user-select: none;
-                      transition: 0.4s;
-                      &:hover {
-                        color: orangered;
-                      }
-                    }
                   }
                 }
               }
