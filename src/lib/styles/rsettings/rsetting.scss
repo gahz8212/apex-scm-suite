@@ -122,6 +122,11 @@
     .cards {
       width: 100%;
       background-color: transparent;
+
+      .item-list {
+        margin: 0.5rem 0 0 0;
+        width: 100%;
+      }
     }
   }
 }

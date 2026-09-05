@@ -44,7 +44,15 @@ const RestComponent: React.FC<Props> = ({ items, selectItem, dragItem, onDrop, v
         }
         return (
             <div className="right">
-                <ItemFilterToolbar hideSetFilter={!viewMode} placeholder="하위 부품명 또는 규격 검색..." />
+                <ItemFilterToolbar
+                    hideSetFilter={!viewMode}
+                    placeholder="하위 부품명 또는 규격 검색..."
+                    style={{
+                        maxWidth: '780px',
+                        marginLeft: 'auto',
+                        marginBottom: '1rem',
+                    }}
+                />
                 <div className="cards">
                     <CardComponent
                         items={parts}

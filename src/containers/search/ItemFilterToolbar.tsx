@@ -6,11 +6,13 @@ import { itemData } from '../../store/slices/itemSlice';
 type Props = {
     hideSetFilter?: boolean;
     placeholder?: string;
+    style?: React.CSSProperties;
 };
 
 const ItemFilterToolbar: React.FC<Props> = ({
     hideSetFilter = false,
     placeholder = '부품명 또는 규격 검색...',
+    style: customStyle,
 }) => {
     const dispatch = useDispatch();
     const { search } = useSelector(SearchData);
@@ -164,6 +166,7 @@ const ItemFilterToolbar: React.FC<Props> = ({
                 boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
                 boxSizing: 'border-box',
                 width: '100%',
+                ...customStyle,
             }}
         >
             {/* 기본 1열: 검색창 + 빠른 타입 필터 칩 + 상세 필터 버튼 */}
