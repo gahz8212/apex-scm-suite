@@ -1,56 +1,74 @@
 
-import React, { useState } from 'react';
+import React, { useRef } from 'react';
 import { select_modelname } from '../../../lib/utils/parseModelName'
 type Props = {
     palletData: {
         [key: number]: { [key: string]: string | number; }[]
     }
     settingPallet: (Pnumber: number, itemData: { item: string, CT_qty: number, quantity: number, weight: number, moq: number, cbm: number, sets: string, mode: string }) => void
-    addCount: (id: number, item: string, value: number) => void;
-    removeCount: (id: number, item: string, value: number) => void;
+    addCount: (id: number, item: string, value: number, itemIndex?: number) => void;
+    removeCount: (id: number, item: string, value: number, itemIndex?: number) => void;
     onInputPallet: () => void
-    removeItem: (id: number, item: string) => void
+    removeItem: (id: number, item: string, itemIndex?: number) => void
     resetPallet: () => void
 }
 type Items = {
     items: {
         [key: string]: string | number;
     }[];
-    addCount: (id: number, item: string, value: number) => void;
-    removeCount: (id: number, item: string, value: number) => void;
-    removeItem: (id: number, item: string) => void;
+    addCount: (id: number, item: string, value: number, itemIndex?: number) => void;
+    removeCount: (id: number, item: string, value: number, itemIndex?: number) => void;
+    removeItem: (id: number, item: string, itemIndex?: number) => void;
     index: number;
     resetPallet: () => void
 }
 const PalletItems: React.FC<Items> = ({ items, addCount, removeCount, index, removeItem, resetPallet }) => {
-    const [inter, setInter] = useState<NodeJS.Timeout | undefined>(undefined)
-    const [tout, setTout] = useState<NodeJS.Timeout | undefined>(undefined)
+    const interRef = useRef<NodeJS.Timeout | null>(null);
+    const toutRef = useRef<NodeJS.Timeout | null>(null);
+    const isLongPressRef = useRef<boolean>(false);
 
-    function inCrease(id: number, item: string, value: number) {
-        setTout(setTimeout(() => {
-            setInter(
-                setInterval(() => {
-                    addCount(id, item, value)
-                }, 100))
-        }, 500))
+    function clearTimers() {
+        if (toutRef.current) {
+            clearTimeout(toutRef.current);
+            toutRef.current = null;
+        }
+        if (interRef.current) {
+            clearInterval(interRef.current);
+            interRef.current = null;
+        }
     }
 
-    function deCrease(id: number, item: string, value: number) {
-        setTout(setTimeout(() => {
-            setInter(
-                setInterval(() => {
-                    removeCount(id, item, value)
-                }, 100))
-        }, 500))
+    function inCrease(id: number, item: string, value: number, itemIdx: number) {
+        clearTimers();
+        isLongPressRef.current = false;
+        toutRef.current = setTimeout(() => {
+            isLongPressRef.current = true;
+            interRef.current = setInterval(() => {
+                addCount(id, item, value, itemIdx);
+            }, 100);
+        }, 500);
     }
+
+    function deCrease(id: number, item: string, value: number, itemIdx: number) {
+        clearTimers();
+        isLongPressRef.current = false;
+        toutRef.current = setTimeout(() => {
+            isLongPressRef.current = true;
+            interRef.current = setInterval(() => {
+                removeCount(id, item, value, itemIdx);
+            }, 100);
+        }, 500);
+    }
+
     return <div>
-        {items.map(item => item.item && <div
+        {items.map((item, itemIdx) => item.item && <div
+            key={itemIdx}
             className='elem-pallet'
             draggable
             onDragStart={(e) => {
                 const img = new Image();
-                img.src = './images/package.png'
-                e.dataTransfer.setDragImage(img, 50, 50)
+                img.src = './images/package.png';
+                e.dataTransfer.setDragImage(img, 50, 50);
                 e.dataTransfer.setData('item', JSON.stringify({
                     name: item.item,
                     CT_qty: item.CT_qty,
@@ -60,8 +78,8 @@ const PalletItems: React.FC<Items> = ({ items, addCount, removeCount, index, rem
                     cbm: item.cbm,
                     sets: item.sets,
                     mode: 'copy'
-                }))
-                clearInterval(inter)
+                }));
+                clearTimers();
             }}
         >
             <span className='modelName'>
@@ -72,68 +90,67 @@ const PalletItems: React.FC<Items> = ({ items, addCount, removeCount, index, rem
             {item.CT_qty ? <div className='material-symbols' >
                 <span className="material-symbols-outlined add"
                     onClick={() => {
+                        if (isLongPressRef.current) {
+                            isLongPressRef.current = false;
+                            return;
+                        }
                         if (typeof item.item === 'string' && typeof item.CT_qty === 'number')
-                            addCount(index, item.item, item.CT_qty)
+                            addCount(index, item.item, item.CT_qty, itemIdx);
                     }}
                     onMouseDown={() => {
                         if (typeof item.item === 'string' && typeof item.CT_qty === 'number')
-                            inCrease(index, item.item, item.CT_qty)
+                            inCrease(index, item.item, item.CT_qty, itemIdx);
                     }}
-                    onMouseUp={() => {
-                        clearInterval(inter)
-                        clearTimeout(tout)
-                    }}
+                    onMouseUp={clearTimers}
+                    onMouseLeave={clearTimers}
                 >
                     add_circle
                 </span>
                 <span className='CT_qty'>{item.CT_qty}</span>
                 <span className="material-symbols-outlined remove "
-
                     onClick={() => {
-                        if (typeof item.item === 'string' && typeof item.CT_qty === 'number') {
-                            removeCount(index, item.item, item.CT_qty)
+                        if (isLongPressRef.current) {
+                            isLongPressRef.current = false;
+                            return;
                         }
-
                         if (item.CT_qty === 1) {
-
                             // eslint-disable-next-line no-restricted-globals
-                            let result = confirm('이 품목을 삭제합니까?')
+                            let result = confirm('이 품목을 삭제합니까?');
                             if (result) {
                                 if (typeof item.item === 'string') {
-                                    removeItem(index, item.item)
+                                    removeItem(index, item.item, itemIdx);
                                 }
                             }
+                            return;
+                        }
+                        if (typeof item.item === 'string' && typeof item.CT_qty === 'number') {
+                            removeCount(index, item.item, item.CT_qty, itemIdx);
                         }
                     }}
                     onMouseDown={() => {
                         if (typeof item.item === 'string' && typeof item.CT_qty === 'number')
-                            deCrease(index, item.item, item.CT_qty)
+                            deCrease(index, item.item, item.CT_qty, itemIdx);
                     }}
-                    onMouseUp={() => {
-                        clearInterval(inter)
-                        clearTimeout(tout)
-                    }}
-
+                    onMouseUp={clearTimers}
+                    onMouseLeave={clearTimers}
                 >
                     do_not_disturb_on
                 </span>
             </div> : <div><span className="material-symbols-outlined remove repair"
                 onClick={() => {
                     // eslint-disable-next-line no-restricted-globals
-                    let result = confirm('이 품목을 삭제합니까?')
+                    let result = confirm('이 품목을 삭제합니까?');
                     if (result) {
                         if (typeof item.item === 'string') {
-                            removeItem(index, item.item)
+                            removeItem(index, item.item, itemIdx);
                         }
                     }
-                }
-                }
+                }}
             >
                 delete
             </span></div>}
-        </div>)
-        }
-    </div >
+        </div>)}
+    </div>;
 }
 const PalletComponent: React.FC<Props> = ({ palletData, settingPallet, addCount, removeCount, onInputPallet, removeItem, resetPallet }) => {
 
@@ -184,7 +201,7 @@ const PalletComponent: React.FC<Props> = ({ palletData, settingPallet, addCount,
                         e.currentTarget.style.background = "white"
                     }}
                 >
-                    <div style={{ position: 'absolute', left: index < 9 ? "40%" : "30%", fontSize: '80px', opacity: '.1', userSelect: 'none' }}>
+                    <div style={{ position: 'absolute', left: index < 9 ? "40%" : "30%", fontSize: '80px', opacity: '.1', userSelect: 'none', pointerEvents: 'none' }}>
                         {index + 1}
                     </div>
                     <PalletItems items={data} addCount={addCount} removeCount={removeCount} index={index} removeItem={removeItem} resetPallet={resetPallet} />

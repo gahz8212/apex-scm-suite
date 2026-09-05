@@ -223,28 +223,35 @@ const orderSlice = createSlice({
       }
     },
     addCount: (state, { payload: items }) => {
-      const { id, item, value } = items;
-      // console.log(value);
-
-      let idx = state.palletData[id].findIndex((data) => data.item === item);
-      // if (state.palletData[id][idx].CT_qty === value) {
-      //   state.palletData[id][idx].CT_qty = value;
-      // } else {
-      // }
-      state.palletData[id][idx].CT_qty += 1;
+      const { id, item, itemIndex } = items;
+      const targetIdx =
+        typeof itemIndex === "number" && itemIndex >= 0
+          ? itemIndex
+          : state.palletData[id].findIndex((data: any) => data.item === item);
+      if (targetIdx >= 0 && state.palletData[id] && state.palletData[id][targetIdx]) {
+        state.palletData[id][targetIdx].CT_qty = Number(state.palletData[id][targetIdx].CT_qty || 0) + 1;
+      }
     },
     removeCount: (state, { payload: items }) => {
-      const { id, item } = items;
-      let idx = state.palletData[id].findIndex((data) => data.item === item);
-      state.palletData[id][idx].CT_qty -= 1;
-      if (state.palletData[id][idx].CT_qty < 1) {
-        state.palletData[id][idx].CT_qty = 1;
+      const { id, item, itemIndex } = items;
+      const targetIdx =
+        typeof itemIndex === "number" && itemIndex >= 0
+          ? itemIndex
+          : state.palletData[id].findIndex((data: any) => data.item === item);
+      if (targetIdx >= 0 && state.palletData[id] && state.palletData[id][targetIdx]) {
+        const current = Number(state.palletData[id][targetIdx].CT_qty || 1);
+        state.palletData[id][targetIdx].CT_qty = Math.max(1, current - 1);
       }
     },
     removeItem: (state, { payload: items }) => {
-      const { id, item } = items;
-      let idx = state.palletData[id].findIndex((data) => data.item === item);
-      state.palletData[id].splice(idx, 1);
+      const { id, item, itemIndex } = items;
+      const targetIdx =
+        typeof itemIndex === "number" && itemIndex >= 0
+          ? itemIndex
+          : state.palletData[id].findIndex((data: any) => data.item === item);
+      if (targetIdx >= 0 && state.palletData[id] && state.palletData[id][targetIdx]) {
+        state.palletData[id].splice(targetIdx, 1);
+      }
     },
     resetPallet: (state) => {
       state.palletData = initialState.palletData;

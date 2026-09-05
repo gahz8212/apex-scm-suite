@@ -544,16 +544,9 @@ async function seed() {
   `);
   console.log("✅ 수출 오더시트(ordersheet) 테이블 생성 완료 (Sep ~ Jan)");
 
-  // 8. 컨테이너 팔레트(Pallet) 적재 데이터 생성
-  const palletsData = [
-    { no: 0, item: "APEX-1000 PRO SET", CT_qty: 20, moq: 100, sets: "SET", weight: 26.5, cbm: 0.045 },
-    { no: 0, item: "APEX-1000 PRO SET", CT_qty: 20, moq: 100, sets: "SET", weight: 26.5, cbm: 0.045 },
-    { no: 1, item: "APEX-200 MINI SET", CT_qty: 40, moq: 200, sets: "SET", weight: 31.2, cbm: 0.038 },
-    { no: 1, item: "APEX-200 MINI SET", CT_qty: 40, moq: 200, sets: "SET", weight: 31.2, cbm: 0.038 },
-    { no: 2, item: "NEXUS-500 SMART SET", CT_qty: 15, moq: 90, sets: "SET", weight: 23.0, cbm: 0.042 },
-  ];
-  await Pallet.bulkCreate(palletsData);
-  console.log(`✅ 팔레트(Pallet) 적재 데이터 ${palletsData.length}건 생성 완료`);
+  // 8. 컨테이너 팔레트(Pallet)는 사용자가 Packing 폼에서 D&D하여 입력하므로 기본값 없이 비워둡니다.
+  await Pallet.destroy({ where: {} });
+  console.log("✅ 팔레트(Pallet) 테이블 초기화 완료 (기본값 없음, Packing 폼 D&D 전용)");
 
   // 9. 출하 피킹 리스트(Picker)는 사용자가 Item Master에서 직접 부자재를 선택하여 수집하므로 기본값 없이 비워둡니다.
   await Picker.destroy({ where: {} });
