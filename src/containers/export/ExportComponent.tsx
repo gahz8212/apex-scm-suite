@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import InvoiceContainer from '../forms/invoiceForm/InvoiceContainer';
 import PackingContainer from '../forms/packingListForm/PackingContainer';
 import PalletContainer from '../forms/packingListForm/PalletContainer';
@@ -154,6 +154,32 @@ const ExportComponent: React.FC<Props> = ({
         });
         return Array.from(map.values());
     }, [orderData, activeMonth]);
+
+    const [checkedProducts, setCheckedProducts] = useState<{ [itemName: string]: boolean }>({});
+
+    useEffect(() => {
+        setCheckedProducts({});
+    }, [activeMonth]);
+
+    const isProductChecked = (itemName: string): boolean => {
+        return checkedProducts[itemName] !== undefined ? checkedProducts[itemName] : true;
+    };
+
+    const toggleProductCheck = (itemName: string) => {
+        setCheckedProducts(prev => ({
+            ...prev,
+            [itemName]: !isProductChecked(itemName)
+        }));
+    };
+
+    const handleSelectAll = (select: boolean) => {
+        setSelect(select);
+        const newChecked: { [key: string]: boolean } = {};
+        productPackingData.forEach(prod => {
+            newChecked[prod.itemName] = select;
+        });
+        setCheckedProducts(newChecked);
+    };
 
 
     // const onDragStart = (index: number, column: number) => {
@@ -380,8 +406,8 @@ const ExportComponent: React.FC<Props> = ({
                                     </div>
                                 </div>
                                 <div className='btns'>
-                                    <button type='button' onClick={() => setSelect(true)}>전체 선택</button>
-                                    <button type='button' onClick={() => setSelect(false)}>전체 취소</button>
+                                    <button type='button' onClick={() => handleSelectAll(true)}>전체 선택</button>
+                                    <button type='button' onClick={() => handleSelectAll(false)}>전체 취소</button>
                                     <button type='button' onClick={() => {
                                         const result = pickedData?.map(data => ({
                                             id: data.id,
@@ -455,51 +481,62 @@ const ExportComponent: React.FC<Props> = ({
                                     </div>
                                     <div className="articles">
                                         {/* 1. 제품 목록 (좌측 화면의 발주서 제품 및 수량, 패킹 규격) */}
-                                        {productPackingData?.map((prod, pIdx) => (
-                                            <div
-                                                className="items product-row"
-                                                key={`prod-${pIdx}`}
-                                                draggable
-                                                onDragStart={(e) => {
-                                                    const img = new Image();
-                                                    img.src = '/images/package.png';
-                                                    e.dataTransfer.setDragImage(img, 50, 50);
-                                                    e.dataTransfer.setData('item', JSON.stringify({
-                                                        name: prod.itemName,
-                                                        totalCT_qty: prod.CT_qty,
-                                                        CT_qty: prod.CT_qty,
-                                                        quantity: prod.quantity,
-                                                        weight: prod.weight,
-                                                        moq: prod.moq,
-                                                        cbm: prod.cbm,
-                                                        sets: prod.sets,
-                                                        mode: 'move'
-                                                    }));
-                                                }}
-                                            >
-                                                <div className='item' style={{ textAlign: 'center' }}>
-                                                    <input type="checkbox" checked readOnly style={{ accentColor: '#1976d2', cursor: 'default' }} />
+                                        {productPackingData?.map((prod, pIdx) => {
+                                            const isChecked = isProductChecked(prod.itemName);
+                                            return (
+                                                <div
+                                                    className="items product-row"
+                                                    key={`prod-${pIdx}`}
+                                                    draggable={isChecked}
+                                                    onDragStart={(e) => {
+                                                        if (!isChecked) return;
+                                                        const img = new Image();
+                                                        img.src = '/images/package.png';
+                                                        e.dataTransfer.setDragImage(img, 50, 50);
+                                                        e.dataTransfer.setData('item', JSON.stringify({
+                                                            name: prod.itemName,
+                                                            totalCT_qty: prod.CT_qty,
+                                                            CT_qty: prod.CT_qty,
+                                                            quantity: prod.quantity,
+                                                            weight: prod.weight,
+                                                            moq: prod.moq,
+                                                            cbm: prod.cbm,
+                                                            sets: prod.sets,
+                                                            mode: 'move'
+                                                        }));
+                                                    }}
+                                                >
+                                                    <div className='item'>
+                                                        <input
+                                                            type="checkbox"
+                                                            name="check"
+                                                            id={`prod-check-${pIdx}`}
+                                                            checked={isChecked}
+                                                            onChange={() => toggleProductCheck(prod.itemName)}
+                                                            style={{ accentColor: '#1976d2', cursor: 'pointer' }}
+                                                        />
+                                                    </div>
+                                                    <div className={`item ${isChecked ? 'selected' : ''}`} style={{ fontWeight: isChecked ? 700 : 400 }}>
+                                                        <span style={{
+                                                            fontSize: '0.7rem',
+                                                            padding: '1px 5px',
+                                                            borderRadius: '3px',
+                                                            backgroundColor: '#e3f2fd',
+                                                            color: '#1565c0',
+                                                            fontWeight: 700,
+                                                            marginRight: '6px',
+                                                            display: 'inline-block'
+                                                        }}>제품</span>
+                                                        {prod.itemName}
+                                                    </div>
+                                                    <div className='item'>{prod.quantity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
+                                                    <div className='item'>{prod.CT_qty ? prod.CT_qty.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-'}</div>
+                                                    <div className='item'>{prod.CT_qty && prod.weight ? (prod.CT_qty * prod.weight).toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ",") : (prod.weight ? String(prod.weight) : '-')}</div>
+                                                    <div className='item'>{prod.CT_qty && prod.cbm ? (prod.CT_qty * prod.cbm).toFixed(2) : (prod.cbm ? String(prod.cbm) : '-')}</div>
+                                                    <div className='item'></div>
                                                 </div>
-                                                <div className='item' style={{ fontWeight: 600 }}>
-                                                    <span style={{
-                                                        fontSize: '0.7rem',
-                                                        padding: '1px 5px',
-                                                        borderRadius: '3px',
-                                                        backgroundColor: '#e3f2fd',
-                                                        color: '#1565c0',
-                                                        fontWeight: 700,
-                                                        marginRight: '6px',
-                                                        display: 'inline-block'
-                                                    }}>제품</span>
-                                                    {prod.itemName}
-                                                </div>
-                                                <div className='item'>{prod.quantity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
-                                                <div className='item'>{prod.CT_qty ? prod.CT_qty.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '-'}</div>
-                                                <div className='item'>{prod.CT_qty && prod.weight ? (prod.CT_qty * prod.weight).toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ",") : (prod.weight ? String(prod.weight) : '-')}</div>
-                                                <div className='item'>{prod.CT_qty && prod.cbm ? (prod.CT_qty * prod.cbm).toFixed(2) : (prod.cbm ? String(prod.cbm) : '-')}</div>
-                                                <div className='item'></div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
 
                                         {/* 2. 부자재 목록 (Item Master에서 선택한 부자재 및 C/T, Kg, CBM) */}
                                         {pickedData?.map((picked, index) => <div className={`items sub-material-row`} key={picked.ItemId}
@@ -574,8 +611,8 @@ const ExportComponent: React.FC<Props> = ({
                                     </div>
                                 </div>
                                 <div className='btns'>
-                                    <button type='button' onClick={() => setSelect(true)}>전체 선택</button>
-                                    <button type='button' onClick={() => setSelect(false)}>전체 취소</button>
+                                    <button type='button' onClick={() => handleSelectAll(true)}>전체 선택</button>
+                                    <button type='button' onClick={() => handleSelectAll(false)}>전체 취소</button>
                                     <button type='button' onClick={() => {
                                         const result = pickedData?.map(data => ({
                                             id: data.id,
