@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { useDrag } from 'react-use-gesture';
-import { useSelector } from 'react-redux';
-import { itemData } from '../../store/slices/itemSlice';
 import InputFormContainer from '../forms/inputForm/InputFormContainer';
 import EditFormContainer from "../forms/editForm/EditFormContainer";
 import CardContainer from '../common/card/CardContainer';
@@ -24,7 +22,6 @@ type Props = {
 
 const IsettingComponent: React.FC<Props> = ({ input, edit, relate, openForm, changePosition, picker }) => {
     const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
-    const { items } = useSelector(itemData);
 
 
     const inputPos = useDrag(params => {
@@ -101,31 +98,7 @@ const IsettingComponent: React.FC<Props> = ({ input, edit, relate, openForm, cha
                 </div> */}
                 <RelationContainer />
             </div>}
-            {/* 상단 액션 툴바 */}
-            <div className="isetting-header-bar">
-                <div className="title-area">
-                    <h2 className="title">품목 마스터 (Item Master)</h2>
-                    <span className="count-badge">총 {items ? items.length : 0}개 품목</span>
-                </div>
-                <div className="actions-area">
-                    <button
-                        type="button"
-                        className="btn-create"
-                        onClick={() => openForm('input')}
-                    >
-                        <span className="icon">+</span>
-                        <span>신규 품목 등록</span>
-                    </button>
-                    <button
-                        type="button"
-                        className="btn-picker"
-                        onClick={() => openForm('picker')}
-                    >
-                        <span className="icon">📦</span>
-                        <span>BOM 자재 선택</span>
-                    </button>
-                </div>
-            </div>
+
 
             {/* 오른쪽 끝에서 슥 하고 나타나는 슬라이드 필터 드로어 */}
             <ItemFilterDrawer
