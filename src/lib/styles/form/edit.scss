@@ -1,0 +1,171 @@
+// .form-container {
+//   user-select: none;
+//   background-color: green;
+//   border: 3px solid red;
+//   border-radius: 8px;
+//   width: 300px;
+//   position: relative;
+//   z-index: 2;
+//   &.제품 {
+//     background-color: lemonchiffon;
+//   }
+//   &.결합 {
+//     background-color: tomato;
+//   }
+//   &.전장 {
+//     background-color: orange;
+//   }
+//   &.회로 {
+//     background-color: cornflowerblue;
+//   }
+//   &.기구 {
+//     background-color: khaki;
+//   }
+//   &.포장 {
+//     background-color: yellowgreen;
+//   }
+//   &.기타 {
+//     background-color: darkolivegreen;
+//   }
+
+//   .edits {
+//     // background: green;
+//     width: 300px;
+//     margin: 25px auto;
+//     .currency,
+//     .uses,
+//     input[type="text"],
+//     input[type="number"],
+//     textarea {
+//       display: flex;
+//       justify-content: center;
+//       align-items: center;
+//     }
+//     input[type="text"],
+//     input[type="number"],
+//     textarea {
+//       width: 80%;
+//       margin: 5px auto;
+//       resize: none;
+//     }
+//     input[name="price"],
+//     input[name="supplyer"] {
+//       width: 55%;
+//       margin-left: 0;
+//     }
+//     textarea {
+//       height: 100px;
+//     }
+//     label {
+//       display: inline-block;
+//       width: 60px;
+//       text-align: center;
+//       // background-color: yellowgreen;
+//     }
+//     .currency {
+//       // background: yellow;
+//       width: 90%;
+//       margin: 0 auto;
+//     }
+//     .uses {
+//       // background: yellow;
+//       width: 90%;
+//       margin: 0 auto;
+//     }
+//     .file {
+//       //   display: block;
+//       width: 90%;
+//       // margin: 0 auto;
+//       label {
+//         text-align: center;
+//         margin-top: 0.5rem;
+//         cursor: pointer;
+//         background-color: darkcyan;
+//         padding: 0.3rem;
+//         color: white;
+//         width: 80px;
+//         border-radius: 4px;
+//         transition: 0.4s;
+//         &:hover {
+//           background-color: cyan;
+//         }
+//       }
+//       margin-left: 1rem;
+//       input[type="file"] {
+//         display: none;
+//       }
+//     }
+//     .category {
+//       input[type="radio"] {
+//         width: 20px;
+//         margin: 0;
+//       }
+//       label {
+//         width: 40px;
+//         // background: yellow;
+//       }
+//       .sub {
+//         margin-top: 0.4rem;
+//       }
+//     }
+//     input[type="radio"] {
+//       width: 20px;
+//     }
+//   }
+//   .input-submit_edit {
+//     // background-color: green;
+//     text-align: right;
+//     padding: 0.2rem;
+//     button:nth-child(1) {
+//       background: darkcyan;
+//     }
+//     button:nth-child(2) {
+//       background: darkorange;
+//     }
+//     button:nth-child(3) {
+//       background: darkgray;
+//     }
+//     button:nth-child(1):hover {
+//       background: cyan;
+//     }
+//     button:nth-child(2):hover {
+//       background: orange;
+//     }
+//     button:nth-child(3):hover {
+//       background: gray;
+//     }
+//     button {
+//       border: none;
+//       outline: none;
+//       cursor: pointer;
+//       background-color: darkcyan;
+//       padding: 0.3rem;
+//       color: white;
+//       width: 80px;
+//       border-radius: 4px;
+//       transition: 0.4s;
+//       & + button {
+//         margin-left: 0.5rem;
+//       }
+//     }
+//   }
+//   .imageList_edit {
+//     height: 50px;
+//     display: flex;
+//     justify-content: center;
+//     align-items: center;
+//     cursor: pointer;
+//     // background: yellow;
+
+//     .image {
+//       // margin: 0.1rem;
+//       transition: 0.5s;
+//       &:hover {
+//         transform: scale(1.5);
+//       }
+//       & + & {
+//         margin-right: 0.5rem;
+//       }
+//     }
+//   }
+// }

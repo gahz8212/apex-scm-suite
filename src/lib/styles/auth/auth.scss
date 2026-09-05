@@ -1,0 +1,77 @@
+a {
+  text-decoration: none;
+  color: inherit;
+  font-weight: 700;
+  color: balck;
+  font-size: 1rem;
+}
+.authTemplate {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  background: lightyellow;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  .whitebox {
+    background-color: white;
+    width: 400px;
+    border-radius: 8px;
+    .logo-area {
+      text-align: center;
+      letter-spacing: 4px;
+      font-weight: 700;
+      font-size: 1.125rem;
+      padding: 10px;
+    }
+  }
+}
+.authForm {
+  padding: 20px;
+  .title {
+    font-weight: 700;
+    color: gray;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+  .formContainer {
+    display: flex;
+    align-items: flex-end;
+    // justify-content: center;
+    .inputs {
+      input {
+        border: none;
+        outline: none;
+        border-bottom: 2px solid black;
+        width: 90%;
+        padding: 0.5rem;
+        font-size: 1rem;
+        &:focus {
+          background-color: yellow;
+        }
+        &::placeholder {
+          color: green;
+        }
+      }
+    }
+    button {
+      cursor: pointer;
+      width: 70px;
+      height: 80px;
+      color: white;
+      font-size: 1.125rem;
+      font-weight: 700;
+      border-radius: 8px;
+      border: none;
+      transition: 0.5s;
+    }
+  }
+  .errorMessage {
+    text-align: center;
+    color: orange;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+}

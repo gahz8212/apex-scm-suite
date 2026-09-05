@@ -1,0 +1,147 @@
+.wrap-picker {
+  //   margin-top: 2rem;
+  width: 400px;
+  height: 400px;
+  background: gray;
+  position: relative;
+  .title {
+    color: black;
+    height: 30px;
+    background-color: lightgray;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  .header {
+    display: flex;
+    // justify-content: center;
+    align-items: center;
+    width: 80%;
+    margin: 0.5rem auto;
+    div {
+      &:nth-of-type(1) {
+        width: 51%;
+      }
+      &:nth-of-type(2) {
+        width: 13%;
+        text-align: center;
+      }
+      &:nth-of-type(3) {
+        text-align: center;
+        width: 13%;
+      }
+      &:last-of-type {
+        text-align: center;
+        width: 13%;
+      }
+    }
+  }
+  .itemList {
+    padding: 0.5rem;
+    margin: 0.5rem auto;
+    width: 80%;
+    height: 250px;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid black;
+    overflow-y: auto;
+    .pickedList {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      div {
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+        margin-left: 0.3rem;
+        margin-right: 0.5rem;
+        font-size: 0.9rem;
+
+        &:nth-of-type(1) {
+          width: 60%;
+
+          // background: yellow;
+        }
+        &:nth-of-type(2) {
+          width: 20%;
+          text-align: right;
+          // margin-right: 0.6rem;
+        }
+        &:nth-of-type(3) {
+          width: 10%;
+          text-align: right;
+        }
+        &:nth-of-type(4) {
+          width: 10%;
+          text-align: center;
+          input {
+            font-size: 0.9rem;
+            text-align: right;
+            border: none;
+            border-bottom: 1px solid black;
+            width: 30px;
+          }
+          // background: yellow;
+        }
+        &:last-of-type {
+          width: 10%;
+          margin-right: 0.2rem;
+          text-align: center;
+          color: orangered;
+        }
+      }
+      .trashBtn {
+        cursor: pointer;
+        &:hover {
+          // transition: 0.5s;
+          transform: scale(1.2);
+        }
+      }
+    }
+  }
+  .controls {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    button {
+      padding: 0.3rem 0.5rem;
+      border-radius: 3px;
+      border: none;
+      cursor: pointer;
+      transition: 0.4s;
+      font-size: 1rem;
+      &:first-of-type {
+        background: pink;
+        &:hover {
+          background: hotpink;
+        }
+        margin-right: 1rem;
+      }
+      &:last-of-type {
+        background: yellowgreen;
+        &:hover {
+          background: green;
+        }
+      }
+    }
+  }
+  .bar-btn {
+    position: absolute;
+    top: 2px;
+    right: 10px;
+    button {
+      border: none;
+      background: yellow;
+      transition: 0.3s;
+      width: 25px;
+      height: 25px;
+      margin: 0 auto;
+      border-radius: 50%;
+      font-weight: 700;
+      &:hover {
+        color: red;
+        cursor: pointer;
+      }
+    }
+  }
+}

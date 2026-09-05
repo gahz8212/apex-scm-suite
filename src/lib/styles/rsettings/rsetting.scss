@@ -1,0 +1,117 @@
+.rsettingComponent {
+  display: flex;
+
+  .left {
+    width: 450px;
+    height: 85%;
+    // background: yellow;
+    border-right: 5px solid black;
+    position: fixed;
+    top: 10rem;
+    overflow-y: auto;
+    .items {
+      width: 100%;
+      margin-left: 2rem;
+
+      .item {
+        border-bottom: 5px solid green;
+        padding: 1rem 0;
+        &:nth-of-type(2n + 1) {
+          background: rgba(211, 211, 211, 0.2);
+        }
+        .title {
+          font-weight: 700;
+          margin-bottom: 0.5rem;
+        }
+        .itemInfo {
+          display: flex;
+          .image {
+            width: 50%;
+          }
+          .info {
+            width: 50%;
+          }
+        }
+      }
+      .relation-list {
+        min-height: 0px;
+        max-height: 300px;
+        width: 90%;
+        overflow-y: auto;
+        background-color: white;
+        transition: 0.2s height;
+        border: 5px dashed darkturquoise;
+        &.open {
+          height: 150px;
+        }
+        &.close {
+          height: 0px;
+        }
+      }
+      .item_basket {
+        box-sizing: border-box;
+        margin-top: 0.5rem;
+        padding: 0 10px;
+        width: 350px;
+        // min-height: 20px;
+        // max-height: 150px;
+        border-radius: 8px;
+        background: white;
+        margin-left: 0.5rem;
+        margin-bottom: 1rem;
+        // overflow-y: auto;
+        .countControl {
+          .itemName {
+            margin-left: 1rem;
+            position: relative;
+
+            &::before {
+              content: "";
+              position: absolute;
+              background-color: burlywood;
+              width: 15px;
+              height: 15px;
+              border-radius: 50%;
+              left: -18px;
+              // bottom: -1px;
+            }
+          }
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 1px solid black;
+          margin-bottom: 0.3rem;
+          padding-top: 0.2rem;
+          padding-bottom: 0.2rem;
+          .material-symbols {
+            user-select: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            span {
+              &:nth-of-type(2) {
+                font-weight: 700;
+                color: red;
+                width: 18px;
+                text-align: center;
+              }
+            }
+            .material-symbols-outlined.add,
+            .material-symbols-outlined.remove {
+              &:hover {
+                color: red;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  .right {
+    margin-left: 450px;
+    display: flex;
+    .cards {
+      background-color: white;
+    }
+  }
+}

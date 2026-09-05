@@ -1,0 +1,31 @@
+.isetting-wraper {
+  width: 90%;
+
+  .material-symbols-outlined.write {
+    position: fixed;
+    bottom: 100px;
+    right: 100px;
+    font-size: 3rem;
+    cursor: pointer;
+    transition: 0.5s;
+    user-select: none;
+    &:hover {
+      color: black;
+      transform: scale(1.4);
+    }
+  }
+  .material-symbols-outlined.picker {
+    position: fixed;
+    bottom: 100px;
+    right: 50px;
+    font-size: 3rem;
+    cursor: pointer;
+    transition: 0.5s;
+    color: red;
+    user-select: none;
+    &:hover {
+      color: red;
+      transform: scale(1.4);
+    }
+  }
+}
