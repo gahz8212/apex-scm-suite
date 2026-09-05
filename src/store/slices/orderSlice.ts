@@ -130,10 +130,14 @@ const orderSlice = createSlice({
       state.status.loading = true;
       state.status.error = "";
     },
-    inputPalletSuccess: (state, { payload: palletData }) => {
+    inputPalletSuccess: (state, { payload }) => {
       state.status.loading = false;
       state.status.error = "";
-      state.palletData = palletData;
+      if (typeof payload === "string") {
+        state.status.message = payload;
+      } else if (payload && typeof payload === "object") {
+        state.palletData = payload;
+      }
     },
     inputPalletFailure: (state, action: PayloadAction<any[] | null>) => {
       state.status.loading = false;
@@ -276,6 +280,32 @@ const orderSlice = createSlice({
           : state.palletData[id].findIndex((data: any) => data.item === item);
       if (targetIdx >= 0 && state.palletData[id] && state.palletData[id][targetIdx]) {
         state.palletData[id].splice(targetIdx, 1);
+      }
+    },
+    reorderPallet: (
+      state,
+      {
+        payload,
+      }: {
+        payload: {
+          pNo: number;
+          sourceIdx: number;
+          targetIdx: number;
+        };
+      }
+    ) => {
+      const { pNo, sourceIdx, targetIdx } = payload;
+      const list = state.palletData[pNo];
+      if (
+        Array.isArray(list) &&
+        sourceIdx >= 0 &&
+        sourceIdx < list.length &&
+        targetIdx >= 0 &&
+        targetIdx < list.length &&
+        sourceIdx !== targetIdx
+      ) {
+        const [item] = list.splice(sourceIdx, 1);
+        list.splice(targetIdx, 0, item);
       }
     },
     resetPallet: (state) => {

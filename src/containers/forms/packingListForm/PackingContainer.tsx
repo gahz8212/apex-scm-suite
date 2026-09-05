@@ -5,32 +5,33 @@ import { OrderData } from '../../../store/slices/orderSlice';
 import CartonExcelContainer from '../../excels/export/CartonExcelContainer';
 import { calculatePackingData } from '../../../lib/utils/calculatePackingData';
 type Props = {
+    selectedMonth: string;
+    exportData?: any[];
+};
 
-    selectedMonth: string
-}
-const PackingContainer: React.FC<Props> = ({ selectedMonth }) => {
-    const { orderData, palletData } = useSelector(OrderData)
-    const filteredPackingData = calculatePackingData(orderData, selectedMonth);
+const PackingContainer: React.FC<Props> = ({ selectedMonth, exportData }) => {
+    const { orderData, palletData } = useSelector(OrderData);
+    const dataToUse = exportData !== undefined ? exportData : orderData;
+    const filteredPackingData = calculatePackingData(dataToUse, selectedMonth);
 
     let totalResult: { [x: string]: { carton: number; weight: number; cbm: number; price: number; }; }[] = [];
-    if (orderData) {
-        const headers = Object.keys(orderData[0]).slice(1, 6)
-        totalResult =
-            headers.map(header => {
-                let carton = 0;
-                let weight = 0;
-                let cbm = 0;
-                let price = 0;
+    if (filteredPackingData) {
+        let carton = 0;
+        let weight = 0;
+        let cbm = 0;
+        let price = 0;
 
-                filteredPackingData?.forEach(invoice => {
-
-                    carton += invoice.CT_qty
-                    weight += invoice.weight * invoice.CT_qty
-                    cbm += invoice.cbm * invoice.CT_qty
-                })
-                return { [header]: { carton, weight, cbm, price } };
-            })
-
+        filteredPackingData.forEach(invoice => {
+            const ct = Number(invoice.CT_qty) || 0;
+            const wt = invoice.totalWeight !== undefined && ct > 0 && Number(invoice.totalWeight) > 0
+                ? Number(invoice.totalWeight)
+                : (ct > 0 && Number(invoice.weight) > 0 ? (ct * Number(invoice.weight)) : 0);
+            const cb = ct > 0 && Number(invoice.cbm) > 0 ? (ct * Number(invoice.cbm)) : 0;
+            carton += ct;
+            weight += wt;
+            cbm += cb;
+        });
+        totalResult = [{ [selectedMonth]: { carton, weight: Number(weight.toFixed(1)), cbm: Number(cbm.toFixed(2)), price } }];
     }
     return (
         <div>
@@ -42,7 +43,6 @@ const PackingContainer: React.FC<Props> = ({ selectedMonth }) => {
                     packingData={filteredPackingData}
                     palletData={palletData}
                 />} />
-
         </div>
     );
 };

@@ -12,7 +12,7 @@ const ExportContainer = () => {
     const dispatch = useDispatch()
     const { orderData, months } = useSelector(OrderData)
     const { pickedData } = useSelector(itemData)
-    const [model, setModel] = useState<string>('model')
+    const [model, setModel] = useState<string>('parts')
     const { invoice, packing, addItem, pallet } = useSelector(formSelector)
     const [partPackaging, setPartPackaging] = useState<{}>()
     // const [select, setSelect] = useState<boolean>(false)

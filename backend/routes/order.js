@@ -71,6 +71,7 @@ router.post("/orderinput", async (req, res) => {
       `
       SELECT 
       G.itemName,
+      G.groupName,
       ${selectCols},
       L.descript,
       L.category,
@@ -97,6 +98,7 @@ router.post("/orderinput", async (req, res) => {
       create table ordersheet (
         SELECT 
         G.itemName,
+        G.groupName,
         ${selectCols},
         L.descript,
         L.category,
@@ -203,6 +205,7 @@ router.get("/getPalletData", async (req, res) => {
   try {
     const data = await Pallet.findAll({
       attributes: ["no", "item", "CT_qty", "moq", "sets", "weight", "cbm"],
+      order: [["id", "ASC"]],
     });
     return res.status(200).json(data);
   } catch (e) {

@@ -4,14 +4,16 @@ import { useSelector, useDispatch } from 'react-redux'
 import { OrderData, OrderAction } from '../../../store/slices/orderSlice';
 import { calculatePackingData } from '../../../lib/utils/calculatePackingData';
 type Props = {
-    selectedMonth: string
-}
-const PalletContainer: React.FC<Props> = ({ selectedMonth }) => {
-    const { palletData, orderData } = useSelector(OrderData)
+    selectedMonth: string;
+    exportData?: any[];
+};
+const PalletContainer: React.FC<Props> = ({ selectedMonth, exportData }) => {
+    const { palletData, orderData } = useSelector(OrderData);
+    const dataToUse = exportData !== undefined ? exportData : orderData;
     const dispatch = useDispatch();
 
     const packingCartonMap = useMemo(() => {
-        const packingData = calculatePackingData(orderData, selectedMonth);
+        const packingData = calculatePackingData(dataToUse, selectedMonth);
         const map: { [itemName: string]: number } = {};
         packingData?.forEach(item => {
             if (item.CT_qty > 0) {
@@ -19,7 +21,7 @@ const PalletContainer: React.FC<Props> = ({ selectedMonth }) => {
             }
         });
         return map;
-    }, [orderData, selectedMonth]);
+    }, [dataToUse, selectedMonth]);
 
     const settingPallet = (Pnumber: number, itemData: { item: string, totalCT_qty?: number, CT_qty: number, quantity: number, weight: number, moq: number, cbm: number, sets: string, mode: string }) => {
 
@@ -34,6 +36,9 @@ const PalletContainer: React.FC<Props> = ({ selectedMonth }) => {
     const removeItem = (id: number, item: string, itemIndex?: number) => {
         dispatch(OrderAction.removeItem({ id, item, itemIndex }))
     }
+    const reorderPallet = (pNo: number, sourceIdx: number, targetIdx: number) => {
+        dispatch(OrderAction.reorderPallet({ pNo, sourceIdx, targetIdx }));
+    };
     const addCount = (id: number, item: string, value: number, itemIndex?: number, maxAllowed?: number) => {
         dispatch(OrderAction.addCount({ id, item, value, itemIndex, maxAllowed }))
     }
@@ -41,7 +46,8 @@ const PalletContainer: React.FC<Props> = ({ selectedMonth }) => {
         dispatch(OrderAction.removeCount({ id, item, value, itemIndex }))
     }
     const onInputPallet = () => {
-        dispatch(OrderAction.inputPallet(palletData))
+        dispatch(OrderAction.inputPallet(palletData));
+        alert('팔레트 정보가 저장되었습니다.');
     }
     const resetPallet = () => {
         dispatch(OrderAction.resetPallet())
@@ -52,9 +58,17 @@ const PalletContainer: React.FC<Props> = ({ selectedMonth }) => {
     }, [])
     return (
         <div>
-            <PalletComponent palletData={palletData} packingCartonMap={packingCartonMap} settingPallet={settingPallet}
-                addCount={addCount} removeCount={removeCount}
-                onInputPallet={onInputPallet} removeItem={removeItem} resetPallet={resetPallet} />
+            <PalletComponent
+                palletData={palletData}
+                packingCartonMap={packingCartonMap}
+                settingPallet={settingPallet}
+                reorderPallet={reorderPallet}
+                addCount={addCount}
+                removeCount={removeCount}
+                onInputPallet={onInputPallet}
+                removeItem={removeItem}
+                resetPallet={resetPallet}
+            />
         </div>
     );
 };

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { select_modelname } from '../../../lib/utils/parseModelName';
 
 type Props = {
@@ -7,6 +7,7 @@ type Props = {
     };
     packingCartonMap?: { [key: string]: number };
     settingPallet: (Pnumber: number, itemData: { item: string; totalCT_qty?: number; CT_qty: number; quantity: number; weight: number; moq: number; cbm: number; sets: string; mode: string; }) => void;
+    reorderPallet: (pNo: number, sourceIdx: number, targetIdx: number) => void;
     addCount: (id: number, item: string, value: number, itemIndex?: number, maxAllowed?: number) => void;
     removeCount: (id: number, item: string, value: number, itemIndex?: number) => void;
     onInputPallet: () => void;
@@ -33,6 +34,8 @@ type RowProps = {
     addCount: Props['addCount'];
     removeCount: Props['removeCount'];
     removeItem: Props['removeItem'];
+    reorderPallet: Props['reorderPallet'];
+    draggedItemRef: React.MutableRefObject<{ palletIndex: number; itemIdx: number; name?: string; } | null>;
 };
 
 const PalletRowItem: React.FC<RowProps> = ({
@@ -44,7 +47,11 @@ const PalletRowItem: React.FC<RowProps> = ({
     addCount,
     removeCount,
     removeItem,
+    reorderPallet,
+    draggedItemRef,
 }) => {
+    const [isDragOver, setIsDragOver] = useState(false);
+    const [isDraggingSelf, setIsDraggingSelf] = useState(false);
     const interRef = useRef<NodeJS.Timeout | null>(null);
     const toutRef = useRef<NodeJS.Timeout | null>(null);
     const isLongPressRef = useRef<boolean>(false);
@@ -134,7 +141,23 @@ const PalletRowItem: React.FC<RowProps> = ({
         <div
             className='elem-pallet'
             draggable
+            style={{
+                backgroundColor: isDragOver ? '#e3f2fd' : undefined,
+                borderTop: isDragOver ? '2px solid #1976d2' : '2px solid transparent',
+                borderBottom: '2px solid transparent',
+                opacity: isDraggingSelf ? 0.4 : 1,
+                transition: 'background-color 0.15s ease, border-color 0.15s ease',
+                cursor: 'grab',
+            }}
             onDragStart={(e) => {
+                draggedItemRef.current = {
+                    palletIndex,
+                    itemIdx,
+                    name: item.item,
+                };
+                setIsDraggingSelf(true);
+                e.dataTransfer.setData('palletIndex', String(palletIndex));
+                e.dataTransfer.setData('itemIdx', String(itemIdx));
                 const img = new Image();
                 img.src = './images/package.png';
                 e.dataTransfer.setDragImage(img, 50, 50);
@@ -151,13 +174,52 @@ const PalletRowItem: React.FC<RowProps> = ({
                 }));
                 clearTimers();
             }}
+            onDragEnd={() => {
+                setIsDraggingSelf(false);
+                setIsDragOver(false);
+                draggedItemRef.current = null;
+            }}
+            onDragOver={(e) => {
+                if (draggedItemRef.current && draggedItemRef.current.palletIndex === palletIndex) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (draggedItemRef.current.itemIdx !== itemIdx) {
+                        setIsDragOver(true);
+                    }
+                }
+            }}
+            onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    setIsDragOver(false);
+                }
+            }}
+            onDrop={(e) => {
+                if (draggedItemRef.current && draggedItemRef.current.palletIndex === palletIndex) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDragOver(false);
+                    const sourceIdx = draggedItemRef.current.itemIdx;
+                    const targetIdx = itemIdx;
+                    if (sourceIdx !== targetIdx) {
+                        reorderPallet(palletIndex, sourceIdx, targetIdx);
+                    }
+                    draggedItemRef.current = null;
+                }
+            }}
         >
             <span className='modelName'>
                 {typeof item.item === 'string' &&
                     select_modelname(item.item)
                 }
             </span>
-            {item.CT_qty ? <div className='material-symbols' >
+            {item.CT_qty ? <div
+                className='material-symbols'
+                draggable={false}
+                onDragStart={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                }}
+            >
                 <span
                     className="material-symbols-outlined add"
                     style={{
@@ -218,19 +280,27 @@ const PalletRowItem: React.FC<RowProps> = ({
                 >
                     do_not_disturb_on
                 </span>
-            </div> : <div><span className="material-symbols-outlined remove repair"
-                onClick={() => {
-                    // eslint-disable-next-line no-restricted-globals
-                    let result = confirm('이 품목을 삭제합니까?');
-                    if (result) {
-                        if (typeof item.item === 'string') {
-                            removeItem(palletIndex, item.item, itemIdx);
-                        }
-                    }
+            </div> : <div
+                draggable={false}
+                onDragStart={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
                 }}
             >
-                delete
-            </span></div>}
+                <span className="material-symbols-outlined remove repair"
+                    onClick={() => {
+                        // eslint-disable-next-line no-restricted-globals
+                        let result = confirm('이 품목을 삭제합니까?');
+                        if (result) {
+                            if (typeof item.item === 'string') {
+                                removeItem(palletIndex, item.item, itemIdx);
+                            }
+                        }
+                    }}
+                >
+                    delete
+                </span>
+            </div>}
         </div>
     );
 };
@@ -244,13 +314,26 @@ type Items = {
     removeCount: Props['removeCount'];
     removeItem: Props['removeItem'];
     resetPallet: () => void;
+    reorderPallet: Props['reorderPallet'];
+    draggedItemRef: React.MutableRefObject<{ palletIndex: number; itemIdx: number; name?: string; } | null>;
 };
 
-const PalletItems: React.FC<Items> = ({ items, addCount, removeCount, index, removeItem, resetPallet, palletData, packingCartonMap }) => {
+const PalletItems: React.FC<Items> = ({
+    items,
+    addCount,
+    removeCount,
+    index,
+    removeItem,
+    resetPallet,
+    palletData,
+    packingCartonMap,
+    reorderPallet,
+    draggedItemRef
+}) => {
     return <div>
-        {items.map((item, itemIdx) => item.item && (
+        {Array.isArray(items) && items.map((item, itemIdx) => item && item.item && (
             <PalletRowItem
-                key={itemIdx}
+                key={`${item.item}-${itemIdx}`}
                 item={item}
                 itemIdx={itemIdx}
                 palletIndex={index}
@@ -259,12 +342,25 @@ const PalletItems: React.FC<Items> = ({ items, addCount, removeCount, index, rem
                 addCount={addCount}
                 removeCount={removeCount}
                 removeItem={removeItem}
+                reorderPallet={reorderPallet}
+                draggedItemRef={draggedItemRef}
             />
         ))}
     </div>;
 };
 
-const PalletComponent: React.FC<Props> = ({ palletData, packingCartonMap, settingPallet, addCount, removeCount, onInputPallet, removeItem, resetPallet }) => {
+const PalletComponent: React.FC<Props> = ({
+    palletData,
+    packingCartonMap,
+    settingPallet,
+    reorderPallet,
+    addCount,
+    removeCount,
+    onInputPallet,
+    removeItem,
+    resetPallet
+}) => {
+    const draggedItemRef = useRef<{ palletIndex: number; itemIdx: number; name?: string; } | null>(null);
 
     const drop = (index: number, itemName: { name: string; totalCT_qty?: number; CT_qty: number; quantity: number; weight: number; moq: number; cbm: number; sets: string; mode: string; }) => {
         settingPallet(index, {
@@ -275,8 +371,8 @@ const PalletComponent: React.FC<Props> = ({ palletData, packingCartonMap, settin
         });
     };
 
+    if (!palletData || typeof palletData !== 'object' || Array.isArray(palletData)) { return null; }
     const values = Object.values(palletData);
-    if (!palletData) { return null; }
 
     return (
         <div className='wrap-pallets'>
@@ -285,23 +381,63 @@ const PalletComponent: React.FC<Props> = ({ palletData, packingCartonMap, settin
                 {values.map((data, index) => <div
                     className='outline-pallet'
                     key={index}
-                    onDragLeave={(e) => { e.currentTarget.style.background = "white"; }}
+                    onDragLeave={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                            e.currentTarget.style.background = "white";
+                        }
+                    }}
                     onDragOver={(e) => {
                         e.preventDefault();
-                        e.currentTarget.style.background = "pink";
+                        if (draggedItemRef.current && draggedItemRef.current.palletIndex === index) {
+                            e.currentTarget.style.background = "#f0f7ff";
+                        } else {
+                            e.currentTarget.style.background = "pink";
+                        }
                     }}
                     onDrop={(e) => {
-                        const parsed = JSON.parse(e.dataTransfer.getData('item'));
-                        const { name, CT_qty, quantity, weight, moq, cbm, sets, mode, totalCT_qty } = parsed;
+                        e.currentTarget.style.background = "white";
+                        const sourcePalletStr = e.dataTransfer.getData('palletIndex');
+                        const sourceItemStr = e.dataTransfer.getData('itemIdx');
+
+                        // Check if drop originated from within this exact pallet
+                        const isSamePallet =
+                            (draggedItemRef.current && draggedItemRef.current.palletIndex === index) ||
+                            (sourcePalletStr !== '' && Number(sourcePalletStr) === index);
+
+                        if (isSamePallet) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const currentList = palletData[index] || [];
+                            const sourceIdx =
+                                draggedItemRef.current && draggedItemRef.current.itemIdx !== undefined
+                                    ? draggedItemRef.current.itemIdx
+                                    : Number(sourceItemStr);
+
+                            if (typeof sourceIdx === 'number' && sourceIdx >= 0 && sourceIdx < currentList.length) {
+                                const targetIdx = currentList.length - 1;
+                                if (sourceIdx !== targetIdx) {
+                                    reorderPallet(index, sourceIdx, targetIdx);
+                                }
+                            }
+                            draggedItemRef.current = null;
+                            return;
+                        }
+
+                        const rawData = e.dataTransfer.getData('item');
+                        if (!rawData) return;
+                        const parsed = JSON.parse(rawData);
+                        const { name, CT_qty, quantity, weight, moq, cbm, sets, mode, totalCT_qty, category, isSubMaterial } = parsed;
 
                         if (mode === 'move') {
                             let alreadyPacked = 0;
+                            let alreadyDropped = false;
                             if (palletData) {
                                 Object.keys(palletData).forEach((key) => {
                                     const pItems = palletData[Number(key)];
                                     if (Array.isArray(pItems)) {
                                         pItems.forEach((pItem) => {
                                             if (pItem && pItem.item === name) {
+                                                alreadyDropped = true;
                                                 alreadyPacked += Number(pItem.CT_qty || 0);
                                             }
                                         });
@@ -313,15 +449,36 @@ const PalletComponent: React.FC<Props> = ({ palletData, packingCartonMap, settin
                                     ? packingCartonMap[name]
                                     : (totalCT_qty || CT_qty || 0)
                             );
-                            const remaining = originalTotal - alreadyPacked;
-                            if (remaining <= 0) {
-                                alert(`이미 해당 품목(${name})의 모든 카톤(${originalTotal} C/T)이 팔레트에 적재되었습니다.`);
-                                e.currentTarget.style.background = "white";
+                            const isSub = Boolean(isSubMaterial || category === 'REPAIR' || sets === 'EA' || originalTotal === 0);
+
+                            if (isSub) {
+                                if (alreadyDropped) {
+                                    alert(`이미 해당 부자재(${name})가 팔레트에 적재되었습니다.`);
+                                    return;
+                                }
+                                const dropCT = originalTotal > 0 ? originalTotal : (Number(CT_qty) || 0);
+                                const newQuantity = moq && dropCT > 0 ? dropCT * moq : Number(quantity || 0);
+                                drop(index, { name, totalCT_qty: dropCT, CT_qty: dropCT, quantity: newQuantity, weight: Number(weight) || 0, moq: Number(moq) || 0, cbm: Number(cbm) || 0, sets: sets || 'EA', mode });
+                            } else {
+                                const remaining = originalTotal - alreadyPacked;
+                                if (remaining <= 0) {
+                                    alert(`이미 해당 품목(${name})의 모든 카톤(${originalTotal} C/T)이 팔레트에 적재되었습니다.`);
+                                    return;
+                                }
+                                const isAlreadyInThisPallet = (palletData[index] || []).some(pItem => pItem && pItem.item === name);
+                                if (isAlreadyInThisPallet) {
+                                    alert(`이미 해당 팔레트에 동일한 품목(${name})이 존재합니다.`);
+                                    return;
+                                }
+                                const newQuantity = moq ? remaining * moq : remaining;
+                                drop(index, { name, totalCT_qty: originalTotal, CT_qty: remaining, quantity: newQuantity, weight: Number(weight) || 0, moq: Number(moq) || 0, cbm: Number(cbm) || 0, sets: sets || 'SET', mode });
+                            }
+                        } else if (mode === 'copy') {
+                            const isAlreadyInThisPallet = (palletData[index] || []).some(pItem => pItem && pItem.item === name);
+                            if (isAlreadyInThisPallet) {
+                                alert(`이미 해당 팔레트에 동일한 품목(${name})이 존재합니다.`);
                                 return;
                             }
-                            const newQuantity = moq ? remaining * moq : remaining;
-                            drop(index, { name, totalCT_qty: originalTotal, CT_qty: remaining, quantity: newQuantity, weight, moq, cbm, sets, mode });
-                        } else if (mode === 'copy') {
                             const originalTotal = Number(
                                 (packingCartonMap && typeof packingCartonMap[name] === 'number' && packingCartonMap[name] > 0)
                                     ? packingCartonMap[name]
@@ -330,7 +487,7 @@ const PalletComponent: React.FC<Props> = ({ palletData, packingCartonMap, settin
                             drop(index, { name, totalCT_qty: originalTotal, CT_qty, quantity, weight, moq, cbm, sets, mode });
                         } else {
                             const { summary, mode: repairMode } = parsed;
-                            summary.sort((a: { id: number }, b: { id: number }) => b.id - a.id).map((data: {
+                            summary.sort((a: { id: number }, b: { id: number }) => b.id - a.id).forEach((data: {
                                 itemName: string;
                                 CT_qty: number;
                                 totalCT_qty?: number;
@@ -341,12 +498,16 @@ const PalletComponent: React.FC<Props> = ({ palletData, packingCartonMap, settin
                                 sets: string;
                                 mode: string;
                             }) => {
+                                const isAlreadyInThisPallet = (palletData[index] || []).some(pItem => pItem && pItem.item === data.itemName);
+                                if (isAlreadyInThisPallet) {
+                                    return;
+                                }
                                 const orig = Number(
                                     (packingCartonMap && typeof packingCartonMap[data.itemName] === 'number' && packingCartonMap[data.itemName] > 0)
                                         ? packingCartonMap[data.itemName]
                                         : (data.totalCT_qty || data.CT_qty || 0)
                                 );
-                                return drop(index, {
+                                drop(index, {
                                     name: data.itemName,
                                     totalCT_qty: orig,
                                     CT_qty: data.CT_qty,
@@ -359,14 +520,13 @@ const PalletComponent: React.FC<Props> = ({ palletData, packingCartonMap, settin
                                 });
                             });
                         }
-                        e.currentTarget.style.background = "white";
                     }}
                 >
                     <div style={{ position: 'absolute', left: index < 9 ? "40%" : "30%", fontSize: '80px', opacity: '.1', userSelect: 'none', pointerEvents: 'none' }}>
                         {index + 1}
                     </div>
                     <PalletItems
-                        items={data}
+                        items={Array.isArray(data) ? data : []}
                         addCount={addCount}
                         removeCount={removeCount}
                         index={index}
@@ -374,6 +534,8 @@ const PalletComponent: React.FC<Props> = ({ palletData, packingCartonMap, settin
                         resetPallet={resetPallet}
                         palletData={palletData}
                         packingCartonMap={packingCartonMap}
+                        reorderPallet={reorderPallet}
+                        draggedItemRef={draggedItemRef}
                     />
                 </div>)}
             </div>

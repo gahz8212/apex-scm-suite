@@ -6,14 +6,16 @@ import { generateInvoiceExcel } from '../../../lib/services/excel/invoiceService
 
 type Props = {
     selectedMonth: string;
+    exportData?: any[];
 };
 
-const InvoiceExcelContainer: React.FC<Props> = ({ selectedMonth }) => {
+const InvoiceExcelContainer: React.FC<Props> = ({ selectedMonth, exportData }) => {
     const { orderData } = useSelector(OrderData);
+    const dataToUse = exportData || orderData;
 
     const makeInvoice = async () => {
         try {
-            await generateInvoiceExcel(selectedMonth, orderData);
+            await generateInvoiceExcel(selectedMonth, dataToUse);
         } catch (e) {
             console.error('Failed to generate invoice excel:', e);
         }

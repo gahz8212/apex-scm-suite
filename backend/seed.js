@@ -521,6 +521,7 @@ async function seed() {
     create table ordersheet (
       SELECT 
       G.itemName,
+      G.groupName,
       O.Sep, O.Oct, O.Nov, O.Dec, O.Jan,
       L.descript,
       L.category,

@@ -48,48 +48,57 @@ const PackingComponent: React.FC<Props> = ({ selectedMonth, packingData, totalRe
     //     // console.log(newList)
     // }
     const datas = (
-        packingData?.map((data, index) => <div className='packing-rows'
-            draggable
-            onDragStart={(e) => {
-                // console.log(data)
-                // dragItemStart(index)
-                const img = new Image();
-                img.src = './images/package.png'
-                e.dataTransfer.setDragImage(img, 50, 50)
-                e.dataTransfer.setData('item', JSON.stringify({
-                    name: data.itemName,
-                    totalCT_qty: data.CT_qty,
-                    CT_qty: data.CT_qty,
-                    quantity: data.quantity,
-                    weight: data.weight,
-                    moq: data.moq,
-                    cbm: data.cbm,
-                    sets: data.sets,
-                    mode: 'move'
+        packingData?.map((data, index) => {
+            const ctVal = Number(data.CT_qty) || 0;
+            const totalWeight = data.totalWeight !== undefined && ctVal > 0 && Number(data.totalWeight) > 0
+                ? Number(data.totalWeight)
+                : (ctVal > 0 && Number(data.weight) > 0 ? (ctVal * Number(data.weight)) : 0);
+            const totalCbm = ctVal > 0 && Number(data.cbm) > 0 ? (ctVal * Number(data.cbm)) : 0;
 
-                }))
-
-
-            }
-            }
-        // onDragOver={(e) => { dragItemEnter(index); }}
-        // onDrop={drop}
-        >
-            <div className='packing-data'>{data.itemName}</div>
-            {/* {data[selectedMonth] && <div className='invoice-data'>{data[selectedMonth]?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>} */}
-            {/* {data[selectedMonth] && <div className='invoice-data'>${(data.ex_price)?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>} */}
-            {<div className='invoice-data'>{(data.CT_qty)?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>}
-            {<div className='invoice-data'>{(data.CT_qty * data.weight).toFixed(1)?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>}
-            {<div className='invoice-data'>{(data.CT_qty * data.cbm).toFixed(2)?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>}
-        </div >)
-    )
-    const footer = (totalResult?.map((result, index) => <div key={index} className='tr'>
-        {result[selectedMonth] && <div className='th'>TOTAL</div>}
-        {result[selectedMonth] && <div className='th'>{result[selectedMonth].carton}C/T</div>}
-        {result[selectedMonth] && <div className='th'>{result[selectedMonth].weight.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}Kg</div>}
-        {result[selectedMonth] && <div className='th'>{result[selectedMonth].cbm.toFixed(1)}CBM</div>}
-        {/* {result[selectedMonth] && <div className='th'>${result[selectedMonth].price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>} */}
-    </div>))
+            return (
+                <div
+                    key={index}
+                    className='packing-rows'
+                    draggable
+                    onDragStart={(e) => {
+                        const img = new Image();
+                        img.src = './images/package.png';
+                        e.dataTransfer.setDragImage(img, 50, 50);
+                        e.dataTransfer.setData('item', JSON.stringify({
+                            name: data.itemName,
+                            totalCT_qty: data.CT_qty,
+                            CT_qty: data.CT_qty,
+                            quantity: data.quantity,
+                            weight: data.weight,
+                            moq: data.moq,
+                            cbm: data.cbm,
+                            sets: data.sets,
+                            category: data.category,
+                            isSubMaterial: Boolean(data.isSubMaterial || data.category === 'REPAIR' || data.sets === 'EA'),
+                            mode: 'move'
+                        }));
+                    }}
+                >
+                    <div className='packing-data'>{data.itemName}</div>
+                    <div className='invoice-data'>{ctVal > 0 ? ctVal.toLocaleString() : ''}</div>
+                    <div className='invoice-data'>{totalWeight > 0 ? totalWeight.toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ''}</div>
+                    <div className='invoice-data'>{totalCbm > 0 ? totalCbm.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ''}</div>
+                </div>
+            );
+        })
+    );
+    const footer = (totalResult?.map((result, index) => {
+        const item = result[selectedMonth];
+        if (!item) return null;
+        return (
+            <div key={index} className='tr'>
+                <div className='th'>TOTAL</div>
+                <div className='th'>{item.carton > 0 ? `${item.carton.toLocaleString()}C/T` : ''}</div>
+                <div className='th'>{item.weight > 0 ? `${item.weight.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}Kg` : ''}</div>
+                <div className='th'>{item.cbm > 0 ? `${item.cbm.toFixed(2)}CBM` : ''}</div>
+            </div>
+        );
+    }));
     return (
         <div className='packing-container'>
             <div className="title">PACKING</div>

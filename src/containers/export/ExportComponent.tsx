@@ -1,12 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import InvoiceContainer from '../forms/invoiceForm/InvoiceContainer';
 import PackingContainer from '../forms/packingListForm/PackingContainer';
-import AddItemContainer from '../forms/addItemForm/AddItemContainer';
 import PalletContainer from '../forms/packingListForm/PalletContainer';
 import { useDrag } from 'react-use-gesture';
-import { OrderAction } from '../../store/slices/orderSlice'
-import { useDispatch } from 'react-redux'
-import { itemActions } from '../../store/slices/itemSlice';
+import { calculatePackingData } from '../../lib/utils/calculatePackingData';
 type Props = {
     model: string
     setModel: React.Dispatch<React.SetStateAction<string>>
@@ -91,9 +88,6 @@ const ExportComponent: React.FC<Props> = ({
     setSelect,
     inputRepairToOrdersheet
 }) => {
-    const dragItem: any = useRef();
-    const dragOverItem: any = useRef();
-    const dispatch = useDispatch();
     const [formZIndex, setFormZIndex] = useState<{ [key: string]: number }>({
         invoice: 30,
         packing: 32,
@@ -128,16 +122,207 @@ const ExportComponent: React.FC<Props> = ({
         const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
         changePosition('pallet', { x: nextX, y: nextY });
     });
-    const addItemPos = useDrag(params => {
-        const nextX = Math.max(10, Math.min(window.innerWidth - 400, params.offset[0] + 100));
-        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
-        changePosition('addItem', { x: nextX, y: nextY });
-    });
+    // const addItemPos = useDrag(params => {
+    //     const nextX = Math.max(10, Math.min(window.innerWidth - 400, params.offset[0] + 100));
+    //     const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+    //     changePosition('addItem', { x: nextX, y: nextY });
+    // });
     // let dragItemKey = '';
     // let dragOverItemKey = ''
     // console.log(pickedData)
     let orderdata;
-    const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
+    const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+    const activeMonth = selectedMonth || (months && months.length > 0 ? months[0] : '');
+
+    const productPackingData = useMemo(() => {
+        if (!orderData || !activeMonth) return [];
+        const packingItems = calculatePackingData(orderData, activeMonth);
+        const map = new Map<string, any>();
+        packingItems.forEach(p => {
+            const existing = map.get(p.itemName);
+            if (existing) {
+                existing.quantity += p.quantity;
+                existing.CT_qty += p.CT_qty;
+            } else {
+                const orderItem = orderData.find((o: any) => o.itemName === p.itemName);
+                map.set(p.itemName, {
+                    ...p,
+                    itemName: p.itemName,
+                    groupName: p.groupName || orderItem?.groupName,
+                    quantity: p.quantity,
+                    CT_qty: p.CT_qty,
+                    weight: p.weight,
+                    cbm: p.cbm,
+                    moq: p.moq,
+                    sets: p.sets,
+                    ex_price: p.ex_price || orderItem?.ex_price || 0,
+                    category: p.category || orderItem?.category || 'EDT'
+                });
+            }
+        });
+        return Array.from(map.values());
+    }, [orderData, activeMonth]);
+
+    const getDtName = (prod: any) => {
+        if (prod.groupName) return prod.groupName;
+        const fromOrder = orderData?.find((o: any) => o.itemName === prod.itemName)?.groupName;
+        if (fromOrder) return fromOrder;
+        if (prod.itemName) {
+            const cleaned = prod.itemName.replace(/\s+(PRO|MINI|SMART)?\s*SET$/i, '').trim();
+            if (cleaned) return cleaned;
+        }
+        return prod.itemName;
+    };
+
+    const [checkedProducts, setCheckedProducts] = useState<{ [itemName: string]: boolean }>({});
+    const [productOverrides, setProductOverrides] = useState<{
+        [itemName: string]: {
+            quantity?: number | string;
+            CT_qty?: number | string;
+            weight?: number | string;
+            cbm?: string;
+        }
+    }>({});
+
+    useEffect(() => {
+        setCheckedProducts({});
+        setProductOverrides({});
+    }, [activeMonth]);
+
+    const isProductChecked = (itemName: string): boolean => {
+        return checkedProducts[itemName] !== undefined ? checkedProducts[itemName] : true;
+    };
+
+    const currentExportData = useMemo(() => {
+        if (!activeMonth) return [];
+
+        const checkedProductItems = productPackingData
+            .filter(prod => (checkedProducts[prod.itemName] !== undefined ? checkedProducts[prod.itemName] : true))
+            .map(prod => {
+                const override = productOverrides[prod.itemName];
+                const currentQty = override?.quantity !== undefined ? (override.quantity !== '' ? Number(override.quantity) : 0) : Number(prod.quantity);
+                const currentCT = override?.CT_qty !== undefined ? (override.CT_qty !== '' ? Number(override.CT_qty) : 0) : Number(prod.CT_qty || 0);
+                const currentWeight = override?.weight !== undefined ? (override.weight !== '' ? Number(override.weight) : 0) : (prod.CT_qty && prod.weight ? Number((prod.CT_qty * prod.weight).toFixed(1)) : Number(prod.weight || 0));
+                const currentCbm = override?.cbm !== undefined ? (Number(override.cbm) > 0 ? Number(override.cbm) : 0) : (Number(prod.cbm) > 0 ? Number(prod.cbm) : 0);
+                const unitWeight = currentCT > 0 ? currentWeight / currentCT : (Number(prod.weight) || 0);
+
+                return {
+                    ...prod,
+                    [activeMonth]: currentQty,
+                    quantity: currentQty,
+                    CT_qty: currentCT,
+                    weight: unitWeight,
+                    totalWeight: currentWeight,
+                    cbm: currentCbm,
+                    ex_price: Number(prod.ex_price) || 0,
+                    sets: prod.sets || 'SET',
+                    moq: prod.moq || (currentCT > 0 ? currentQty / currentCT : 0),
+                    isSubMaterial: false,
+                    isDirect: true
+                };
+            });
+
+        const checkedSubMaterialItems = (pickedData || [])
+            .filter(picked => picked.check)
+            .map(picked => {
+                const qty = Number(picked.quantity) || 0;
+                const ct = Number(picked.CT_qty) || 0;
+                const wt = Number(picked.weight) || 0;
+                const unitWeight = ct > 0 ? wt / ct : wt;
+                const cbmVal = Number(picked.cbm) > 0 ? Number(picked.cbm) : 0;
+
+                return {
+                    ...picked,
+                    [activeMonth]: qty,
+                    quantity: qty,
+                    CT_qty: ct,
+                    weight: unitWeight,
+                    totalWeight: wt,
+                    cbm: cbmVal,
+                    ex_price: Number(picked.ex_price) || 0,
+                    sets: (picked as any).sets || 'EA',
+                    moq: (picked as any).moq || (ct > 0 ? qty / ct : 0),
+                    category: 'REPAIR',
+                    isSubMaterial: true,
+                    isDirect: true
+                };
+            });
+
+        return [...checkedProductItems, ...checkedSubMaterialItems];
+    }, [productPackingData, checkedProducts, productOverrides, pickedData, activeMonth]);
+
+    const toggleProductCheck = (itemName: string) => {
+        setCheckedProducts(prev => ({
+            ...prev,
+            [itemName]: !isProductChecked(itemName)
+        }));
+    };
+
+    const handleProductQtyChange = (prod: any, value: string) => {
+        if (value === '') {
+            setProductOverrides(prev => ({
+                ...prev,
+                [prod.itemName]: {
+                    ...prev[prod.itemName],
+                    quantity: '',
+                    CT_qty: '',
+                    weight: ''
+                }
+            }));
+            return;
+        }
+        const qty = Number(value);
+        const ct = prod.moq > 0 ? Math.ceil(qty / prod.moq) : (prod.CT_qty || 1);
+        const wt = prod.weight ? Number((ct * prod.weight).toFixed(1)) : (prod.weight || 0);
+        setProductOverrides(prev => ({
+            ...prev,
+            [prod.itemName]: {
+                ...prev[prod.itemName],
+                quantity: qty,
+                CT_qty: ct,
+                weight: wt
+            }
+        }));
+    };
+
+    const handleProductCTChange = (itemName: string, value: string) => {
+        setProductOverrides(prev => ({
+            ...prev,
+            [itemName]: {
+                ...prev[itemName],
+                CT_qty: value === '' ? '' : Number(value)
+            }
+        }));
+    };
+
+    const handleProductWeightChange = (itemName: string, value: string) => {
+        setProductOverrides(prev => ({
+            ...prev,
+            [itemName]: {
+                ...prev[itemName],
+                weight: value === '' ? '' : Number(value)
+            }
+        }));
+    };
+
+    const handleProductCbmChange = (itemName: string, value: string) => {
+        setProductOverrides(prev => ({
+            ...prev,
+            [itemName]: {
+                ...prev[itemName],
+                cbm: value
+            }
+        }));
+    };
+
+    const handleSelectAll = (select: boolean) => {
+        setSelect(select);
+        const newChecked: { [key: string]: boolean } = {};
+        productPackingData.forEach(prod => {
+            newChecked[prod.itemName] = select;
+        });
+        setCheckedProducts(newChecked);
+    };
 
 
     // const onDragStart = (index: number, column: number) => {
@@ -189,7 +374,10 @@ const ExportComponent: React.FC<Props> = ({
                     <div style={{ width: '520px', padding: '1rem', userSelect: 'none' }}></div>
                 </div>
                 <div style={{ position: 'fixed', top: invoiceForm.position.y, left: invoiceForm.position.x, zIndex: formZIndex.invoice }}>
-                    <InvoiceContainer selectedMonth={selectedMonth || (months && months.length > 0 ? months[0] : '')} />
+                    <InvoiceContainer
+                        selectedMonth={activeMonth}
+                        exportData={currentExportData}
+                    />
                 </div>
             </div>}
             {packingForm.visible && <div onMouseDown={() => bringToFront('packing')}>
@@ -207,7 +395,8 @@ const ExportComponent: React.FC<Props> = ({
                 </div>
                 <div style={{ position: 'fixed', top: packingForm.position.y, left: packingForm.position.x, zIndex: formZIndex.packing }}>
                     <PackingContainer
-                        selectedMonth={selectedMonth || (months && months.length > 0 ? months[0] : '')}
+                        selectedMonth={activeMonth}
+                        exportData={currentExportData}
                     />
                 </div>
             </div>}
@@ -232,7 +421,8 @@ const ExportComponent: React.FC<Props> = ({
                 </div>
                 <div style={{ position: 'fixed', top: palletForm.position.y, left: palletForm.position.x, zIndex: formZIndex.pallet }}>
                     <PalletContainer
-                        selectedMonth={selectedMonth || (months && months.length > 0 ? months[0] : '')}
+                        selectedMonth={activeMonth}
+                        exportData={currentExportData}
                     />
                 </div>
             </div>}
@@ -301,65 +491,78 @@ const ExportComponent: React.FC<Props> = ({
                                 </div>
                                 <div className='body'>
                                     <div className="titles">
-                                        <div className='title'>부자재</div>
-                                        <div className='title'>수량</div>
-                                        <div className='title'>C/T</div>
-                                        <div className='title'>Kg</div>
-                                        <div className='title'>cbm</div>
+                                        <div className='title col-check'></div>
+                                        <div className='title col-name'>부자재</div>
+                                        <div className='title col-qty'>수량</div>
+                                        <div className='title col-ct'>C/T</div>
+                                        <div className='title col-weight'>Kg</div>
+                                        <div className='title col-cbm'>cbm</div>
                                     </div>
                                     <div className="articles">
-                                        {pickedData?.map((picked, index) => <div className={`items`} key={picked.ItemId}
-                                            draggable={!picked.check}
-                                            onDragStart={(e) => {
-                                                const img = new Image();
-                                                img.src = '/images/package.png'
-                                                e.dataTransfer.setDragImage(img, 50, 50)
-                                                dragItem.current = index
-
-                                            }}
-                                            onDragEnter={() => {
-                                                dragOverItem.current = index
-                                            }}
-                                            onDragOver={e => { e.preventDefault() }}
-                                            onDrop={() => {
-                                                const copyList: { id: number; ItemId: number; check: boolean; itemName: string; unit: string; im_price: number; ex_price: number; quantity: number; CT_qty: number; weight: number; cbm: number; }[] = JSON.parse(JSON.stringify(pickedData));
-                                                const temp = copyList[dragOverItem.current]
-                                                copyList[dragOverItem.current] = copyList[dragItem.current];
-                                                copyList[dragItem.current] = temp
-                                                dragOverItem.current = null;
-                                                dragItem.current = null;
-                                                console.log('copyList', copyList)
-                                                dispatch(itemActions.changeRepair(copyList))
-                                            }}
-                                        >
-                                            <div className='item'><input type="checkbox" name="check" id={String(picked.ItemId)} checked={picked.check}
-                                                onChange={onChangePicked}
-                                            /></div>
-                                            <div className={`item ${picked.check ? 'selected' : ''}`}>{picked.itemName}</div>
-                                            <div className='item'>{picked.quantity ? picked.quantity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : 0}</div>
-                                            <div className='item'>{
-                                                picked.check && <input type='number' name="CT_qty" id={picked.ItemId.toString()} value={picked.CT_qty} onChange={onChangePicked} className='input_ct' ></input>
-                                            }</div>
-                                            <div className='item'>{
-                                                picked.check && <input type='number' name="weight" id={String(picked.ItemId)} value={picked.weight} onChange={onChangePicked} className='input_weight'></input>
-                                            }</div>
-                                            <div className='item'>{
-                                                picked.check &&
-                                                <select className='sel_cbm' name='cbm' value={picked.cbm} id={String(picked.ItemId)} onChange={onChangePicked}>
-                                                    <option value="선택">선택</option>
-                                                    <option value="0.044">iDT</option>
-                                                    <option value="0.04">CC360</option>
-                                                    <option value="0.044">SPT</option>
-                                                </select>}</div>
-                                            <div className={`item ${picked.check ? 'selected' : ''}`} onClick={() => {
-                                                if (!picked.check)
-                                                    removePicked(picked.ItemId)
-                                            }}>
-                                                <span className={`material-symbols-outlined trash `}>
-                                                    delete
-                                                </span>
+                                        {pickedData?.map((picked, index) => (
+                                            <div className="items sub-material-row" key={picked.ItemId || picked.id || index}>
+                                                <div className='item col-check'>
+                                                    <input type="checkbox" name="check" id={String(picked.ItemId || picked.id)} checked={picked.check}
+                                                        onChange={onChangePicked}
+                                                    />
+                                                </div>
+                                                <div className={`item col-name ${picked.check ? 'selected' : ''}`} title={picked.itemName}>
+                                                    <span className="badge-part">부자재</span>
+                                                    <span className="name-text">{picked.itemName}</span>
+                                                </div>
+                                                <div className='item col-qty'>
+                                                    <input
+                                                        type="number"
+                                                        name="quantity"
+                                                        id={String(picked.ItemId || picked.id)}
+                                                        value={picked.quantity !== undefined && picked.quantity !== null ? picked.quantity : ''}
+                                                        disabled={!picked.check}
+                                                        onChange={onChangePicked}
+                                                        className="input_box input_qty"
+                                                    />
+                                                </div>
+                                                <div className='item col-ct'>
+                                                    <input
+                                                        type='number'
+                                                        name="CT_qty"
+                                                        id={String(picked.ItemId || picked.id)}
+                                                        value={picked.CT_qty !== undefined && picked.CT_qty !== null ? picked.CT_qty : ''}
+                                                        disabled={!picked.check}
+                                                        onChange={onChangePicked}
+                                                        className='input_box input_ct'
+                                                    />
+                                                </div>
+                                                <div className='item col-weight'>
+                                                    <input
+                                                        type='number'
+                                                        name="weight"
+                                                        id={String(picked.ItemId || picked.id)}
+                                                        value={picked.weight !== undefined && picked.weight !== null ? picked.weight : ''}
+                                                        disabled={!picked.check}
+                                                        onChange={onChangePicked}
+                                                        className='input_box input_weight'
+                                                    />
+                                                </div>
+                                                <div className='item col-cbm'>
+                                                    <select
+                                                        className='input_box sel_cbm'
+                                                        name='cbm'
+                                                        value={picked.cbm || '선택'}
+                                                        id={String(picked.ItemId || picked.id)}
+                                                        disabled={!picked.check}
+                                                        onChange={onChangePicked}
+                                                    >
+                                                        <option value="선택">선택</option>
+                                                        <option value="0.044">iDT</option>
+                                                        <option value="0.04">CC360</option>
+                                                        <option value="0.044">SPT</option>
+                                                        {picked.cbm && !['0.044', '0.04', 0.044, 0.04, '선택'].includes(picked.cbm) && (
+                                                            <option value={String(picked.cbm)}>{picked.cbm}</option>
+                                                        )}
+                                                    </select>
+                                                </div>
                                             </div>
-                                        </div>)}
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -386,92 +589,201 @@ const ExportComponent: React.FC<Props> = ({
 
                                     <div>
                                         <div className='radio_type'>
-                                            <label htmlFor="boat">Boat</label><input type="radio" name="tr" id="boat" checked />
+                                            <label htmlFor="boat">Boat</label><input type="radio" name="tr" id="boat" defaultChecked />
                                             <label htmlFor="air">Air</label><input type="radio" name="tr" id="air" />
                                         </div>
                                         <div className='radio_type'>
-                                            <label htmlFor="Rohlig">Rohlig</label><input type="radio" name="forw" id="Rohlig" checked />
+                                            <label htmlFor="Rohlig">Rohlig</label><input type="radio" name="forw" id="Rohlig" defaultChecked />
                                             <label htmlFor="NNR">NNR</label><input type="radio" name="forw" id="NNR" />
                                         </div>
                                         <div className='radio_type'>
                                             <label htmlFor="fcl">FCL</label><input type="radio" name="ct" id="fcl" />
-                                            <label htmlFor="lcl">LCL</label><input type="radio" name="ct" id="lcl" checked />
+                                            <label htmlFor="lcl">LCL</label><input type="radio" name="ct" id="lcl" defaultChecked />
                                         </div>
                                     </div>
                                 </div>
                                 <div className='body'>
                                     <div className="titles">
-
-                                        <div className='title'>원/부자재</div>
-                                        <div className='title'>수량</div>
-                                        <div className='title'>C/T</div>
-                                        <div className='title'>Kg</div>
-                                        <div className='title'>cbm</div>
+                                        <div className='title col-check'></div>
+                                        <div className='title col-name'>제품/부자재</div>
+                                        <div className='title col-qty'>수량</div>
+                                        <div className='title col-ct'>C/T</div>
+                                        <div className='title col-weight'>Kg</div>
+                                        <div className='title col-cbm'>cbm</div>
                                     </div>
                                     <div className="articles">
-                                        {pickedData?.map((picked, index) => <div className={`items`} key={picked.ItemId}
+                                        {/* 1. 제품 목록 (좌측 월 데이터 발주 품목) */}
+                                        {productPackingData?.map((prod, pIdx) => {
+                                            const isChecked = isProductChecked(prod.itemName);
+                                            const override = productOverrides[prod.itemName];
 
-                                            draggable={picked.check}
-                                            onDragStart={(e) => {
-                                                const img = new Image();
-                                                img.src = '/images/package.png'
-                                                e.dataTransfer.setDragImage(img, 50, 50)
-                                                dragItem.current = index
-                                                if (partPackaging) {
-                                                    e.dataTransfer.setData('item',
-                                                        JSON.stringify({ summary: partPackaging[picked.id], key: picked.id, data: partPackaging, mode: 'repair' }))
-                                                }
-                                            }}
-                                            onDragEnter={() => {
-                                                dragOverItem.current = index
-                                            }}
-                                            onDragOver={e => { e.preventDefault() }}
-                                            onDrop={() => {
-                                                const copyList: { id: number; ItemId: number; check: boolean; itemName: string; unit: string; im_price: number; ex_price: number; quantity: number; CT_qty: number; weight: number; cbm: number; }[] = JSON.parse(JSON.stringify(pickedData));
-                                                const temp = copyList[dragOverItem.current]
-                                                copyList[dragOverItem.current] = copyList[dragItem.current];
-                                                copyList[dragItem.current] = temp
-                                                dragOverItem.current = null;
-                                                dragItem.current = null;
-                                                console.log('copyList', copyList)
-                                                dispatch(itemActions.changeRepair(copyList))
-                                            }}
-                                        >
-                                            <div className='item'><input type="checkbox" name="check" id={String(picked.ItemId)} checked={picked.check}
-                                                onChange={onChangePicked}
-                                            /></div>
-                                            <div className={`item ${picked.check ? 'selected' : ''}`}>{picked.itemName}</div>
-                                            <div className='item'>{picked.quantity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</div>
-                                            <div className='item'>{
-                                                picked.check && <input type='number' name="CT_qty" id={picked.ItemId.toString()} value={picked.CT_qty} onChange={onChangePicked} className='input_ct' ></input>
-                                            }</div>
-                                            <div className='item'>{
-                                                picked.check && <input type='number' name="weight" id={String(picked.ItemId)} value={picked.weight} onChange={onChangePicked} className='input_weight'></input>
-                                            }</div>
-                                            <div className='item'>{
-                                                picked.check &&
-                                                <select className='sel_cbm' name='cbm' value={picked.cbm} id={String(picked.ItemId)} onChange={onChangePicked}>
-                                                    <option value="선택">선택</option>
-                                                    <option value="0.044">iDT</option>
-                                                    <option value="0.04">CC360</option>
-                                                    <option value="0.044">SPT</option>
-                                                </select>}</div>
-                                            <div className={`item ${picked.check ? 'selected' : ''}`} onClick={() => {
-                                                if (!picked.check)
-                                                    removePicked(picked.ItemId)
-                                            }}>
-                                                <span className={`material-symbols-outlined trash `}>
-                                                    delete
-                                                </span>
+                                            const currentQty = override?.quantity !== undefined
+                                                ? override.quantity
+                                                : prod.quantity;
+
+                                            const currentCT = override?.CT_qty !== undefined
+                                                ? override.CT_qty
+                                                : prod.CT_qty;
+
+                                            const currentWeight = override?.weight !== undefined
+                                                ? override.weight
+                                                : (prod.CT_qty && prod.weight ? (prod.CT_qty * prod.weight).toFixed(1) : (prod.weight || 0));
+
+                                            const currentCbm = override?.cbm !== undefined
+                                                ? override.cbm
+                                                : (prod.cbm ? String(prod.cbm) : '선택');
+
+                                            return (
+                                                <div
+                                                    className="items product-row"
+                                                    key={`prod-${pIdx}`}
+                                                >
+                                                    <div className='item col-check'>
+                                                        <input
+                                                            type="checkbox"
+                                                            name="check"
+                                                            id={`prod-check-${pIdx}`}
+                                                            checked={isChecked}
+                                                            onChange={() => toggleProductCheck(prod.itemName)}
+                                                        />
+                                                    </div>
+                                                    <div className={`item col-name ${isChecked ? 'selected' : ''}`} title={prod.itemName}>
+                                                        <span className="badge-prod">제품</span>
+                                                        <span className="name-text">{getDtName(prod)}</span>
+                                                    </div>
+                                                    <div className='item col-qty'>
+                                                        <input
+                                                            type="number"
+                                                            name="quantity"
+                                                            value={currentQty !== undefined && currentQty !== null ? currentQty : ''}
+                                                            disabled={!isChecked}
+                                                            onChange={(e) => handleProductQtyChange(prod, e.target.value)}
+                                                            className="input_box input_qty"
+                                                        />
+                                                    </div>
+                                                    <div className='item col-ct'>
+                                                        <input
+                                                            type="number"
+                                                            name="CT_qty"
+                                                            value={currentCT !== undefined && currentCT !== null ? currentCT : ''}
+                                                            disabled={!isChecked}
+                                                            onChange={(e) => handleProductCTChange(prod.itemName, e.target.value)}
+                                                            className="input_box input_ct"
+                                                        />
+                                                    </div>
+                                                    <div className='item col-weight'>
+                                                        <input
+                                                            type="number"
+                                                            name="weight"
+                                                            value={currentWeight !== undefined && currentWeight !== null ? currentWeight : ''}
+                                                            disabled={!isChecked}
+                                                            onChange={(e) => handleProductWeightChange(prod.itemName, e.target.value)}
+                                                            className="input_box input_weight"
+                                                        />
+                                                    </div>
+                                                    <div className='item col-cbm'>
+                                                        <select
+                                                            className='input_box sel_cbm'
+                                                            name='cbm'
+                                                            value={currentCbm || '선택'}
+                                                            disabled={!isChecked}
+                                                            onChange={(e) => handleProductCbmChange(prod.itemName, e.target.value)}
+                                                        >
+                                                            <option value="선택">선택</option>
+                                                            <option value="0.044">iDT</option>
+                                                            <option value="0.04">CC360</option>
+                                                            <option value="0.044">SPT</option>
+                                                            {prod.cbm && !['0.044', '0.04', 0.044, 0.04, '선택'].includes(prod.cbm) && (
+                                                                <option value={String(prod.cbm)}>{prod.cbm}</option>
+                                                            )}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+
+                                        {/* 2. 부자재 목록 (Item Master에서 선택한 부자재) */}
+                                        {pickedData?.map((picked, index) => (
+                                            <div className="items sub-material-row" key={picked.ItemId || picked.id || index}>
+                                                <div className='item col-check'>
+                                                    <input
+                                                        type="checkbox"
+                                                        name="check"
+                                                        id={String(picked.ItemId || picked.id)}
+                                                        checked={picked.check}
+                                                        onChange={onChangePicked}
+                                                    />
+                                                </div>
+                                                <div className={`item col-name ${picked.check ? 'selected' : ''}`} title={picked.itemName}>
+                                                    <span className="badge-part">부자재</span>
+                                                    <span className="name-text">{picked.itemName}</span>
+                                                </div>
+                                                <div className='item col-qty'>
+                                                    <input
+                                                        type="number"
+                                                        name="quantity"
+                                                        id={String(picked.ItemId || picked.id)}
+                                                        value={picked.quantity !== undefined && picked.quantity !== null ? picked.quantity : ''}
+                                                        disabled={!picked.check}
+                                                        onChange={onChangePicked}
+                                                        className="input_box input_qty"
+                                                    />
+                                                </div>
+                                                <div className='item col-ct'>
+                                                    <input
+                                                        type='number'
+                                                        name="CT_qty"
+                                                        id={String(picked.ItemId || picked.id)}
+                                                        value={picked.CT_qty !== undefined && picked.CT_qty !== null ? picked.CT_qty : ''}
+                                                        disabled={!picked.check}
+                                                        onChange={onChangePicked}
+                                                        className='input_box input_ct'
+                                                    />
+                                                </div>
+                                                <div className='item col-weight'>
+                                                    <input
+                                                        type='number'
+                                                        name="weight"
+                                                        id={String(picked.ItemId || picked.id)}
+                                                        value={picked.weight !== undefined && picked.weight !== null ? picked.weight : ''}
+                                                        disabled={!picked.check}
+                                                        onChange={onChangePicked}
+                                                        className='input_box input_weight'
+                                                    />
+                                                </div>
+                                                <div className='item col-cbm'>
+                                                    <select
+                                                        className='input_box sel_cbm'
+                                                        name='cbm'
+                                                        value={picked.cbm || '선택'}
+                                                        id={String(picked.ItemId || picked.id)}
+                                                        disabled={!picked.check}
+                                                        onChange={onChangePicked}
+                                                    >
+                                                        <option value="선택">선택</option>
+                                                        <option value="0.044">iDT</option>
+                                                        <option value="0.04">CC360</option>
+                                                        <option value="0.044">SPT</option>
+                                                        {picked.cbm && !['0.044', '0.04', 0.044, 0.04, '선택'].includes(picked.cbm) && (
+                                                            <option value={String(picked.cbm)}>{picked.cbm}</option>
+                                                        )}
+                                                    </select>
+                                                </div>
                                             </div>
-                                        </div>)}
+                                        ))}
                                     </div>
                                 </div>
                                 <div className='btns'>
-                                    <button type='button' onClick={() => setSelect(true)}>전체 선택</button>
-                                    <button type='button' onClick={() => setSelect(false)}>전체 취소</button>
+                                    <button type='button' onClick={() => handleSelectAll(true)}>전체 선택</button>
+                                    <button type='button' onClick={() => handleSelectAll(false)}>전체 취소</button>
                                     <button type='button' onClick={() => {
-                                        const result = pickedData?.map(data => ({
+                                        const checkedPicked = pickedData?.filter(data => data.check) || [];
+                                        if (checkedPicked.length === 0) {
+                                            if (!window.confirm('선택된 항목이 없습니다. 부자재를 모두 제외하고 저장하시겠습니까?')) {
+                                                return;
+                                            }
+                                        }
+                                        const result = checkedPicked.map(data => ({
                                             id: data.id,
                                             ItemId: data.ItemId,
                                             check: data.check,
@@ -489,12 +801,8 @@ const ExportComponent: React.FC<Props> = ({
                                             CT_qty: data.CT_qty,
                                             number1: 9,
                                             use: true,
-                                        }))
-                                        if (result) {
-
-                                            inputRepairToOrdersheet(result)
-
-                                        }
+                                        }));
+                                        inputRepairToOrdersheet(result);
                                     }}>저장</button>
                                 </div>
                             </div>
