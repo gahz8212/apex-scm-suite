@@ -282,7 +282,7 @@ const ExportComponent: React.FC<Props> = ({
                                 </div>
                                 <div className='body'>
                                     <div className="titles">
-                                        <div className='title'>제품</div>
+                                        <div className='title'>부자재</div>
                                         <div className='title'>수량</div>
                                         <div className='title'>C/T</div>
                                         <div className='title'>Kg</div>
