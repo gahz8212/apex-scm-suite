@@ -163,6 +163,7 @@ const CardComponent: React.FC<Props> = ({ items, selectItem, dragItem, onDrop, v
                                         unit: item.unit,
                                         im_price: item.im_price,
                                         ex_price: item.ex_price,
+                                        type: item.type,
                                     }))
                             }}
                             onDragEnd={onDrop}

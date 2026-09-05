@@ -555,34 +555,8 @@ async function seed() {
   await Pallet.bulkCreate(palletsData);
   console.log(`✅ 팔레트(Pallet) 적재 데이터 ${palletsData.length}건 생성 완료`);
 
-  // 9. 출하 피킹 리스트(Picker) 데이터 생성
+  // 9. 출하 피킹 리스트(Picker) 데이터 생성 (부자재: SET 제품을 제외한 ASSY, PARTS 부자재만 포함)
   const pickersData = [
-    {
-      check: true,
-      itemName: "APEX-1000 PRO SET",
-      unit: "\\",
-      im_price: 28500,
-      ex_price: 48.5,
-      quantity: 500,
-      weight: 1.25,
-      cbm: 0.008,
-      CT_qty: 20,
-      supplyer: "NEXUS Tech",
-      ItemId: 1,
-    },
-    {
-      check: true,
-      itemName: "APEX-200 MINI SET",
-      unit: "\\",
-      im_price: 19800,
-      ex_price: 32.0,
-      quantity: 800,
-      weight: 0.75,
-      cbm: 0.005,
-      CT_qty: 40,
-      supplyer: "NEXUS Tech",
-      ItemId: 2,
-    },
     {
       check: true,
       itemName: "APEX-1000 MAIN PCB ASSY",
@@ -596,9 +570,61 @@ async function seed() {
       supplyer: "협력사A",
       ItemId: 10,
     },
+    {
+      check: true,
+      itemName: "APEX-200 RF MODULE ASSY",
+      unit: "\\",
+      im_price: 9800,
+      ex_price: 15.0,
+      quantity: 300,
+      weight: 0.18,
+      cbm: 0.001,
+      CT_qty: 100,
+      supplyer: "협력사B",
+      ItemId: 11,
+    },
+    {
+      check: true,
+      itemName: "FRONT TOP CASE (PC/ABS)",
+      unit: "\\",
+      im_price: 1800,
+      ex_price: 2.8,
+      quantity: 500,
+      weight: 0.08,
+      cbm: 0.0005,
+      CT_qty: 100,
+      supplyer: "대광정밀",
+      ItemId: 105,
+    },
+    {
+      check: true,
+      itemName: "LIPO BATTERY 3.7V 850MAH",
+      unit: "\\",
+      im_price: 4600,
+      ex_price: 7.2,
+      quantity: 400,
+      weight: 0.12,
+      cbm: 0.0003,
+      CT_qty: 100,
+      supplyer: "LG에너지",
+      ItemId: 109,
+    },
+    {
+      check: true,
+      itemName: "INDIVIDUAL COLOR GIFT BOX",
+      unit: "\\",
+      im_price: 980,
+      ex_price: 1.5,
+      quantity: 500,
+      weight: 0.08,
+      cbm: 0.001,
+      CT_qty: 100,
+      supplyer: "삼보판지",
+      ItemId: 111,
+    },
   ];
   await Picker.bulkCreate(pickersData);
-  console.log(`✅ 출하 피킹 리스트(Picker) ${pickersData.length}건 생성 완료`);
+  console.log(`✅ 출하 피킹 리스트(Picker) ${pickersData.length}건 생성 완료 (부자재 전용)`);
 
   console.log("\n🎉 모든 샘플 데이터 시딩이 완벽하게 완료되었습니다!");
   process.exit(0);

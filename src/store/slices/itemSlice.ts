@@ -505,10 +505,21 @@ const itemSlice = createSlice({
       state.relations = newRelations;
     },
     addPicked: (state, { payload: newRepairs }) => {
-      state.pickedData?.unshift(newRepairs);
-      // const repairs = state.pickedData?.map((picked) => picked.itemName);
-      // if (!repairs?.includes(newRepairs.itemName)) {
-      // }
+      if (newRepairs.type === "SET") return;
+      if (!state.pickedData) {
+        state.pickedData = [];
+      }
+      const exists = state.pickedData.some((p) => p.ItemId === newRepairs.ItemId);
+      if (!exists) {
+        state.pickedData.unshift({
+          ...newRepairs,
+          check: false,
+          quantity: newRepairs.quantity || 0,
+          CT_qty: newRepairs.CT_qty || 0,
+          weight: newRepairs.weight || 0,
+          cbm: newRepairs.cbm || 0,
+        });
+      }
     },
     removePicked: (state, { payload: id }) => {
       let idx = state.pickedData?.findIndex((picked) => picked.ItemId === id);

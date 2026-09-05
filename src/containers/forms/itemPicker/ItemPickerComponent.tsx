@@ -35,9 +35,19 @@ const ItemPickerComponent: React.FC<Props> = ({ addPicked, removePicked, pickedD
                 onDragOver={e => { e.preventDefault() }}
                 onDrop={e => {
                     e.preventDefault();
-                    const pickedItem = JSON.parse(e.dataTransfer.getData('pickedItem'))
-                    if (pickedItem) {
-                        addPicked(pickedItem)
+                    const dataStr = e.dataTransfer.getData('pickedItem');
+                    if (!dataStr) return;
+                    try {
+                        const pickedItem = JSON.parse(dataStr);
+                        if (pickedItem) {
+                            if (pickedItem.type === 'SET') {
+                                alert('제품(SET)은 부자재 수집 대상이 아닙니다. 부자재(ASSY, PARTS 등)만 선택해 주세요.');
+                                return;
+                            }
+                            addPicked(pickedItem);
+                        }
+                    } catch (err) {
+                        console.error('Failed to parse pickedItem', err);
                     }
                 }}
 
