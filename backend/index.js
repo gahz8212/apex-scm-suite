@@ -7,6 +7,8 @@ const passportConfig = require("./passport");
 const authRouter = require("./routes/auth");
 const itemRouter = require("./routes/item");
 const orderRouter = require("./routes/order");
+const scheduleRouter = require("./routes/schedule");
+const trackingRouter = require("./routes/tracking");
 const { sequelize } = require("./models");
 const path = require("path");
 const app = express();
@@ -38,6 +40,8 @@ app.use(passport.session());
 app.use("/auth", authRouter);
 app.use("/item", itemRouter);
 app.use("/order", orderRouter);
+app.use("/schedule", scheduleRouter);
+app.use("/tracking", trackingRouter);
 app.listen(app.get("port"), () => {
   console.log(`${app.get("port")}번 포트에서 서버 대기 중`);
 });

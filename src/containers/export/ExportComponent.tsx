@@ -1,9 +1,12 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import InvoiceContainer from '../forms/invoiceForm/InvoiceContainer';
 import PackingContainer from '../forms/packingListForm/PackingContainer';
 import PalletContainer from '../forms/packingListForm/PalletContainer';
 import { useDrag } from 'react-use-gesture';
 import { calculatePackingData } from '../../lib/utils/calculatePackingData';
+import ScheduleSearchModal from '../modals/ScheduleSearchModal';
+import { ScheduleItem } from '../../lib/api/schedule';
+import { syncExportShipment } from '../../lib/api/tracking';
 type Props = {
     model: string
     setModel: React.Dispatch<React.SetStateAction<string>>
@@ -61,6 +64,9 @@ type Props = {
         use: boolean;
 
     }[]) => void;
+    palletData?: {
+        [key: number]: any[];
+    };
 }
 const ExportComponent: React.FC<Props> = ({
     model,
@@ -86,13 +92,116 @@ const ExportComponent: React.FC<Props> = ({
     onChangePicked,
     partPackaging,
     setSelect,
-    inputRepairToOrdersheet
+    inputRepairToOrdersheet,
+    palletData
 }) => {
     const [formZIndex, setFormZIndex] = useState<{ [key: string]: number }>({
         invoice: 30,
         packing: 32,
         pallet: 34,
     });
+
+    type MonthShippingInfo = {
+        exportNo: string;
+        vesselVoy: string;
+        selectedSchedule: ScheduleItem | null;
+        isSaved: boolean;
+        subMaterials?: any[];
+    };
+
+    const getSavedShippingForMonth = (
+        map: { [month: string]: MonthShippingInfo },
+        month: string
+    ): MonthShippingInfo | undefined => {
+        if (!month || !map) return undefined;
+        if (map[month]) return map[month];
+        const lower = month.toLowerCase();
+        const foundKey = Object.keys(map).find(k => k.toLowerCase() === lower);
+        return foundKey ? map[foundKey] : undefined;
+    };
+
+    const getInitialSubMaterialsForMonth = (
+        month: string,
+        basePickedData: any[],
+        shippingMap: { [month: string]: MonthShippingInfo }
+    ) => {
+        const saved = getSavedShippingForMonth(shippingMap, month);
+        if (saved && saved.isSaved) {
+            if (saved.subMaterials && Array.isArray(saved.subMaterials)) {
+                // Return ONLY the sub-materials that were saved and checked for this month!
+                return saved.subMaterials.filter((item: any) => item.check);
+            } else {
+                // Legacy saved without subMaterials array: take only checked items from basePickedData for this month
+                return (basePickedData || []).filter((p: any) => p.check).map((p: any) => ({
+                    ...p,
+                    quantity: p.quantity !== undefined && p.quantity !== null ? p.quantity : '',
+                    CT_qty: p.CT_qty !== undefined && p.CT_qty !== null ? p.CT_qty : '',
+                    weight: p.weight !== undefined && p.weight !== null ? p.weight : '',
+                    cbm: p.cbm || '선택',
+                }));
+            }
+        }
+
+        // Unsaved month: do NOT show sub-materials that were already saved in other months!
+        const savedItemIdsInOtherMonths = new Set<string>();
+        Object.entries(shippingMap).forEach(([m, info]) => {
+            if (m !== month && info && info.isSaved && Array.isArray(info.subMaterials)) {
+                info.subMaterials.forEach((item: any) => {
+                    if (item.check) {
+                        savedItemIdsInOtherMonths.add(String(item.ItemId || item.id));
+                    }
+                });
+            }
+        });
+
+        // Only include items from Item Master (pickedData) that were NOT already saved in another month
+        return (basePickedData || [])
+            .filter((p: any) => {
+                const id = String(p.ItemId || p.id);
+                return !savedItemIdsInOtherMonths.has(id);
+            })
+            .map((p: any) => ({
+                ...p,
+                check: true,
+                quantity: p.quantity !== undefined && p.quantity !== null && p.quantity !== '' ? p.quantity : 1,
+                CT_qty: p.CT_qty !== undefined && p.CT_qty !== null && p.CT_qty !== '' ? p.CT_qty : 1,
+                weight: p.weight !== undefined && p.weight !== null && p.weight !== '' ? p.weight : 0,
+                cbm: p.cbm && p.cbm !== '선택' ? p.cbm : '0.044',
+            }));
+    };
+
+    const [savedMonthShipping, setSavedMonthShipping] = useState<{ [month: string]: MonthShippingInfo }>(() => {
+        try {
+            const saved = localStorage.getItem('apex_export_month_shipping');
+            if (saved) {
+                return JSON.parse(saved);
+            }
+        } catch (e) {
+            console.error('Failed to load month shipping data', e);
+        }
+        return {};
+    });
+
+    const [vesselVoy, setVesselVoy] = useState<string>('');
+    const [selectedSchedule, setSelectedSchedule] = useState<ScheduleItem | null>(null);
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState<boolean>(false);
+    const [exportNo, setExportNo] = useState<string>('');
+
+    // 10번 Pallet(index 9)까지 사용하면 FCL, 아니면 무조건 LCL
+    const isFcl = useMemo(() => {
+        if (!palletData) return false;
+        const pallet10 = palletData[9];
+        const isPallet10Used = Array.isArray(pallet10) && pallet10.length > 0;
+        const totalUsedPallets = Object.values(palletData).filter((p) => Array.isArray(p) && p.length > 0).length;
+        return isPallet10Used || totalUsedPallets >= 10;
+    }, [palletData]);
+
+    const containerType = isFcl ? 'FCL' : 'LCL';
+
+    const handleSelectSchedule = (schedule: ScheduleItem) => {
+        setSelectedSchedule(schedule);
+        setVesselVoy(`${schedule.vesselName} / ${schedule.voyage}`);
+    };
     const bringToFront = (form: string) => {
         setFormZIndex(prev => {
             const currentZ = prev[form] || 30;
@@ -184,13 +293,84 @@ const ExportComponent: React.FC<Props> = ({
         }
     }>({});
 
+    const [activeSubMaterials, setActiveSubMaterials] = useState<any[]>(() => {
+        return getInitialSubMaterialsForMonth(activeMonth, pickedData || [], savedMonthShipping);
+    });
+
+    const prevMonthRef = useRef<string | null>(null);
+    const prevPickedLengthRef = useRef<number>(0);
+
     useEffect(() => {
-        setCheckedProducts({});
-        setProductOverrides({});
-    }, [activeMonth]);
+        const monthChanged = prevMonthRef.current !== activeMonth;
+        const pickedLoaded = prevPickedLengthRef.current === 0 && (pickedData?.length || 0) > 0;
+
+        if (monthChanged || pickedLoaded) {
+            prevMonthRef.current = activeMonth;
+            prevPickedLengthRef.current = pickedData?.length || 0;
+
+            setCheckedProducts({});
+            setProductOverrides({});
+
+            // 월 변경 시: 저장된 월이면 저장된 출고넘버와 Vessel/Voy 복원, 저장 안 된 월이면 빈칸!
+            const savedInfo = getSavedShippingForMonth(savedMonthShipping, activeMonth);
+            if (activeMonth && savedInfo && savedInfo.isSaved) {
+                setExportNo(savedInfo.exportNo || '');
+                setVesselVoy(savedInfo.vesselVoy || '');
+                setSelectedSchedule(savedInfo.selectedSchedule || null);
+            } else {
+                setExportNo('');
+                setVesselVoy('');
+                setSelectedSchedule(null);
+            }
+
+            // 부자재: 저장된 월이면 저장된 부자재 복원, 저장 안 된 월이면 모두 빈칸/체크해제!
+            if (activeMonth) {
+                const initialSubs = getInitialSubMaterialsForMonth(activeMonth, pickedData || [], savedMonthShipping);
+                setActiveSubMaterials(initialSubs);
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeMonth, savedMonthShipping, pickedData]);
 
     const isProductChecked = (itemName: string): boolean => {
         return checkedProducts[itemName] !== undefined ? checkedProducts[itemName] : true;
+    };
+
+    const handleSubMaterialChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value, id } = e.target;
+        const isCheckbox = (e.target as HTMLInputElement).type === 'checkbox';
+        const checked = (e.target as HTMLInputElement).checked;
+
+        if (isCheckbox || name === 'check') {
+            if (!checked) {
+                // 체크 해제 시 부자재 목록에서 아예 삭제/제외 처리 ("부자재 체크가 해제되는게 아니라 부자재가 아예 없어져야 하는거야")
+                setActiveSubMaterials(prev => prev.filter(item => {
+                    const matches = (item.ItemId !== undefined && String(item.ItemId) === String(id)) ||
+                                    (item.id !== undefined && String(item.id) === String(id));
+                    return !matches;
+                }));
+                return;
+            }
+        }
+
+        setActiveSubMaterials(prev => prev.map(item => {
+            const matches = (item.ItemId !== undefined && String(item.ItemId) === String(id)) ||
+                            (item.id !== undefined && String(item.id) === String(id));
+            if (!matches) return item;
+
+            return {
+                ...item,
+                [name]: value,
+            };
+        }));
+    };
+
+    const handleRemoveSubMaterial = (id: any) => {
+        setActiveSubMaterials(prev => prev.filter(item => {
+            const matches = (item.ItemId !== undefined && String(item.ItemId) === String(id)) ||
+                            (item.id !== undefined && String(item.id) === String(id));
+            return !matches;
+        }));
     };
 
     const currentExportData = useMemo(() => {
@@ -222,7 +402,7 @@ const ExportComponent: React.FC<Props> = ({
                 };
             });
 
-        const checkedSubMaterialItems = (pickedData || [])
+        const checkedSubMaterialItems = (activeSubMaterials || [])
             .filter(picked => picked.check)
             .map(picked => {
                 const qty = Number(picked.quantity) || 0;
@@ -249,7 +429,7 @@ const ExportComponent: React.FC<Props> = ({
             });
 
         return [...checkedProductItems, ...checkedSubMaterialItems];
-    }, [productPackingData, checkedProducts, productOverrides, pickedData, activeMonth]);
+    }, [productPackingData, checkedProducts, productOverrides, activeSubMaterials, activeMonth]);
 
     const toggleProductCheck = (itemName: string) => {
         setCheckedProducts(prev => ({
@@ -322,6 +502,15 @@ const ExportComponent: React.FC<Props> = ({
             newChecked[prod.itemName] = select;
         });
         setCheckedProducts(newChecked);
+        if (!select) {
+            // 전체 취소 시 부자재 목록도 완전히 제거
+            setActiveSubMaterials([]);
+        } else {
+            setActiveSubMaterials(prev => prev.map(item => ({
+                ...item,
+                check: true
+            })));
+        }
     };
 
 
@@ -377,6 +566,13 @@ const ExportComponent: React.FC<Props> = ({
                     <InvoiceContainer
                         selectedMonth={activeMonth}
                         exportData={currentExportData}
+                        shippingInfo={selectedSchedule ? {
+                            vesselVoy: vesselVoy,
+                            carrier: selectedSchedule.carrier || 'MSC',
+                            sailingDate: selectedSchedule.etd || undefined,
+                            pol: selectedSchedule.pol,
+                            pod: selectedSchedule.pod,
+                        } : (vesselVoy ? { vesselVoy } : undefined)}
                     />
                 </div>
             </div>}
@@ -499,16 +695,36 @@ const ExportComponent: React.FC<Props> = ({
                                         <div className='title col-cbm'>cbm</div>
                                     </div>
                                     <div className="articles">
-                                        {pickedData?.map((picked, index) => (
+                                        {activeSubMaterials?.filter(p => p.check)?.map((picked, index) => (
                                             <div className="items sub-material-row" key={picked.ItemId || picked.id || index}>
                                                 <div className='item col-check'>
                                                     <input type="checkbox" name="check" id={String(picked.ItemId || picked.id)} checked={picked.check}
-                                                        onChange={onChangePicked}
+                                                        onChange={handleSubMaterialChange}
                                                     />
                                                 </div>
                                                 <div className={`item col-name ${picked.check ? 'selected' : ''}`} title={picked.itemName}>
                                                     <span className="badge-part">부자재</span>
                                                     <span className="name-text">{picked.itemName}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRemoveSubMaterial(picked.ItemId || picked.id);
+                                                        }}
+                                                        title="부자재 삭제"
+                                                        style={{
+                                                            marginLeft: 'auto',
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            color: '#94a3b8',
+                                                            cursor: 'pointer',
+                                                            fontSize: '0.8rem',
+                                                            padding: '0 4px',
+                                                            lineHeight: 1
+                                                        }}
+                                                    >
+                                                        ✕
+                                                    </button>
                                                 </div>
                                                 <div className='item col-qty'>
                                                     <input
@@ -517,7 +733,7 @@ const ExportComponent: React.FC<Props> = ({
                                                         id={String(picked.ItemId || picked.id)}
                                                         value={picked.quantity !== undefined && picked.quantity !== null ? picked.quantity : ''}
                                                         disabled={!picked.check}
-                                                        onChange={onChangePicked}
+                                                        onChange={handleSubMaterialChange}
                                                         className="input_box input_qty"
                                                     />
                                                 </div>
@@ -528,7 +744,7 @@ const ExportComponent: React.FC<Props> = ({
                                                         id={String(picked.ItemId || picked.id)}
                                                         value={picked.CT_qty !== undefined && picked.CT_qty !== null ? picked.CT_qty : ''}
                                                         disabled={!picked.check}
-                                                        onChange={onChangePicked}
+                                                        onChange={handleSubMaterialChange}
                                                         className='input_box input_ct'
                                                     />
                                                 </div>
@@ -539,7 +755,7 @@ const ExportComponent: React.FC<Props> = ({
                                                         id={String(picked.ItemId || picked.id)}
                                                         value={picked.weight !== undefined && picked.weight !== null ? picked.weight : ''}
                                                         disabled={!picked.check}
-                                                        onChange={onChangePicked}
+                                                        onChange={handleSubMaterialChange}
                                                         className='input_box input_weight'
                                                     />
                                                 </div>
@@ -550,7 +766,7 @@ const ExportComponent: React.FC<Props> = ({
                                                         value={picked.cbm || '선택'}
                                                         id={String(picked.ItemId || picked.id)}
                                                         disabled={!picked.check}
-                                                        onChange={onChangePicked}
+                                                        onChange={handleSubMaterialChange}
                                                     >
                                                         <option value="선택">선택</option>
                                                         <option value="0.044">iDT</option>
@@ -563,6 +779,7 @@ const ExportComponent: React.FC<Props> = ({
                                                 </div>
                                             </div>
                                         ))}
+
                                     </div>
                                 </div>
                             </div>
@@ -577,28 +794,36 @@ const ExportComponent: React.FC<Props> = ({
                                             <div>
                                                 <label htmlFor='exNo'>출고넘버</label>
                                             </div>
-                                            <input type="text" name="" id="exNo" placeholder='EK-' />
+                                            <input
+                                                type="text"
+                                                name="exNo"
+                                                id="exNo"
+                                                placeholder='EK-'
+                                                value={exportNo}
+                                                onChange={(e) => setExportNo(e.target.value)}
+                                            />
                                         </div>
-                                        <div className='input_type'>
+                                        <div className='input_type vessel_type'>
                                             <div>
                                                 <label htmlFor='vess'>Vessel/Voy</label>
                                             </div>
-                                            <input type="text" name="" id="vess" />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <div className='radio_type'>
-                                            <label htmlFor="boat">Boat</label><input type="radio" name="tr" id="boat" defaultChecked />
-                                            <label htmlFor="air">Air</label><input type="radio" name="tr" id="air" />
-                                        </div>
-                                        <div className='radio_type'>
-                                            <label htmlFor="Rohlig">Rohlig</label><input type="radio" name="forw" id="Rohlig" defaultChecked />
-                                            <label htmlFor="NNR">NNR</label><input type="radio" name="forw" id="NNR" />
-                                        </div>
-                                        <div className='radio_type'>
-                                            <label htmlFor="fcl">FCL</label><input type="radio" name="ct" id="fcl" />
-                                            <label htmlFor="lcl">LCL</label><input type="radio" name="ct" id="lcl" defaultChecked />
+                                            <input
+                                                type="text"
+                                                name="vess"
+                                                id="vess"
+                                                placeholder="클릭하여 스케줄 선택"
+                                                value={vesselVoy}
+                                                onClick={() => setIsScheduleModalOpen(true)}
+                                                onChange={(e) => setVesselVoy(e.target.value)}
+                                            />
+                                            {selectedSchedule && (
+                                                <div className="vessel_info_preview" title="선택된 선박 스케줄 정보">
+                                                    <span>ETD: {selectedSchedule.etd}</span>
+                                                    {selectedSchedule.docClosingDate && (
+                                                        <span> | S/I: {selectedSchedule.docClosingDate.split(' ')[0]}</span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -703,7 +928,7 @@ const ExportComponent: React.FC<Props> = ({
                                         })}
 
                                         {/* 2. 부자재 목록 (Item Master에서 선택한 부자재) */}
-                                        {pickedData?.map((picked, index) => (
+                                        {activeSubMaterials?.filter(p => p.check)?.map((picked, index) => (
                                             <div className="items sub-material-row" key={picked.ItemId || picked.id || index}>
                                                 <div className='item col-check'>
                                                     <input
@@ -711,12 +936,32 @@ const ExportComponent: React.FC<Props> = ({
                                                         name="check"
                                                         id={String(picked.ItemId || picked.id)}
                                                         checked={picked.check}
-                                                        onChange={onChangePicked}
+                                                        onChange={handleSubMaterialChange}
                                                     />
                                                 </div>
                                                 <div className={`item col-name ${picked.check ? 'selected' : ''}`} title={picked.itemName}>
                                                     <span className="badge-part">부자재</span>
                                                     <span className="name-text">{picked.itemName}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRemoveSubMaterial(picked.ItemId || picked.id);
+                                                        }}
+                                                        title="부자재 삭제"
+                                                        style={{
+                                                            marginLeft: 'auto',
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            color: '#94a3b8',
+                                                            cursor: 'pointer',
+                                                            fontSize: '0.8rem',
+                                                            padding: '0 4px',
+                                                            lineHeight: 1
+                                                        }}
+                                                    >
+                                                        ✕
+                                                    </button>
                                                 </div>
                                                 <div className='item col-qty'>
                                                     <input
@@ -725,7 +970,7 @@ const ExportComponent: React.FC<Props> = ({
                                                         id={String(picked.ItemId || picked.id)}
                                                         value={picked.quantity !== undefined && picked.quantity !== null ? picked.quantity : ''}
                                                         disabled={!picked.check}
-                                                        onChange={onChangePicked}
+                                                        onChange={handleSubMaterialChange}
                                                         className="input_box input_qty"
                                                     />
                                                 </div>
@@ -736,7 +981,7 @@ const ExportComponent: React.FC<Props> = ({
                                                         id={String(picked.ItemId || picked.id)}
                                                         value={picked.CT_qty !== undefined && picked.CT_qty !== null ? picked.CT_qty : ''}
                                                         disabled={!picked.check}
-                                                        onChange={onChangePicked}
+                                                        onChange={handleSubMaterialChange}
                                                         className='input_box input_ct'
                                                     />
                                                 </div>
@@ -747,7 +992,7 @@ const ExportComponent: React.FC<Props> = ({
                                                         id={String(picked.ItemId || picked.id)}
                                                         value={picked.weight !== undefined && picked.weight !== null ? picked.weight : ''}
                                                         disabled={!picked.check}
-                                                        onChange={onChangePicked}
+                                                        onChange={handleSubMaterialChange}
                                                         className='input_box input_weight'
                                                     />
                                                 </div>
@@ -758,7 +1003,7 @@ const ExportComponent: React.FC<Props> = ({
                                                         value={picked.cbm || '선택'}
                                                         id={String(picked.ItemId || picked.id)}
                                                         disabled={!picked.check}
-                                                        onChange={onChangePicked}
+                                                        onChange={handleSubMaterialChange}
                                                     >
                                                         <option value="선택">선택</option>
                                                         <option value="0.044">iDT</option>
@@ -771,38 +1016,108 @@ const ExportComponent: React.FC<Props> = ({
                                                 </div>
                                             </div>
                                         ))}
+
                                     </div>
                                 </div>
                                 <div className='btns'>
                                     <button type='button' onClick={() => handleSelectAll(true)}>전체 선택</button>
                                     <button type='button' onClick={() => handleSelectAll(false)}>전체 취소</button>
-                                    <button type='button' onClick={() => {
-                                        const checkedPicked = pickedData?.filter(data => data.check) || [];
-                                        if (checkedPicked.length === 0) {
-                                            if (!window.confirm('선택된 항목이 없습니다. 부자재를 모두 제외하고 저장하시겠습니까?')) {
-                                                return;
-                                            }
+                                    <button type='button' onClick={async () => {
+                                        const currentMonth = activeMonth || '';
+                                        const trimmedExportNo = exportNo ? exportNo.trim() : '';
+                                        if (!trimmedExportNo || trimmedExportNo === 'EK-') {
+                                            alert(`${currentMonth ? `[${currentMonth}월] ` : ''}출고넘버를 입력해 주세요. (예: EK-260905)`);
+                                            return;
                                         }
+                                        if (!vesselVoy || !vesselVoy.trim()) {
+                                            alert(`${currentMonth ? `[${currentMonth}월] ` : ''}Vessel/Voy를 선택하거나 입력해 주세요.`);
+                                            return;
+                                        }
+
+                                        // 1. 선택된 부자재가 있으면 ordersheet에 반영
+                                        const checkedPicked = activeSubMaterials?.filter(data => data.check) || [];
                                         const result = checkedPicked.map(data => ({
                                             id: data.id,
                                             ItemId: data.ItemId,
                                             check: data.check,
                                             itemName: data.itemName,
-                                            month: months ? (selectedMonth || months[0]) : '',
-                                            quantity: data.quantity,
+                                            month: currentMonth,
+                                            quantity: data.quantity !== '' ? Number(data.quantity) : 0,
                                             description: '',
                                             category: 'REPAIR',
                                             unit: '$',
-                                            im_price: data.im_price,
-                                            ex_price: data.ex_price,
+                                            im_price: data.im_price || 0,
+                                            ex_price: data.ex_price || 0,
                                             sets: 'EA',
-                                            weight: data.weight,
-                                            cbm: data.cbm,
-                                            CT_qty: data.CT_qty,
+                                            weight: data.weight !== '' ? Number(data.weight) : 0,
+                                            cbm: data.cbm && data.cbm !== '선택' ? Number(data.cbm) : 0,
+                                            CT_qty: data.CT_qty !== '' ? Number(data.CT_qty) : 0,
                                             number1: 9,
                                             use: true,
                                         }));
-                                        inputRepairToOrdersheet(result);
+                                        if (result.length > 0) {
+                                            inputRepairToOrdersheet(result);
+                                        }
+
+                                        // 2. 출고넘버 및 선박 스케줄을 트래킹 시스템에 즉시 저장
+                                        try {
+                                            let vName = 'MSC VESSEL';
+                                            let voy = 'V001';
+                                            if (selectedSchedule) {
+                                                vName = selectedSchedule.vesselName;
+                                                voy = selectedSchedule.voyage;
+                                            } else if (vesselVoy) {
+                                                const parts = vesselVoy.split('/');
+                                                vName = parts[0].trim() || 'MSC VESSEL';
+                                                voy = parts.length > 1 ? parts[1].trim() : 'V001';
+                                            }
+
+                                            const totalCbm = result.reduce((acc, curr) => acc + (Number(curr.cbm) || 0), 0).toFixed(2);
+                                            const totalWeight = result.reduce((acc, curr) => acc + (Number(curr.weight) || 0), 0).toFixed(1);
+                                            const summary = result.length > 0
+                                                ? `출하 저장 [${currentMonth}/${containerType}]: ${result.length}개 품목 (${totalCbm} CBM / ${totalWeight} kg)`
+                                                : `출하 등록 [${currentMonth}/${containerType}]: ${vName} (${voy})`;
+
+                                            await syncExportShipment({
+                                                export_no: trimmedExportNo,
+                                                vessel_name: vName,
+                                                voyage: voy,
+                                                carrier: selectedSchedule?.carrier || 'MSC',
+                                                pol: selectedSchedule?.pol || 'KRPUS',
+                                                pod: selectedSchedule?.pod || 'USLGB',
+                                                etd: selectedSchedule?.etd || null,
+                                                eta: selectedSchedule?.eta || null,
+                                                doc_closing_date: selectedSchedule?.docClosingDate || null,
+                                                cargo_closing_date: selectedSchedule?.cargoClosingDate || null,
+                                                vessel_imo: selectedSchedule?.vesselImo || null,
+                                                item_summary: summary
+                                            });
+
+                                            // 3. 현재 월(activeMonth)에 저장 완료 상태 기록 및 localStorage 영구 보존
+                                            if (currentMonth) {
+                                                const updatedMap = {
+                                                    ...savedMonthShipping,
+                                                    [currentMonth]: {
+                                                        exportNo: trimmedExportNo,
+                                                        vesselVoy: vesselVoy.trim(),
+                                                        selectedSchedule: selectedSchedule,
+                                                        isSaved: true,
+                                                        subMaterials: activeSubMaterials,
+                                                    }
+                                                };
+                                                setSavedMonthShipping(updatedMap);
+                                                try {
+                                                    localStorage.setItem('apex_export_month_shipping', JSON.stringify(updatedMap));
+                                                } catch (e) {
+                                                    console.error('localStorage save error', e);
+                                                }
+                                            }
+
+                                            alert(`[${currentMonth}월] 출고 정보가 성공적으로 저장되었습니다.\n(출고넘버: ${trimmedExportNo} | 선박: ${vName} / ${voy})`);
+                                        } catch (err: any) {
+                                            console.error('Tracking sync error:', err);
+                                            alert('출고 정보 저장 중 오류가 발생했습니다: ' + (err?.response?.data?.message || err.message));
+                                        }
                                     }}>저장</button>
                                 </div>
                             </div>
@@ -825,6 +1140,14 @@ const ExportComponent: React.FC<Props> = ({
                     </div>
                 </div>
             </div>
+
+            {/* MSC 선박 스케줄 검색 모달 */}
+            <ScheduleSearchModal
+                isOpen={isScheduleModalOpen}
+                onClose={() => setIsScheduleModalOpen(false)}
+                onSelect={handleSelectSchedule}
+            />
+
         </div >
     );
 };

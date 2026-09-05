@@ -12,7 +12,7 @@ const HomeComponent: React.FC<Props> = ({ fromCurrency, resultCurrency }) => {
     const jpyRate = resultCurrency[fromCurrency]?.jpy ? (1 / resultCurrency[fromCurrency].jpy).toFixed(1) : "-";
 
     return (
-        <div style={{ margin: '3rem auto', maxWidth: '800px', padding: '0 1rem' }}>
+        <div style={{ margin: 'calc(126px + 0.75rem) auto 2rem auto', maxWidth: '800px', padding: '0 1rem' }}>
             <div className="title" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1e293b', marginBottom: '1rem' }}>
                 실시간 환율 정보 (KRW 기준)
             </div>

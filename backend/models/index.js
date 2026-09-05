@@ -13,6 +13,7 @@ const ItemBackup = require("./item-backup");
 const Relation = require("./relation");
 const Pallet = require("./pallet");
 const Picker = require("./picker");
+const Shipment = require("./shipment");
 
 const dbDatabase = process.env.DB_DATABASE || config.database;
 const dbUsername = process.env.DB_USERNAME || config.username;
@@ -40,6 +41,7 @@ db.ItemBackup = ItemBackup;
 db.Relation = Relation;
 db.Pallet = Pallet;
 db.Picker = Picker;
+db.Shipment = Shipment;
 // db.OrderSheet = OrderSheet;
 User.init(sequelize);
 Item.init(sequelize);
@@ -51,6 +53,7 @@ Order.init(sequelize);
 Relation.init(sequelize);
 Pallet.init(sequelize);
 Picker.init(sequelize);
+Shipment.init(sequelize);
 
 Image.associate(db);
 Good.associate(db);

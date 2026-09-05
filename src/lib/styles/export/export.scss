@@ -224,21 +224,60 @@
           border: 1px solid black;
 
           .header {
-            height: 100px;
-            width: 60%;
+            min-height: 100px;
+            height: auto;
+            width: 65%;
             margin: 0 auto;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             padding: 0.5rem;
-            .input_type + .input_type {
-              margin-top: 1rem;
-            }
-            .radio_type + .radio_type {
-              margin-top: 1rem;
-            }
 
-            input[type="text"] {
-              width: 100px;
+            .input_types {
+              display: flex;
+              flex-direction: column;
+              gap: 0.6rem;
+
+              .input_type {
+                input[type="text"] {
+                  width: 110px;
+                  font-size: 0.8rem;
+                  padding: 2px 6px;
+                  border: 1px solid #cbd5e1;
+                  border-radius: 4px;
+                }
+
+                &.vessel_type {
+
+                  input[type="text"] {
+                    width: 180px;
+                    font-size: 0.8rem;
+                    cursor: pointer;
+                    background-color: #ffffff;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 4px;
+                    padding: 3px 6px;
+                    transition: all 0.15s ease;
+
+                    &:hover {
+                      border-color: #2563eb;
+                      background-color: #f8fafc;
+                    }
+
+                    &:focus {
+                      border-color: #2563eb;
+                      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+                    }
+                  }
+
+                  .vessel_info_preview {
+                    font-size: 0.68rem;
+                    color: #2563eb;
+                    margin-top: 3px;
+                    font-weight: 600;
+                    line-height: 1.2;
+                  }
+                }
+              }
             }
           }
           .body {

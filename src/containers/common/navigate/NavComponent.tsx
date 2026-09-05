@@ -20,6 +20,9 @@ const NavComponent: React.FC<Props> = ({ page, changePage }) => {
             <li className={page === 'View' ? 'selected' : ''} onClick={() => changePage('View')}>
                 Item Master
             </li>
+            <li className={page === 'Tracking' ? 'selected' : ''} onClick={() => changePage('Tracking')}>
+                Shipment Tracking
+            </li>
         </ul>
     );
 };

@@ -87,10 +87,31 @@ const styleTitleCell = (cell: Excel.Cell) => {
     };
 };
 
+export interface InvoiceShippingInfo {
+    vesselVoy?: string;
+    carrier?: string;
+    sailingDate?: string;
+    pol?: string;
+    pod?: string;
+}
+
 export const generateInvoiceExcel = async (
     selectedMonth: string,
-    orderData: OrderItemData[] | null | undefined
+    orderData: OrderItemData[] | null | undefined,
+    shippingInfo?: InvoiceShippingInfo
 ): Promise<void> => {
+    if (shippingInfo) {
+        if (shippingInfo.sailingDate) {
+            description[5].Sailing = shippingInfo.sailingDate;
+        }
+        if (shippingInfo.carrier) {
+            description[6].Carrier = shippingInfo.vesselVoy
+                ? `${shippingInfo.carrier} (${shippingInfo.vesselVoy})`
+                : shippingInfo.carrier;
+        } else if (shippingInfo.vesselVoy) {
+            description[6].Carrier = shippingInfo.vesselVoy;
+        }
+    }
     let rowCount = 0;
     let result: [string, { name: string, amount: number, price: number, sets: string }[]][] = [];
     let row = 0;

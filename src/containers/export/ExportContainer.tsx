@@ -10,7 +10,7 @@ const ExportContainer = () => {
     const partsInput: React.LegacyRef<HTMLInputElement> | undefined = useRef(null)
     const itemsInput: React.LegacyRef<HTMLInputElement> | undefined = useRef(null)
     const dispatch = useDispatch()
-    const { orderData, months } = useSelector(OrderData)
+    const { orderData, months, palletData } = useSelector(OrderData)
     const { pickedData } = useSelector(itemData)
     const [model, setModel] = useState<string>('parts')
     const { invoice, packing, addItem, pallet } = useSelector(formSelector)
@@ -254,6 +254,7 @@ const ExportContainer = () => {
             partPackaging={partPackaging}
             setSelect={setSelect}
             inputRepairToOrdersheet={inputRepairToOrdersheet}
+            palletData={palletData}
         />
     );
 };

@@ -1,14 +1,16 @@
 import React from 'react';
 import InvoiceComponent from './InvoiceComponent';
 import InvoiceExcelContainer from '../../excels/export/InvoiceExcelContainer';
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { OrderData } from '../../../store/slices/orderSlice';
+import { InvoiceShippingInfo } from '../../../lib/services/excel/invoiceService';
 type Props = {
     selectedMonth: string;
     exportData?: any[];
+    shippingInfo?: InvoiceShippingInfo;
 };
 
-const InvoiceContainer: React.FC<Props> = ({ selectedMonth, exportData }) => {
+const InvoiceContainer: React.FC<Props> = ({ selectedMonth, exportData, shippingInfo }) => {
     const { orderData } = useSelector(OrderData);
     const dataToUse = exportData !== undefined ? exportData : orderData;
 
@@ -46,7 +48,7 @@ const InvoiceContainer: React.FC<Props> = ({ selectedMonth, exportData }) => {
                 invoiceData={filteredInvoiceData}
                 selectedMonth={selectedMonth}
                 totalResult={totalResult}
-                InvoiceExcelContainer={() => <InvoiceExcelContainer selectedMonth={selectedMonth} exportData={filteredInvoiceData} />}
+                InvoiceExcelContainer={() => <InvoiceExcelContainer selectedMonth={selectedMonth} exportData={filteredInvoiceData} shippingInfo={shippingInfo} />}
             />
         </div>
     );

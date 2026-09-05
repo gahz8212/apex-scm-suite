@@ -8,6 +8,7 @@ import HomeForm from './pages/HomeForm'
 import ExportForm from './pages/ExportForm'
 import SettingForm from './pages/SettingForm';
 import RViewForm from './pages/ItemSettingForm';
+import TrackingForm from './pages/TrackingForm';
 import { response } from './store/slices/authSlice';
 import HeaderContainer from './containers/common/header/HeaderContainer'
 import NavContainer from './containers/common/navigate/NavContainer';
@@ -27,7 +28,8 @@ const App = () => {
         {auth && <><Route path='/home' element={<HomeForm />} />
           <Route path='/Export' element={<ExportForm />} />
           <Route path='/settings' element={<SettingForm />} />
-          <Route path='/view' element={<RViewForm />} /></>}
+          <Route path='/view' element={<RViewForm />} />
+          <Route path='/Tracking' element={<TrackingForm />} /></>}
         {/* <Route path='/search' element={<SearchForm />} /> */}
       </Routes>
     </>
