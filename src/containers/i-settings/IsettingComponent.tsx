@@ -110,18 +110,6 @@ const IsettingComponent: React.FC<Props> = ({ input, edit, relate, openForm, cha
                 </div> */}
                 <RelationContainer />
             </div>}
-            {/* 우측 화면 가장자리 플로팅 검색 탭 */}
-            <button
-                type="button"
-                className={`floating-search-tab ${isFilterDrawerOpen ? 'active' : ''}`}
-                onClick={() => setIsFilterDrawerOpen(!isFilterDrawerOpen)}
-                title="품목 검색 및 정렬 필터 열기/닫기"
-            >
-                <span className="icon">🔍</span>
-                <span className="text">검색 & 필터</span>
-                {hasActiveFilters && <span className="active-dot" />}
-            </button>
-
             {/* 상단 액션 툴바 */}
             <div className="isetting-header-bar">
                 <div className="title-area">

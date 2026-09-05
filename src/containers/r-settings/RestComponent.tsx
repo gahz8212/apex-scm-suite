@@ -52,19 +52,6 @@ const RestComponent: React.FC<Props> = ({ items, selectItem, dragItem, onDrop, v
         }
         return (
             <div className="right">
-                {/* 우측 화면 가장자리 플로팅 검색 탭 */}
-                <button
-                    type="button"
-                    className={`floating-search-tab ${isDrawerOpen ? 'active' : ''}`}
-                    onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-                    title="부품 검색 및 정렬 필터 열기/닫기"
-                    style={{ top: '160px' }}
-                >
-                    <span className="icon">🔍</span>
-                    <span className="text">검색 & 필터</span>
-                    {hasActiveFilters && <span className="active-dot" />}
-                </button>
-
                 {/* 상단 우측 정렬된 검색 토글 버튼 */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', marginBottom: '0.75rem' }}>
                     <button
