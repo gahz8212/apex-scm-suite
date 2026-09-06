@@ -53,3 +53,8 @@ export const updateRfqStatus = (data: { id: number; rfq_status: string; selected
   return client.patch("/item/updateRfqStatus", data);
 };
 
+export const inboundItem = (data: { id: number; inbound_qty: number; warehouse: string }) => {
+  return client.patch("/item/inbound", data);
+};
+
+

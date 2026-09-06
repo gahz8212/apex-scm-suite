@@ -8,7 +8,7 @@ import { formSelector, formActions } from '../../../store/slices/formSlice';
 import { makeRelateData_View, makeRelateData_View_Horizon } from '../../../lib/utils/createRelateData'
 import { SearchActions, SearchData } from '../../../store/slices/searchSlice';
 import { OrderAction, OrderData } from '../../../store/slices/orderSlice';
-import { updateRfqStatus } from '../../../lib/api/itemAPI';
+import { updateRfqStatus, inboundItem } from '../../../lib/api/itemAPI';
 
 const CardContainer = () => {
     const dispatch = useDispatch();
@@ -33,6 +33,19 @@ const CardContainer = () => {
             console.error(e);
         }
     };
+
+    const onInboundStock = async (id: number, inbound_qty: number, warehouse: string) => {
+        const currentItem = items?.find((i) => i.id === id);
+        const prevStock = currentItem?.stock || 0;
+        const newStock = prevStock + inbound_qty;
+        dispatch(itemActions.inboundItemStock({ id, stock: newStock, rfq_status: 'IDLE' }));
+        try {
+            await inboundItem({ id, inbound_qty, warehouse });
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
 
 
 
@@ -119,6 +132,7 @@ const CardContainer = () => {
                 totalPrice={totalPrice}
                 orderData={orderData}
                 onUpdateRfqStatus={onUpdateRfqStatus}
+                onInboundStock={onInboundStock}
                 isItemMaster={true}
             />
         </div>

@@ -652,6 +652,26 @@ const itemSlice = createSlice({
         }
       }
     },
+    inboundItemStock: (
+      state,
+      {
+        payload,
+      }: {
+        payload: {
+          id: number;
+          stock: number;
+          rfq_status?: string;
+        };
+      }
+    ) => {
+      if (state.items) {
+        const item = state.items.find((i) => i.id === payload.id);
+        if (item) {
+          item.stock = payload.stock;
+          item.rfq_status = payload.rfq_status || 'IDLE';
+        }
+      }
+    },
     removeDragItems: () => {},
   },
 });

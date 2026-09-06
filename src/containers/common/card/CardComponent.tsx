@@ -36,6 +36,7 @@ type Props = {
   totalPrice: { [key: number]: number } | undefined;
   orderData?: any[] | null;
   onUpdateRfqStatus?: (id: number, rfq_status: string, selected_supplier?: string) => void;
+  onInboundStock?: (id: number, inbound_qty: number, warehouse: string) => void;
   isItemMaster?: boolean;
 };
 
@@ -50,6 +51,7 @@ const CardComponent: React.FC<Props> = ({
   totalPrice,
   orderData = null,
   onUpdateRfqStatus,
+  onInboundStock,
   isItemMaster = false,
 }) => {
   const [selected, setSelected] = useState<number | ''>();
@@ -69,6 +71,12 @@ const CardComponent: React.FC<Props> = ({
   const [selectedVendor, setSelectedVendor] = useState<string>('');
 
   const [poModalItem, setPoModalItem] = useState<MRPItemResult | null>(null);
+
+  // 입고(Inbound) 모달 상태
+  const [inboundModalItem, setInboundModalItem] = useState<MRPItemResult | null>(null);
+  const [inboundQty, setInboundQty] = useState<number>(100);
+  const [inboundWarehouse, setInboundWarehouse] = useState<string>('제1 중앙물류창고 (본사 메인)');
+
 
   // 1. 실시간 MRP 소요량 & 재고 예측 계산 (다중 월 누적 & 재고 소진 시점 연산)
   const mrpMap = useMemo(() => {
@@ -134,27 +142,45 @@ const CardComponent: React.FC<Props> = ({
     return { total: mrpMap.size, danger, warning, normal };
   }, [mrpMap]);
 
-  // RFQ 제출 핸들러
+  // RFQ 제출 핸들러 (견적서 출력 및 발송 ➔ 버튼이 '발주요청'으로 전환)
   const handleRfqSubmit = () => {
     if (!rfqModalItem) return;
     const vendor = selectedVendor || rfqModalItem.selected_supplier || rfqModalItem.supplyer;
     if (onUpdateRfqStatus) {
       onUpdateRfqStatus(rfqModalItem.id, 'RFQ_SENT', vendor);
     }
-    alert(`[${rfqModalItem.itemName}]\n${vendor}에 견적요청서(RFQ)가 성공적으로 발송되었습니다.\n(카드 상태가 '2단계: 발주서 발행'으로 자동 전환됩니다.)`);
+    alert(`[${rfqModalItem.itemName}]\n${vendor} 대상 견적서(RFQ)가 성공적으로 출력 및 발송되었습니다.\n(카드 버튼이 '발주요청'으로 자동 전환됩니다.)`);
     setRfqModalItem(null);
   };
 
-  // PO 발주 제출 핸들러
+  // PO 발주 제출 핸들러 (발주서 출력 및 전송 ➔ 버튼이 '입고대기'로 전환)
   const handlePoSubmit = () => {
     if (!poModalItem) return;
     const vendor = poModalItem.selected_supplier || poModalItem.supplyer;
     if (onUpdateRfqStatus) {
       onUpdateRfqStatus(poModalItem.id, 'PO_SENT', vendor);
     }
-    alert(`[${poModalItem.itemName}]\n${vendor}에 정식 발주서(PO)가 발행되어 전송되었습니다.\n(상태가 '3단계: 입고 대기중'으로 전환됩니다.)`);
+    alert(`[${poModalItem.itemName}]\n${vendor} 대상 정식 발주서(PO)가 성공적으로 출력 및 전송되었습니다.\n(카드 버튼이 '입고대기'로 자동 전환됩니다.)`);
     setPoModalItem(null);
   };
+
+  // 자재 입고 제출 핸들러 (창고/수량 입력 ➔ 재고 합산 및 버튼이 기본값 '견적요청'으로 전환)
+  const handleInboundSubmit = () => {
+    if (!inboundModalItem) return;
+    const qty = Number(inboundQty) || 0;
+    if (qty <= 0) {
+      alert('입고 수량을 1 이상 입력해주세요.');
+      return;
+    }
+    if (onInboundStock) {
+      onInboundStock(inboundModalItem.id, qty, inboundWarehouse);
+    } else if (onUpdateRfqStatus) {
+      onUpdateRfqStatus(inboundModalItem.id, 'IDLE');
+    }
+    alert(`[${inboundModalItem.itemName}]\n창고 [${inboundWarehouse}]에 ${qty.toLocaleString()}개가 정상 입고되어 재고가 합산되었습니다.\n(카드 버튼이 기본값인 '견적요청'으로 자동 초기화됩니다.)`);
+    setInboundModalItem(null);
+  };
+
 
   return (
     <div className="item-list-container">
@@ -556,21 +582,18 @@ const CardComponent: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* 3. Item Master 전용 조달 액션 영역: [견적요청] [발주요청] 버튼 및 앞면 버튼 */}
+                {/* 3. Item Master 전용 조달 라이프사이클 버튼 (견적요청 ➔ 발주요청 ➔ 입고대기 ➔ 견적요청) */}
                 {isItemMaster ? (
                   <div className="item-master-back-footer">
-                    <div className="procure-btn-grid">
-                      <button
-                        type="button"
-                        className={`btn-procure btn-rfq ${mrp?.rfq_status === 'RFQ_SENT' ? 'sent' : ''} ${
-                          (mrp?.status === 'DANGER' || mrp?.status === 'WARNING') && !mrp?.rfq_status ? 'urgent' : ''
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const targetVendor = mrp?.selected_supplier || mrp?.supplyer || item.supplyer || '공급업체 미정';
-                          setSelectedVendor(targetVendor);
-                          setRfqModalItem(
-                            mrp || ({
+                    <div className="procure-lifecycle-wrap">
+                      {item.rfq_status === 'PO_SENT' || mrp?.rfq_status === 'PO_SENT' ? (
+                        <button
+                          type="button"
+                          className="btn-lifecycle btn-inbound"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const targetVendor = mrp?.selected_supplier || mrp?.supplyer || item.supplyer || '공급업체 미정';
+                            const targetItem = mrp || ({
                               id: item.id,
                               itemName: item.itemName,
                               type: item.type,
@@ -591,57 +614,98 @@ const CardComponent: React.FC<Props> = ({
                               runwayText: '정상',
                               runwayStatus: 'SAFE',
                               monthlyReqMap: {},
-                              rfq_status: item.rfq_status || '',
+                              rfq_status: 'PO_SENT',
                               selected_supplier: targetVendor,
-                            } as any)
-                          );
-                        }}
-                        title="견적요청서(RFQ) 작성 및 복수 벤더 비교 견적 발송"
-                      >
-                        <span className="icon">{mrp?.rfq_status === 'RFQ_SENT' ? '✅' : '📋'}</span>
-                        <span className="txt">{mrp?.rfq_status === 'RFQ_SENT' ? '견적완료' : '견적요청'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className={`btn-procure btn-po ${mrp?.rfq_status === 'PO_SENT' ? 'sent' : ''} ${
-                          mrp?.rfq_status === 'RFQ_SENT' ? 'urgent' : ''
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const targetVendor = mrp?.selected_supplier || mrp?.supplyer || item.supplyer || '공급업체 미정';
-                          setPoModalItem(
-                            mrp || ({
-                              id: item.id,
-                              itemName: item.itemName,
-                              type: item.type,
-                              category: item.category,
-                              stock: item.stock || 0,
-                              safety_stock: item.safety_stock || 0,
-                              moq: 1,
-                              supplyer: targetVendor,
-                              lead_time: item.lead_time || '2주',
-                              suppliers: item.suppliers || [],
-                              grossReq: 0,
-                              expectedBalance: item.stock || 0,
-                              status: 'NORMAL',
-                              shortage: 0,
-                              suggestedPo: item.safety_stock || 100,
-                              safeUntilMonth: null,
-                              depletionMonth: null,
-                              runwayText: '정상',
-                              runwayStatus: 'SAFE',
-                              monthlyReqMap: {},
-                              rfq_status: item.rfq_status || '',
-                              selected_supplier: targetVendor,
-                            } as any)
-                          );
-                        }}
-                        title="정식 발주서(PO) 발행 및 전송"
-                      >
-                        <span className="icon">{mrp?.rfq_status === 'PO_SENT' ? '⏳' : '🛒'}</span>
-                        <span className="txt">{mrp?.rfq_status === 'PO_SENT' ? '입고대기' : '발주요청'}</span>
-                      </button>
+                            } as any);
+                            setInboundModalItem(targetItem);
+                            setInboundQty(targetItem.suggestedPo || 100);
+                            setInboundWarehouse('제1 중앙물류창고 (본사 메인)');
+                          }}
+                          title="자재 입고 등록 (창고 및 입고수량 입력 ➔ 재고 합산 및 견적요청 리셋)"
+                        >
+                          <span className="icon">⏳</span>
+                          <span className="txt">입고대기</span>
+                        </button>
+                      ) : item.rfq_status === 'RFQ_SENT' || mrp?.rfq_status === 'RFQ_SENT' ? (
+                        <button
+                          type="button"
+                          className="btn-lifecycle btn-po"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const targetVendor = mrp?.selected_supplier || mrp?.supplyer || item.supplyer || '공급업체 미정';
+                            setPoModalItem(
+                              mrp || ({
+                                id: item.id,
+                                itemName: item.itemName,
+                                type: item.type,
+                                category: item.category,
+                                stock: item.stock || 0,
+                                safety_stock: item.safety_stock || 0,
+                                moq: 1,
+                                supplyer: targetVendor,
+                                lead_time: item.lead_time || '2주',
+                                suppliers: item.suppliers || [],
+                                grossReq: 0,
+                                expectedBalance: item.stock || 0,
+                                status: 'NORMAL',
+                                shortage: 0,
+                                suggestedPo: item.safety_stock || 100,
+                                safeUntilMonth: null,
+                                depletionMonth: null,
+                                runwayText: '정상',
+                                runwayStatus: 'SAFE',
+                                monthlyReqMap: {},
+                                rfq_status: 'RFQ_SENT',
+                                selected_supplier: targetVendor,
+                              } as any)
+                            );
+                          }}
+                          title="정식 발주서(PO) 발행 및 출력 (출력 완료 시 '입고대기'로 전환)"
+                        >
+                          <span className="icon">🛒</span>
+                          <span className="txt">발주요청</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-lifecycle btn-rfq"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const targetVendor = mrp?.selected_supplier || mrp?.supplyer || item.supplyer || '공급업체 미정';
+                            setSelectedVendor(targetVendor);
+                            setRfqModalItem(
+                              mrp || ({
+                                id: item.id,
+                                itemName: item.itemName,
+                                type: item.type,
+                                category: item.category,
+                                stock: item.stock || 0,
+                                safety_stock: item.safety_stock || 0,
+                                moq: 1,
+                                supplyer: targetVendor,
+                                lead_time: item.lead_time || '2주',
+                                suppliers: item.suppliers || [],
+                                grossReq: 0,
+                                expectedBalance: item.stock || 0,
+                                status: 'NORMAL',
+                                shortage: 0,
+                                suggestedPo: item.safety_stock || 100,
+                                safeUntilMonth: null,
+                                depletionMonth: null,
+                                runwayText: '정상',
+                                runwayStatus: 'SAFE',
+                                monthlyReqMap: {},
+                                rfq_status: item.rfq_status || '',
+                                selected_supplier: targetVendor,
+                              } as any)
+                            );
+                          }}
+                          title="견적요청서(RFQ) 작성 및 출력 (출력 완료 시 '발주요청'으로 전환)"
+                        >
+                          <span className="icon">📋</span>
+                          <span className="txt">견적요청</span>
+                        </button>
+                      )}
                     </div>
 
                     <div className="flip-back-bar">
@@ -803,7 +867,7 @@ const CardComponent: React.FC<Props> = ({
                 className="btn-submit"
                 onClick={handleRfqSubmit}
               >
-                {selectedVendor || rfqModalItem.supplyer} 견적요청서 발송
+                🖨️ 견적서 출력 및 발송 완료
               </button>
             </div>
           </div>
@@ -864,7 +928,123 @@ const CardComponent: React.FC<Props> = ({
                 className="btn-submit po"
                 onClick={handlePoSubmit}
               >
-                발주서 승인 및 전송
+                🖨️ 발주서 출력 및 전송 완료
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 6. 자재 입고 등록 및 재고 합산 모달 (Inbound Modal)                   */}
+      {/* ==================================================================== */}
+      {inboundModalItem && (
+        <div className="procure-modal-overlay" onClick={() => setInboundModalItem(null)}>
+          <div className="procure-modal inbound-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <span className="title">📦 자재 입고 등록 및 재고 합산</span>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setInboundModalItem(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-content">
+              <div className="summary-box">
+                <div className="row">
+                  <span className="k">입고 품목:</span>
+                  <span className="v">{inboundModalItem.itemName}</span>
+                </div>
+                <div className="row">
+                  <span className="k">조달 공급처:</span>
+                  <span className="v highlight">{inboundModalItem.selected_supplier || inboundModalItem.supplyer}</span>
+                </div>
+                <div className="row">
+                  <span className="k">현재고:</span>
+                  <span className="v">{inboundModalItem.stock?.toLocaleString() || 0} EA</span>
+                </div>
+                <div className="row">
+                  <span className="k">입고 후 예상 총재고:</span>
+                  <span className="v" style={{ color: '#16a34a', fontWeight: 800 }}>
+                    {((inboundModalItem.stock || 0) + (Number(inboundQty) || 0)).toLocaleString()} EA
+                    {' '}(+{(Number(inboundQty) || 0).toLocaleString()} EA 합산)
+                  </span>
+                </div>
+              </div>
+
+              {/* 입고 창고 선택 */}
+              <div className="inbound-form-group">
+                <label className="inbound-label">🏢 입고 대상 창고 지정:</label>
+                <select
+                  className="inbound-select"
+                  value={inboundWarehouse}
+                  onChange={(e) => setInboundWarehouse(e.target.value)}
+                >
+                  <option value="제1 중앙물류창고 (본사 메인)">제1 중앙물류창고 (본사 메인)</option>
+                  <option value="제2 부품자재창고 (원자재)">제2 부품자재창고 (원자재)</option>
+                  <option value="생산 1공장 공정대기창고">생산 1공장 공정대기창고</option>
+                  <option value="생산 2공장 현장보관소">생산 2공장 현장보관소</option>
+                  <option value="외주 협력사 가공창고">외주 협력사 가공창고</option>
+                </select>
+              </div>
+
+              {/* 입고 수량 입력 */}
+              <div className="inbound-form-group" style={{ marginTop: '0.85rem' }}>
+                <label className="inbound-label">📥 확정 입고 수량 (EA):</label>
+                <div className="inbound-input-wrap">
+                  <input
+                    type="number"
+                    min="1"
+                    className="inbound-input"
+                    value={inboundQty}
+                    onChange={(e) => setInboundQty(Math.max(1, parseInt(e.target.value, 10) || 0))}
+                    placeholder="입고 수량 입력"
+                  />
+                  <span className="unit-tag">EA</span>
+                </div>
+                <div className="quick-qty-chips">
+                  {[50, 100, 200, 500, 1000].map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      className="chip-btn"
+                      onClick={() => setInboundQty(q)}
+                    >
+                      +{q}
+                    </button>
+                  ))}
+                  {inboundModalItem.suggestedPo > 0 && (
+                    <button
+                      type="button"
+                      className="chip-btn highlight"
+                      onClick={() => setInboundQty(inboundModalItem.suggestedPo)}
+                    >
+                      권장량({inboundModalItem.suggestedPo})
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.85rem', marginBottom: 0 }}>
+                💡 입고 확정 시 지정한 창고로 수량이 즉시 합산되며, 카드 버튼이 다시 기본값인 <b>'견적요청'</b>으로 초기화됩니다.
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => setInboundModalItem(null)}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className="btn-submit inbound"
+                onClick={handleInboundSubmit}
+              >
+                📥 입고 확정 및 재고 합산
               </button>
             </div>
           </div>

@@ -314,4 +314,36 @@ router.patch("/updateRfqStatus", async (req, res) => {
   }
 });
 
+router.patch("/inbound", async (req, res) => {
+  const { id, inbound_qty, warehouse } = req.body;
+  try {
+    const itemId = parseInt(id, 10);
+    const item = await Item.findByPk(itemId);
+    if (!item) {
+      return res.status(404).json({ error: "Item not found" });
+    }
+    const qty = parseInt(inbound_qty, 10) || 0;
+    const prevStock = item.stock || 0;
+    const newStock = prevStock + qty;
+
+    await Item.update(
+      { stock: newStock, rfq_status: "IDLE" },
+      { where: { id: itemId } }
+    );
+    return res.status(200).json({
+      success: true,
+      id: itemId,
+      prevStock,
+      stock: newStock,
+      rfq_status: "IDLE",
+      warehouse: warehouse || "제1 중앙물류창고",
+      inbound_qty: qty,
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(400).json(e.message);
+  }
+});
+
 module.exports = router;
+
