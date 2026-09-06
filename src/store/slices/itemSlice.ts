@@ -25,6 +25,7 @@ type State = {
         suppliers?: any;
         rfq_status?: string;
         selected_supplier?: string;
+        po_qty?: number;
         Images: { url: string }[];
         Good: { groupName: string };
         left: number;
@@ -639,6 +640,7 @@ const itemSlice = createSlice({
           id: number;
           rfq_status: string;
           selected_supplier?: string;
+          po_qty?: number;
         };
       }
     ) => {
@@ -648,6 +650,9 @@ const itemSlice = createSlice({
           item.rfq_status = payload.rfq_status;
           if (payload.selected_supplier) {
             item.selected_supplier = payload.selected_supplier;
+          }
+          if (payload.po_qty !== undefined) {
+            item.po_qty = payload.po_qty;
           }
         }
       }
@@ -661,6 +666,7 @@ const itemSlice = createSlice({
           id: number;
           stock: number;
           rfq_status?: string;
+          po_qty?: number;
         };
       }
     ) => {
@@ -669,6 +675,9 @@ const itemSlice = createSlice({
         if (item) {
           item.stock = payload.stock;
           item.rfq_status = payload.rfq_status || 'IDLE';
+          if (payload.po_qty !== undefined) {
+            item.po_qty = payload.po_qty;
+          }
         }
       }
     },

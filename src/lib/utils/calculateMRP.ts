@@ -22,6 +22,7 @@ export interface MRPItemResult {
   suppliers: { name: string; price: number; lt: string; moq: number }[];
   rfq_status: string;
   selected_supplier: string;
+  po_qty?: number;
   grossReq: number; // 선택된 월들의 누적 총 소요량
   expectedBalance: number; // 예상 잔여재고 (현재고 - 누적 소요량)
   status: 'DANGER' | 'WARNING' | 'NORMAL'; // 발주긴급 / 주의 / 정상
@@ -250,6 +251,7 @@ export const calculateMRP = (
       suppliers: suppliersList,
       rfq_status: item.rfq_status || 'IDLE',
       selected_supplier: item.selected_supplier || suppliersList[0]?.name || item.supplyer || '',
+      po_qty: item.po_qty || 0,
       grossReq: cumulativeGrossReq,
       expectedBalance,
       status,

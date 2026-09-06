@@ -15,12 +15,14 @@ type Props = {
     ex_price: number;
     use: boolean;
     supplyer: string;
+    moq?: number;
     stock?: number;
     safety_stock?: number;
     lead_time?: string;
     suppliers?: any;
     rfq_status?: string;
     selected_supplier?: string;
+    po_qty?: number;
     Images: { url: string }[];
     Good?: { groupName: string };
     left: number;
@@ -35,8 +37,8 @@ type Props = {
   showRelate: (id: number, type: string, event: any, visible: boolean) => void;
   totalPrice: { [key: number]: number } | undefined;
   orderData?: any[] | null;
-  onUpdateRfqStatus?: (id: number, rfq_status: string, selected_supplier?: string) => void;
-  onInboundStock?: (id: number, inbound_qty: number, warehouse: string) => void;
+  onUpdateRfqStatus?: (id: number, rfq_status: string, selected_supplier?: string, po_qty?: number) => void;
+  onInboundStock?: (id: number, inbound_qty: number, warehouse: string, isCompleted?: boolean, remainQty?: number) => void;
   isItemMaster?: boolean;
 };
 
@@ -69,8 +71,10 @@ const CardComponent: React.FC<Props> = ({
 
   const [rfqModalItem, setRfqModalItem] = useState<MRPItemResult | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<string>('');
+  const [rfqQty, setRfqQty] = useState<number>(0);
 
   const [poModalItem, setPoModalItem] = useState<MRPItemResult | null>(null);
+  const [poQty, setPoQty] = useState<number>(0);
 
   // 입고(Inbound) 모달 상태
   const [inboundModalItem, setInboundModalItem] = useState<MRPItemResult | null>(null);
@@ -142,14 +146,34 @@ const CardComponent: React.FC<Props> = ({
     return { total: mrpMap.size, danger, warning, normal };
   }, [mrpMap]);
 
+  // RFQ 수량 증감 핸들러 (+, - 원형 버튼, MOQ 배수 단위)
+  const handleRfqQtyChange = (deltaStep: number) => {
+    if (!rfqModalItem) return;
+    const moq = rfqModalItem.moq || 100;
+    setRfqQty((prev) => {
+      const next = prev + deltaStep * moq;
+      return Math.max(moq, next);
+    });
+  };
+
+  // PO 수량 증감 핸들러 (+, - 원형 버튼, MOQ 배수 단위)
+  const handlePoQtyChange = (deltaStep: number) => {
+    if (!poModalItem) return;
+    const moq = poModalItem.moq || 100;
+    setPoQty((prev) => {
+      const next = prev + deltaStep * moq;
+      return Math.max(moq, next);
+    });
+  };
+
   // RFQ 제출 핸들러 (견적서 출력 및 발송 ➔ 버튼이 '발주요청'으로 전환)
   const handleRfqSubmit = () => {
     if (!rfqModalItem) return;
     const vendor = selectedVendor || rfqModalItem.selected_supplier || rfqModalItem.supplyer;
     if (onUpdateRfqStatus) {
-      onUpdateRfqStatus(rfqModalItem.id, 'RFQ_SENT', vendor);
+      onUpdateRfqStatus(rfqModalItem.id, 'RFQ_SENT', vendor, rfqQty);
     }
-    alert(`[${rfqModalItem.itemName}]\n${vendor} 대상 견적서(RFQ)가 성공적으로 출력 및 발송되었습니다.\n(카드 버튼이 '발주요청'으로 자동 전환됩니다.)`);
+    alert(`[${rfqModalItem.itemName}]\n${vendor} 대상 견적서(RFQ)가 성공적으로 출력 및 발송되었습니다.\n(견적요청 수량: ${rfqQty.toLocaleString()} EA)\n(카드 버튼이 '발주요청'으로 자동 전환됩니다.)`);
     setRfqModalItem(null);
   };
 
@@ -158,26 +182,63 @@ const CardComponent: React.FC<Props> = ({
     if (!poModalItem) return;
     const vendor = poModalItem.selected_supplier || poModalItem.supplyer;
     if (onUpdateRfqStatus) {
-      onUpdateRfqStatus(poModalItem.id, 'PO_SENT', vendor);
+      onUpdateRfqStatus(poModalItem.id, 'PO_SENT', vendor, poQty);
     }
-    alert(`[${poModalItem.itemName}]\n${vendor} 대상 정식 발주서(PO)가 성공적으로 출력 및 전송되었습니다.\n(카드 버튼이 '입고대기'로 자동 전환됩니다.)`);
+    alert(`[${poModalItem.itemName}]\n${vendor} 대상 정식 발주서(PO)가 성공적으로 출력 및 전송되었습니다.\n(발주 수량: ${poQty.toLocaleString()} EA)\n(카드 버튼이 '입고대기'로 자동 전환됩니다.)`);
     setPoModalItem(null);
   };
 
-  // 자재 입고 제출 핸들러 (창고/수량 입력 ➔ 재고 합산 및 버튼이 기본값 '견적요청'으로 전환)
+  // 자재 입고 제출 핸들러 (창고/수량 입력 ➔ 재고 합산 및 버튼이 기본값 '견적요청'으로 전환 또는 잔여 대기)
   const handleInboundSubmit = () => {
     if (!inboundModalItem) return;
-    const qty = Number(inboundQty) || 0;
-    if (qty <= 0) {
-      alert('입고 수량을 1 이상 입력해주세요.');
+    const inQty = Number(inboundQty) || 0;
+    if (inQty <= 0) {
+      alert('입고수량을 1 이상 입력해주세요.');
       return;
     }
-    if (onInboundStock) {
-      onInboundStock(inboundModalItem.id, qty, inboundWarehouse);
-    } else if (onUpdateRfqStatus) {
-      onUpdateRfqStatus(inboundModalItem.id, 'IDLE');
+
+    // 발주했던 수량
+    const orderedQty = (inboundModalItem.po_qty && inboundModalItem.po_qty > 0)
+      ? inboundModalItem.po_qty
+      : (inboundModalItem.suggestedPo || inQty);
+
+    // 발주수량보다 입고수량이 적을 경우 종결 확인
+    if (inQty < orderedQty) {
+      const remainQty = orderedQty - inQty;
+      const isCompleted = window.confirm(
+        `[입고 완료 여부 확인]\n` +
+        `발주 수량: ${orderedQty.toLocaleString()} EA\n` +
+        `입고 수량: ${inQty.toLocaleString()} EA\n` +
+        `미입고 잔여 수량: ${remainQty.toLocaleString()} EA\n\n` +
+        `입고 수량이 발주 수량보다 적습니다.\n` +
+        `잔여 수량 없이 이번 입고로 발주를 '완료' 처리하시겠습니까?\n\n` +
+        `[확인] : 입고 완료 처리 (재고 합산 후 '견적요청' 버튼으로 변경)\n` +
+        `[취소] : 잔여 수량 입고 대기 (재고 합산 후 잔여 ${remainQty.toLocaleString()}EA '입고대기' 버튼 유지)`
+      );
+
+      if (isCompleted) {
+        if (onInboundStock) {
+          onInboundStock(inboundModalItem.id, inQty, inboundWarehouse, true, 0);
+        } else if (onUpdateRfqStatus) {
+          onUpdateRfqStatus(inboundModalItem.id, 'IDLE');
+        }
+        alert(`[${inboundModalItem.itemName}]\n창고 [${inboundWarehouse}]에 ${inQty.toLocaleString()}개가 정상 입고 합산되었습니다.\n발주가 완료 처리되어 카드 버튼이 기본값인 '견적요청'으로 변경되었습니다.`);
+      } else {
+        if (onInboundStock) {
+          onInboundStock(inboundModalItem.id, inQty, inboundWarehouse, false, remainQty);
+        }
+        alert(`[${inboundModalItem.itemName}]\n창고 [${inboundWarehouse}]에 ${inQty.toLocaleString()}개가 정상 입고 합산되었습니다.\n잔여 발주 수량 ${remainQty.toLocaleString()}EA에 대해 '입고대기' 버튼 상태가 유지됩니다.`);
+      }
+    } else {
+      // 입고수량이 발주수량 이상인 경우 전량 완료
+      if (onInboundStock) {
+        onInboundStock(inboundModalItem.id, inQty, inboundWarehouse, true, 0);
+      } else if (onUpdateRfqStatus) {
+        onUpdateRfqStatus(inboundModalItem.id, 'IDLE');
+      }
+      alert(`[${inboundModalItem.itemName}]\n창고 [${inboundWarehouse}]에 ${inQty.toLocaleString()}개가 정상 입고되어 재고가 합산되었습니다.\n(카드 버튼이 기본값인 '견적요청'으로 자동 초기화됩니다.)`);
     }
-    alert(`[${inboundModalItem.itemName}]\n창고 [${inboundWarehouse}]에 ${qty.toLocaleString()}개가 정상 입고되어 재고가 합산되었습니다.\n(카드 버튼이 기본값인 '견적요청'으로 자동 초기화됩니다.)`);
+
     setInboundModalItem(null);
   };
 
@@ -600,7 +661,7 @@ const CardComponent: React.FC<Props> = ({
                               category: item.category,
                               stock: item.stock || 0,
                               safety_stock: item.safety_stock || 0,
-                              moq: 1,
+                              moq: item.moq || 100,
                               supplyer: targetVendor,
                               lead_time: item.lead_time || '2주',
                               suppliers: item.suppliers || [],
@@ -609,6 +670,7 @@ const CardComponent: React.FC<Props> = ({
                               status: 'NORMAL',
                               shortage: 0,
                               suggestedPo: item.safety_stock || 100,
+                              po_qty: item.po_qty || 0,
                               safeUntilMonth: null,
                               depletionMonth: null,
                               runwayText: '정상',
@@ -617,9 +679,14 @@ const CardComponent: React.FC<Props> = ({
                               rfq_status: 'PO_SENT',
                               selected_supplier: targetVendor,
                             } as any);
-                            setInboundModalItem(targetItem);
-                            setInboundQty(targetItem.suggestedPo || 100);
+                            const orderedQty = (targetItem.po_qty && targetItem.po_qty > 0)
+                              ? targetItem.po_qty
+                              : (item.po_qty && item.po_qty > 0)
+                                ? item.po_qty
+                                : (targetItem.suggestedPo || 100);
+                            setInboundQty(orderedQty);
                             setInboundWarehouse('제1 중앙물류창고 (본사 메인)');
+                            setInboundModalItem(targetItem);
                           }}
                           title="자재 입고 등록 (창고 및 입고수량 입력 ➔ 재고 합산 및 견적요청 리셋)"
                         >
@@ -632,32 +699,41 @@ const CardComponent: React.FC<Props> = ({
                           onClick={(e) => {
                             e.stopPropagation();
                             const targetVendor = mrp?.selected_supplier || mrp?.supplyer || item.supplyer || '공급업체 미정';
-                            setPoModalItem(
-                              mrp || ({
-                                id: item.id,
-                                itemName: item.itemName,
-                                type: item.type,
-                                category: item.category,
-                                stock: item.stock || 0,
-                                safety_stock: item.safety_stock || 0,
-                                moq: 1,
-                                supplyer: targetVendor,
-                                lead_time: item.lead_time || '2주',
-                                suppliers: item.suppliers || [],
-                                grossReq: 0,
-                                expectedBalance: item.stock || 0,
-                                status: 'NORMAL',
-                                shortage: 0,
-                                suggestedPo: item.safety_stock || 100,
-                                safeUntilMonth: null,
-                                depletionMonth: null,
-                                runwayText: '정상',
-                                runwayStatus: 'SAFE',
-                                monthlyReqMap: {},
-                                rfq_status: 'RFQ_SENT',
-                                selected_supplier: targetVendor,
-                              } as any)
-                            );
+                            const targetItem = mrp || ({
+                              id: item.id,
+                              itemName: item.itemName,
+                              type: item.type,
+                              category: item.category,
+                              stock: item.stock || 0,
+                              safety_stock: item.safety_stock || 0,
+                              moq: item.moq || 100,
+                              supplyer: targetVendor,
+                              lead_time: item.lead_time || '2주',
+                              suppliers: item.suppliers || [],
+                              grossReq: 0,
+                              expectedBalance: item.stock || 0,
+                              status: 'NORMAL',
+                              shortage: 0,
+                              suggestedPo: item.safety_stock || 100,
+                              po_qty: item.po_qty || 0,
+                              safeUntilMonth: null,
+                              depletionMonth: null,
+                              runwayText: '정상',
+                              runwayStatus: 'SAFE',
+                              monthlyReqMap: {},
+                              rfq_status: 'RFQ_SENT',
+                              selected_supplier: targetVendor,
+                            } as any);
+                            const moq = targetItem.moq || item.moq || 100;
+                            const initialPoQty = (targetItem.po_qty && targetItem.po_qty > 0)
+                              ? targetItem.po_qty
+                              : (item.po_qty && item.po_qty > 0)
+                                ? item.po_qty
+                                : (targetItem.suggestedPo && targetItem.suggestedPo > 0)
+                                  ? Math.max(moq, Math.ceil(targetItem.suggestedPo / moq) * moq)
+                                  : moq;
+                            setPoQty(initialPoQty);
+                            setPoModalItem(targetItem);
                           }}
                           title="정식 발주서(PO) 발행 및 출력 (출력 완료 시 '입고대기'로 전환)"
                         >
@@ -671,32 +747,37 @@ const CardComponent: React.FC<Props> = ({
                             e.stopPropagation();
                             const targetVendor = mrp?.selected_supplier || mrp?.supplyer || item.supplyer || '공급업체 미정';
                             setSelectedVendor(targetVendor);
-                            setRfqModalItem(
-                              mrp || ({
-                                id: item.id,
-                                itemName: item.itemName,
-                                type: item.type,
-                                category: item.category,
-                                stock: item.stock || 0,
-                                safety_stock: item.safety_stock || 0,
-                                moq: 1,
-                                supplyer: targetVendor,
-                                lead_time: item.lead_time || '2주',
-                                suppliers: item.suppliers || [],
-                                grossReq: 0,
-                                expectedBalance: item.stock || 0,
-                                status: 'NORMAL',
-                                shortage: 0,
-                                suggestedPo: item.safety_stock || 100,
-                                safeUntilMonth: null,
-                                depletionMonth: null,
-                                runwayText: '정상',
-                                runwayStatus: 'SAFE',
-                                monthlyReqMap: {},
-                                rfq_status: item.rfq_status || '',
-                                selected_supplier: targetVendor,
-                              } as any)
-                            );
+                            const targetItem = mrp || ({
+                              id: item.id,
+                              itemName: item.itemName,
+                              type: item.type,
+                              category: item.category,
+                              stock: item.stock || 0,
+                              safety_stock: item.safety_stock || 0,
+                              moq: item.moq || 100,
+                              supplyer: targetVendor,
+                              lead_time: item.lead_time || '2주',
+                              suppliers: item.suppliers || [],
+                              grossReq: 0,
+                              expectedBalance: item.stock || 0,
+                              status: 'NORMAL',
+                              shortage: 0,
+                              suggestedPo: item.safety_stock || 100,
+                              po_qty: item.po_qty || 0,
+                              safeUntilMonth: null,
+                              depletionMonth: null,
+                              runwayText: '정상',
+                              runwayStatus: 'SAFE',
+                              monthlyReqMap: {},
+                              rfq_status: item.rfq_status || '',
+                              selected_supplier: targetVendor,
+                            } as any);
+                            const moq = targetItem.moq || item.moq || 100;
+                            const initialRfqQty = (targetItem.suggestedPo && targetItem.suggestedPo > 0)
+                              ? Math.max(moq, Math.ceil(targetItem.suggestedPo / moq) * moq)
+                              : moq;
+                            setRfqQty(initialRfqQty);
+                            setRfqModalItem(targetItem);
                           }}
                           title="견적요청서(RFQ) 작성 및 출력 (출력 완료 시 '발주요청'으로 전환)"
                         >
@@ -810,9 +891,29 @@ const CardComponent: React.FC<Props> = ({
                     <span style={{ color: '#dc2626' }}>-{Math.abs(rfqModalItem.expectedBalance).toLocaleString()} EA</span>
                   </span>
                 </div>
-                <div className="row">
-                  <span className="k">권장 견적요청 수량:</span>
-                  <span className="v highlight">{rfqModalItem.suggestedPo.toLocaleString()} EA (MOQ 반영)</span>
+                <div className="row" style={{ alignItems: 'center' }}>
+                  <span className="k">견적요청수량:</span>
+                  <div className="qty-stepper">
+                    <button
+                      type="button"
+                      className="btn-circle-step"
+                      onClick={() => handleRfqQtyChange(-1)}
+                      title="MOQ 단위 감소"
+                    >
+                      -
+                    </button>
+                    <span className="v highlight" style={{ minWidth: '70px', textAlign: 'center' }}>
+                      {rfqQty.toLocaleString()} EA
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-circle-step"
+                      onClick={() => handleRfqQtyChange(1)}
+                      title="MOQ 단위 증가"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -897,11 +998,29 @@ const CardComponent: React.FC<Props> = ({
                   <span className="k">수신 공급처:</span>
                   <span className="v highlight">{poModalItem.selected_supplier || poModalItem.supplyer}</span>
                 </div>
-                <div className="row">
-                  <span className="k">발주 확정 수량:</span>
-                  <span className="v highlight">
-                    {poModalItem.suggestedPo.toLocaleString()} EA (MOQ: {poModalItem.moq.toLocaleString()})
-                  </span>
+                <div className="row" style={{ alignItems: 'center' }}>
+                  <span className="k">발주 수량:</span>
+                  <div className="qty-stepper">
+                    <button
+                      type="button"
+                      className="btn-circle-step"
+                      onClick={() => handlePoQtyChange(-1)}
+                      title="MOQ 단위 감소"
+                    >
+                      -
+                    </button>
+                    <span className="v highlight" style={{ minWidth: '70px', textAlign: 'center' }}>
+                      {poQty.toLocaleString()} EA
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-circle-step"
+                      onClick={() => handlePoQtyChange(1)}
+                      title="MOQ 단위 증가"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
                 <div className="row">
                   <span className="k">공급처 리드타임:</span>
@@ -959,6 +1078,12 @@ const CardComponent: React.FC<Props> = ({
                   <span className="v highlight">{inboundModalItem.selected_supplier || inboundModalItem.supplyer}</span>
                 </div>
                 <div className="row">
+                  <span className="k">발주 수량:</span>
+                  <span className="v highlight">
+                    {((inboundModalItem.po_qty && inboundModalItem.po_qty > 0) ? inboundModalItem.po_qty : (inboundModalItem.suggestedPo || 0)).toLocaleString()} EA
+                  </span>
+                </div>
+                <div className="row">
                   <span className="k">현재고:</span>
                   <span className="v">{inboundModalItem.stock?.toLocaleString() || 0} EA</span>
                 </div>
@@ -989,7 +1114,7 @@ const CardComponent: React.FC<Props> = ({
 
               {/* 입고 수량 입력 */}
               <div className="inbound-form-group" style={{ marginTop: '0.85rem' }}>
-                <label className="inbound-label">확정 입고 수량 (EA):</label>
+                <label className="inbound-label">입고수량:</label>
                 <div className="inbound-input-wrap">
                   <input
                     type="number"
@@ -997,35 +1122,14 @@ const CardComponent: React.FC<Props> = ({
                     className="inbound-input"
                     value={inboundQty}
                     onChange={(e) => setInboundQty(Math.max(1, parseInt(e.target.value, 10) || 0))}
-                    placeholder="입고 수량 입력"
+                    placeholder="입고수량 입력"
                   />
                   <span className="unit-tag">EA</span>
-                </div>
-                <div className="quick-qty-chips">
-                  {[50, 100, 200, 500, 1000].map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      className="chip-btn"
-                      onClick={() => setInboundQty(q)}
-                    >
-                      +{q}
-                    </button>
-                  ))}
-                  {inboundModalItem.suggestedPo > 0 && (
-                    <button
-                      type="button"
-                      className="chip-btn highlight"
-                      onClick={() => setInboundQty(inboundModalItem.suggestedPo)}
-                    >
-                      권장량({inboundModalItem.suggestedPo})
-                    </button>
-                  )}
                 </div>
               </div>
 
               <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.85rem', marginBottom: 0 }}>
-                입고 확정 시 지정한 창고로 수량이 즉시 합산되며, 카드 버튼이 다시 기본값인 <b>'견적요청'</b>으로 초기화됩니다.
+                입고 확정 시 지정한 창고로 수량이 즉시 합산되며, 발주수량보다 적을 경우 완료 여부를 확인합니다.
               </p>
             </div>
             <div className="modal-actions">

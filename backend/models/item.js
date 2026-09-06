@@ -50,6 +50,7 @@ module.exports = class Item extends Sequelize.Model {
         suppliers: { type: Sequelize.TEXT, defaultValue: "[]" },
         rfq_status: { type: Sequelize.STRING(20), defaultValue: "IDLE" },
         selected_supplier: { type: Sequelize.STRING(50), defaultValue: "" },
+        po_qty: { type: Sequelize.INTEGER, defaultValue: 0 },
       },
       {
         sequelize,

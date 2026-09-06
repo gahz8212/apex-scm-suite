@@ -25,22 +25,47 @@ const CardContainer = () => {
         dispatch(OrderAction.getOrderData());
     }, [dispatch]);
 
-    const onUpdateRfqStatus = async (id: number, rfq_status: string, selected_supplier?: string) => {
-        dispatch(itemActions.updateItemRfqStatus({ id, rfq_status, selected_supplier }));
+    const onUpdateRfqStatus = async (
+        id: number,
+        rfq_status: string,
+        selected_supplier?: string,
+        po_qty?: number
+    ) => {
+        dispatch(itemActions.updateItemRfqStatus({ id, rfq_status, selected_supplier, po_qty }));
         try {
-            await updateRfqStatus({ id, rfq_status, selected_supplier });
+            await updateRfqStatus({ id, rfq_status, selected_supplier, po_qty });
         } catch (e) {
             console.error(e);
         }
     };
 
-    const onInboundStock = async (id: number, inbound_qty: number, warehouse: string) => {
+    const onInboundStock = async (
+        id: number,
+        inbound_qty: number,
+        warehouse: string,
+        isCompleted: boolean = true,
+        remainQty: number = 0
+    ) => {
         const currentItem = items?.find((i) => i.id === id);
         const prevStock = currentItem?.stock || 0;
         const newStock = prevStock + inbound_qty;
-        dispatch(itemActions.inboundItemStock({ id, stock: newStock, rfq_status: 'IDLE' }));
+        const nextStatus = isCompleted ? 'IDLE' : 'PO_SENT';
+        const nextPoQty = isCompleted ? 0 : remainQty;
+
+        dispatch(itemActions.inboundItemStock({
+            id,
+            stock: newStock,
+            rfq_status: nextStatus,
+            po_qty: nextPoQty,
+        }));
         try {
-            await inboundItem({ id, inbound_qty, warehouse });
+            await inboundItem({
+                id,
+                inbound_qty,
+                warehouse,
+                is_completed: isCompleted,
+                remain_qty: nextPoQty,
+            });
         } catch (e) {
             console.error(e);
         }

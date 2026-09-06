@@ -979,6 +979,7 @@
         .row {
           display: flex;
           justify-content: space-between;
+          align-items: center;
           font-size: 0.85rem;
           margin-bottom: 0.35rem;
           &:last-child { margin-bottom: 0; }
@@ -986,6 +987,42 @@
           .k { color: #64748b; }
           .v { font-weight: 700; color: #0f172a; }
           .v.highlight { color: #2563eb; }
+
+          .qty-stepper {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+
+            .btn-circle-step {
+              width: 22px;
+              height: 22px;
+              border-radius: 50%;
+              border: 1.5px solid #cbd5e1;
+              background-color: #ffffff;
+              color: #334155;
+              font-size: 14px;
+              font-weight: 700;
+              line-height: 1;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              cursor: pointer;
+              padding: 0;
+              box-sizing: border-box;
+              transition: all 0.15s ease;
+              user-select: none;
+
+              &:hover {
+                border-color: #2563eb;
+                color: #2563eb;
+                background-color: #eff6ff;
+              }
+
+              &:active {
+                transform: scale(0.9);
+              }
+            }
+          }
         }
       }
 
@@ -1164,38 +1201,6 @@
             font-size: 0.8rem;
             font-weight: 700;
             color: #64748b;
-          }
-        }
-
-        .quick-qty-chips {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.35rem;
-          margin-top: 0.4rem;
-
-          .chip-btn {
-            border: 1px solid #e2e8f0;
-            background: #f8fafc;
-            color: #475569;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.15s;
-
-            &:hover {
-              background: #f1f5f9;
-              border-color: #cbd5e1;
-              color: #0f172a;
-            }
-
-            &.highlight {
-              background: #fef3c7;
-              border-color: #f59e0b;
-              color: #b45309;
-              font-weight: 700;
-            }
           }
         }
       }

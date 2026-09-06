@@ -300,14 +300,15 @@ router.get("/getPicked", async (req, res) => {
 });
 
 router.patch("/updateRfqStatus", async (req, res) => {
-  const { id, rfq_status, selected_supplier } = req.body;
+  const { id, rfq_status, selected_supplier, po_qty } = req.body;
   try {
     const updateData = {};
     if (rfq_status !== undefined) updateData.rfq_status = rfq_status;
     if (selected_supplier !== undefined) updateData.selected_supplier = selected_supplier;
+    if (po_qty !== undefined) updateData.po_qty = parseInt(po_qty, 10) || 0;
 
     await Item.update(updateData, { where: { id: parseInt(id, 10) } });
-    return res.status(200).json({ success: true, id, rfq_status, selected_supplier });
+    return res.status(200).json({ success: true, id, rfq_status, selected_supplier, po_qty });
   } catch (e) {
     console.error(e);
     return res.status(400).json(e.message);
@@ -315,7 +316,7 @@ router.patch("/updateRfqStatus", async (req, res) => {
 });
 
 router.patch("/inbound", async (req, res) => {
-  const { id, inbound_qty, warehouse } = req.body;
+  const { id, inbound_qty, warehouse, is_completed, remain_qty } = req.body;
   try {
     const itemId = parseInt(id, 10);
     const item = await Item.findByPk(itemId);
@@ -326,8 +327,12 @@ router.patch("/inbound", async (req, res) => {
     const prevStock = item.stock || 0;
     const newStock = prevStock + qty;
 
+    const completed = is_completed !== false; // 기본값 true (완료)
+    const nextStatus = completed ? "IDLE" : "PO_SENT";
+    const nextPoQty = completed ? 0 : Math.max(0, parseInt(remain_qty, 10) || 0);
+
     await Item.update(
-      { stock: newStock, rfq_status: "IDLE" },
+      { stock: newStock, rfq_status: nextStatus, po_qty: nextPoQty },
       { where: { id: itemId } }
     );
     return res.status(200).json({
@@ -335,7 +340,8 @@ router.patch("/inbound", async (req, res) => {
       id: itemId,
       prevStock,
       stock: newStock,
-      rfq_status: "IDLE",
+      rfq_status: nextStatus,
+      po_qty: nextPoQty,
       warehouse: warehouse || "제1 중앙물류창고",
       inbound_qty: qty,
     });

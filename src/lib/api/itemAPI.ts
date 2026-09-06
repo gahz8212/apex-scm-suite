@@ -49,11 +49,11 @@ export const inputPicked = (picked: {}[] | null) => {
 export const getPicked = () => {
   return client.get("/item/getPicked");
 };
-export const updateRfqStatus = (data: { id: number; rfq_status: string; selected_supplier?: string }) => {
+export const updateRfqStatus = (data: { id: number; rfq_status: string; selected_supplier?: string; po_qty?: number }) => {
   return client.patch("/item/updateRfqStatus", data);
 };
 
-export const inboundItem = (data: { id: number; inbound_qty: number; warehouse: string }) => {
+export const inboundItem = (data: { id: number; inbound_qty: number; warehouse: string; is_completed?: boolean; remain_qty?: number }) => {
   return client.patch("/item/inbound", data);
 };
 
