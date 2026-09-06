@@ -321,40 +321,76 @@ const CardComponent: React.FC<Props> = ({
                   <div className="spec-desc">{item.descript || item.itemName}</div>
                 </div>
 
-                {/* 3. 단가 미니 박스 (2열 그리드: 좌측 합산원가(입고원가) / 우측 수출가) */}
-                <div className="price-metrics-box">
-                  {item.type === 'PARTS' ? (
-                    <>
-                      <div className="price-cell highlight">
-                        <span className="label">입고원가</span>
-                        <span className="val">
-                          {formatCurrencySymbol(item.unit)}
-                          {(item.im_price || 0).toLocaleString()}
-                        </span>
+                {/* 3. 단가 미니 박스 (옵션 C: 원래 방식 복원 - ASSY는 합산원가, 입고원가, 수출가 3가지 지원) */}
+                {(() => {
+                  const isAssy = item.type === 'ASSY';
+                  const isParts = item.type === 'PARTS';
+                  const hasOwnImPrice = (item.im_price ?? 0) > 0;
+                  const isTriple = isAssy && hasOwnImPrice;
+                  const rollupPrice = totalPrice && totalPrice[item.id] > 0
+                    ? totalPrice[item.id]
+                    : (item.im_price || 0);
+
+                  if (isParts) {
+                    return (
+                      <div className="price-metrics-box">
+                        <div className="price-cell highlight">
+                          <span className="label">입고원가</span>
+                          <span className="val">
+                            {formatCurrencySymbol(item.unit)}
+                            {(item.im_price || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="price-cell">
+                          <span className="label">수출가</span>
+                          <span className="val">${item.ex_price ? item.ex_price.toFixed(2) : '0.00'}</span>
+                        </div>
                       </div>
-                      <div className="price-cell">
-                        <span className="label">수출가</span>
-                        <span className="val">${item.ex_price ? item.ex_price.toFixed(2) : '0.00'}</span>
+                    );
+                  }
+
+                  if (isTriple) {
+                    return (
+                      <div className="price-metrics-box triple">
+                        <div className="price-cell highlight">
+                          <span className="label">합산원가</span>
+                          <span className="val">
+                            {formatCurrencySymbol(item.unit)}
+                            {rollupPrice.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="price-cell">
+                          <span className="label">입고원가</span>
+                          <span className="val">
+                            {formatCurrencySymbol(item.unit)}
+                            {(item.im_price || 0).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="price-cell full-row">
+                          <span className="label">수출가</span>
+                          <span className="val">${item.ex_price ? item.ex_price.toFixed(2) : '0.00'}</span>
+                        </div>
                       </div>
-                    </>
-                  ) : (
-                    <>
+                    );
+                  }
+
+                  // SET 또는 자체 입고가가 없는 ASSY
+                  return (
+                    <div className="price-metrics-box">
                       <div className="price-cell highlight">
                         <span className="label">합산원가</span>
                         <span className="val">
                           {formatCurrencySymbol(item.unit)}
-                          {totalPrice && totalPrice[item.id] > 0
-                            ? totalPrice[item.id].toLocaleString()
-                            : (item.im_price || 0).toLocaleString()}
+                          {rollupPrice.toLocaleString()}
                         </span>
                       </div>
                       <div className="price-cell">
                         <span className="label">수출가</span>
                         <span className="val">${item.ex_price ? item.ex_price.toFixed(2) : '0.00'}</span>
                       </div>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  );
+                })()}
 
                 {/* 4. 하단 액션 버튼 바 (아이콘 전용 동일 규격 버튼) */}
                 <div className="card-footer-actions">
