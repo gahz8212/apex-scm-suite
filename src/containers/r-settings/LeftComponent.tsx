@@ -100,31 +100,34 @@ const LeftComponent: React.FC<Props> = ({ items, dragItems, addCount, removeCoun
                             } else {
                                 setOpenId(openId.filter(ids => ids !== item.id))
                                 setOpenBasket(false)
+                                if (openView) {
+                                    setOpenView(false)
+                                    changeView(false)
+                                    setViewMode(false)
+                                }
                             }
                             insertRelation_view(item.id)
                         }}>Relations</button>
                         {openId.includes(item.id) && <button onClick={() => {
-                            setOpenView(!openView);
-                            changeView(!openView)
-                            if (openView) {
+                            const nextView = !openView;
+                            setOpenView(nextView);
+                            changeView(nextView);
+                            if (!nextView) {
                                 //닫힐때
-                                setViewMode(false)
+                                setViewMode(false);
 
                                 //현재 상황 저장
                                 addRelateGood({
                                     id: item.id,
                                     dragItems: dragItems.filter(dragItem => dragItem.targetId === item.id),
                                     mode: 'left'
-                                })
-
-
-
+                                });
                             } else {
-                                setViewMode(true)
-                                inputDragItems_edit(item.id)
+                                setViewMode(true);
+                                inputDragItems_edit(item.id);
                                 if (itemsList.current) {
                                     const scrollPosition = itemsList.current.scrollTop;
-                                    localStorage.setItem('scrollPosition', scrollPosition.toString())
+                                    localStorage.setItem('scrollPosition', scrollPosition.toString());
                                 }
                             }
                         }}>view Relation</button>}

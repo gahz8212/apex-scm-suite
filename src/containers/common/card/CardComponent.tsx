@@ -240,8 +240,12 @@ const CardComponent: React.FC<Props> = ({
           : {};
 
         return (
-          <div className={`item-list ${viewMode ? 'view-mode' : ''}`} style={containerStyle}>
-            {items?.map((item) => {
+          <div
+            key={viewMode ? 'bom-view-mode-canvas' : 'bom-grid-mode-canvas'}
+            className={`item-list ${viewMode ? 'view-mode' : ''}`}
+            style={containerStyle}
+          >
+            {items?.map((item, index) => {
               const mrp = mrpMap.get(item.id);
               const isFlipped = flippedCards.has(item.id);
               const hasImage = item.Images && item.Images.length > 0 && Boolean(item.Images[0].url);
@@ -266,9 +270,13 @@ const CardComponent: React.FC<Props> = ({
                   }
                 : {};
 
+              const itemKey = viewMode
+                ? `view-${item.id}-${(item as any).upperId ?? 0}-${index}`
+                : `grid-${item.id}-${index}`;
+
               return (
                 <div
-                  key={item.id}
+                  key={itemKey}
                   className={`infos ${selected === item.id ? 'selected' : ''} ${
                     isFlipped ? 'is-flipped' : ''
                   } ${item.category} ${item.type} ${viewMode ? 'absolute' : 'relative'}`}

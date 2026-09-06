@@ -418,7 +418,14 @@ const itemSlice = createSlice({
       state.items = items;
     },
     backupItems: (state) => {
-      state.items = state.backup;
+      if (state.backup) {
+        state.items = state.backup.map((item) => {
+          const { top, left, point, upperId, ...rest } = item as any;
+          return rest;
+        });
+      } else {
+        state.items = state.backup;
+      }
     },
     inputDragItem: (state, { payload: item }) => {
       state.dragItem = item;
