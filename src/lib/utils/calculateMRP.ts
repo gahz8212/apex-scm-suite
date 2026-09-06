@@ -17,6 +17,7 @@ export interface MRPItemResult {
   stock: number;
   safety_stock: number;
   moq: number;
+  im_price?: number;
   supplyer: string;
   lead_time: string;
   suppliers: { name: string; price: number; lt: string; moq: number }[];
@@ -246,6 +247,7 @@ export const calculateMRP = (
       stock,
       safety_stock: safetyStock,
       moq,
+      im_price: item.im_price || 0,
       supplyer: item.supplyer || (suppliersList[0]?.name ?? ''),
       lead_time: item.lead_time || '2주',
       suppliers: suppliersList,

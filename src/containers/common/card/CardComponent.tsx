@@ -42,6 +42,33 @@ type Props = {
   isItemMaster?: boolean;
 };
 
+// 공급처 메타 정보 포맷터: 납기가 있으면 납기 표시, 없으면 생략 (예: 기준단가: ￦7,800 / 납기: 2주 / MOQ: 500)
+const formatVendorMeta = (price?: number, lt?: string, moq?: number) => {
+  const parts: string[] = [];
+  if (price !== undefined && price !== null && price > 0) {
+    parts.push(`기준단가: ￦${price.toLocaleString()}`);
+  }
+  const cleanLt = (lt || '').trim();
+  if (cleanLt && cleanLt !== '-' && cleanLt !== '0' && cleanLt !== '0주') {
+    parts.push(`납기: ${cleanLt}`);
+  }
+  if (moq !== undefined && moq !== null && moq > 0) {
+    parts.push(`MOQ: ${moq.toLocaleString()}`);
+  }
+  return parts.join(' / ');
+};
+
+// 최근 납기 문자열에서 주(week) 수치 추출 (기본 1주)
+const parseLeadTimeWeeks = (lt?: string): number => {
+  if (!lt) return 1;
+  const match = String(lt).match(/\d+/);
+  if (match) {
+    const num = parseInt(match[0], 10);
+    return num > 0 ? num : 1;
+  }
+  return 1;
+};
+
 const CardComponent: React.FC<Props> = ({
   items,
   selectItem,
@@ -75,6 +102,7 @@ const CardComponent: React.FC<Props> = ({
 
   const [poModalItem, setPoModalItem] = useState<MRPItemResult | null>(null);
   const [poQty, setPoQty] = useState<number>(0);
+  const [poLeadTime, setPoLeadTime] = useState<number>(1);
 
   // 입고(Inbound) 모달 상태
   const [inboundModalItem, setInboundModalItem] = useState<MRPItemResult | null>(null);
@@ -166,6 +194,11 @@ const CardComponent: React.FC<Props> = ({
     });
   };
 
+  // PO 리드타임 증감 핸들러 (+, - 원형 버튼, 1주 단위 가감)
+  const handlePoLeadTimeChange = (delta: number) => {
+    setPoLeadTime((prev) => Math.max(1, prev + delta));
+  };
+
   // RFQ 제출 핸들러 (견적서 출력 및 발송 ➔ 버튼이 '발주요청'으로 전환)
   const handleRfqSubmit = () => {
     if (!rfqModalItem) return;
@@ -184,7 +217,7 @@ const CardComponent: React.FC<Props> = ({
     if (onUpdateRfqStatus) {
       onUpdateRfqStatus(poModalItem.id, 'PO_SENT', vendor, poQty);
     }
-    alert(`[${poModalItem.itemName}]\n${vendor} 대상 정식 발주서(PO)가 성공적으로 출력 및 전송되었습니다.\n(발주 수량: ${poQty.toLocaleString()} EA)\n(카드 버튼이 '입고대기'로 자동 전환됩니다.)`);
+    alert(`[${poModalItem.itemName}]\n${vendor} 대상 정식 발주서(PO)가 성공적으로 출력 및 전송되었습니다.\n(발주 수량: ${poQty.toLocaleString()} EA / 리드타임: ${poLeadTime}주)\n(카드 버튼이 '입고대기'로 자동 전환됩니다.)`);
     setPoModalItem(null);
   };
 
@@ -732,6 +765,8 @@ const CardComponent: React.FC<Props> = ({
                                 : (targetItem.suggestedPo && targetItem.suggestedPo > 0)
                                   ? Math.max(moq, Math.ceil(targetItem.suggestedPo / moq) * moq)
                                   : moq;
+                            const initialPoLeadTime = parseLeadTimeWeeks(targetItem.lead_time || item.lead_time);
+                            setPoLeadTime(initialPoLeadTime);
                             setPoQty(initialPoQty);
                             setPoModalItem(targetItem);
                           }}
@@ -932,7 +967,7 @@ const CardComponent: React.FC<Props> = ({
                         <div className="v-info">
                           <span className="v-name">{sup.name} {idx === 0 ? '(메인 대리점)' : '(서브 납품처)'}</span>
                           <span className="v-meta">
-                            기준단가: ￦{sup.price?.toLocaleString()} / 납기: {sup.lt} / MOQ: {sup.moq?.toLocaleString()}
+                            {formatVendorMeta(sup.price, sup.lt, sup.moq)}
                           </span>
                         </div>
                       </div>
@@ -946,7 +981,9 @@ const CardComponent: React.FC<Props> = ({
                     <span className="radio-dot active" />
                     <div className="v-info">
                       <span className="v-name">{rfqModalItem.supplyer}</span>
-                      <span className="v-meta">납기: {rfqModalItem.lead_time} / MOQ: {rfqModalItem.moq}</span>
+                      <span className="v-meta">
+                        {formatVendorMeta(rfqModalItem.im_price, rfqModalItem.lead_time, rfqModalItem.moq)}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -1022,13 +1059,33 @@ const CardComponent: React.FC<Props> = ({
                     </button>
                   </div>
                 </div>
-                <div className="row">
+                <div className="row" style={{ alignItems: 'center' }}>
                   <span className="k">공급처 리드타임:</span>
-                  <span className="v">발주일로부터 {poModalItem.lead_time} 소요</span>
+                  <div className="qty-stepper">
+                    <button
+                      type="button"
+                      className="btn-circle-step"
+                      onClick={() => handlePoLeadTimeChange(-1)}
+                      title="1주 감소"
+                    >
+                      -
+                    </button>
+                    <span className="v highlight" style={{ minWidth: '55px', textAlign: 'center' }}>
+                      {poLeadTime}주
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-circle-step"
+                      onClick={() => handlePoLeadTimeChange(1)}
+                      title="1주 증가"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
               <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
-                상기 확정 조건으로 공급처에 정식 발주서(Purchase Order)를 발행하고 구매 시스템에 등록합니다.
+                상기 확정 조건(수량: {poQty.toLocaleString()} EA / 리드타임: {poLeadTime}주)으로 공급처에 정식 발주서(Purchase Order)를 발행하고 구매 시스템에 등록합니다.
               </p>
             </div>
             <div className="modal-actions">
