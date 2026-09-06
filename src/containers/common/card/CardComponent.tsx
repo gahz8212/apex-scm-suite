@@ -623,7 +623,6 @@ const CardComponent: React.FC<Props> = ({
                           }}
                           title="자재 입고 등록 (창고 및 입고수량 입력 ➔ 재고 합산 및 견적요청 리셋)"
                         >
-                          <span className="icon">⏳</span>
                           <span className="txt">입고대기</span>
                         </button>
                       ) : item.rfq_status === 'RFQ_SENT' || mrp?.rfq_status === 'RFQ_SENT' ? (
@@ -662,7 +661,6 @@ const CardComponent: React.FC<Props> = ({
                           }}
                           title="정식 발주서(PO) 발행 및 출력 (출력 완료 시 '입고대기'로 전환)"
                         >
-                          <span className="icon">🛒</span>
                           <span className="txt">발주요청</span>
                         </button>
                       ) : (
@@ -702,7 +700,6 @@ const CardComponent: React.FC<Props> = ({
                           }}
                           title="견적요청서(RFQ) 작성 및 출력 (출력 완료 시 '발주요청'으로 전환)"
                         >
-                          <span className="icon">📋</span>
                           <span className="txt">견적요청</span>
                         </button>
                       )}
@@ -718,7 +715,7 @@ const CardComponent: React.FC<Props> = ({
                         }}
                         title="카드 앞면으로 전환"
                       >
-                        <span>↩️ 앞면</span>
+                        <span>앞면</span>
                       </button>
                     </div>
                   </div>
@@ -734,7 +731,7 @@ const CardComponent: React.FC<Props> = ({
                       }}
                       title="카드 앞면으로 전환"
                     >
-                      <span>↩️ 앞면</span>
+                      <span>앞면</span>
                     </button>
                   </div>
                 )}
@@ -787,7 +784,7 @@ const CardComponent: React.FC<Props> = ({
         <div className="procure-modal-overlay" onClick={() => setRfqModalItem(null)}>
           <div className="procure-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
-              <span className="title">📋 견적요청서(RFQ) 작성</span>
+              <span className="title">견적요청서(RFQ) 작성</span>
               <button
                 type="button"
                 className="close-btn"
@@ -830,7 +827,7 @@ const CardComponent: React.FC<Props> = ({
                         className={`vendor-item ${isChecked ? 'selected' : ''}`}
                         onClick={() => setSelectedVendor(sup.name)}
                       >
-                        <span className="radio-box">{isChecked ? '🔘' : '⚪'}</span>
+                        <span className={`radio-dot ${isChecked ? 'active' : ''}`} />
                         <div className="v-info">
                           <span className="v-name">{sup.name} {idx === 0 ? '(메인 대리점)' : '(서브 납품처)'}</span>
                           <span className="v-meta">
@@ -845,7 +842,7 @@ const CardComponent: React.FC<Props> = ({
                     className="vendor-item selected"
                     onClick={() => setSelectedVendor(rfqModalItem.supplyer)}
                   >
-                    <span className="radio-box">🔘</span>
+                    <span className="radio-dot active" />
                     <div className="v-info">
                       <span className="v-name">{rfqModalItem.supplyer}</span>
                       <span className="v-meta">납기: {rfqModalItem.lead_time} / MOQ: {rfqModalItem.moq}</span>
@@ -867,7 +864,7 @@ const CardComponent: React.FC<Props> = ({
                 className="btn-submit"
                 onClick={handleRfqSubmit}
               >
-                🖨️ 견적서 출력 및 발송 완료
+                견적서 출력 및 발송 완료
               </button>
             </div>
           </div>
@@ -881,7 +878,7 @@ const CardComponent: React.FC<Props> = ({
         <div className="procure-modal-overlay" onClick={() => setPoModalItem(null)}>
           <div className="procure-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
-              <span className="title">🛒 정식 발주서(PO) 발행</span>
+              <span className="title">정식 발주서(PO) 발행</span>
               <button
                 type="button"
                 className="close-btn"
@@ -928,7 +925,7 @@ const CardComponent: React.FC<Props> = ({
                 className="btn-submit po"
                 onClick={handlePoSubmit}
               >
-                🖨️ 발주서 출력 및 전송 완료
+                발주서 출력 및 전송 완료
               </button>
             </div>
           </div>
@@ -942,7 +939,7 @@ const CardComponent: React.FC<Props> = ({
         <div className="procure-modal-overlay" onClick={() => setInboundModalItem(null)}>
           <div className="procure-modal inbound-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
-              <span className="title">📦 자재 입고 등록 및 재고 합산</span>
+              <span className="title">자재 입고 등록 및 재고 합산</span>
               <button
                 type="button"
                 className="close-btn"
@@ -976,7 +973,7 @@ const CardComponent: React.FC<Props> = ({
 
               {/* 입고 창고 선택 */}
               <div className="inbound-form-group">
-                <label className="inbound-label">🏢 입고 대상 창고 지정:</label>
+                <label className="inbound-label">입고 대상 창고 지정:</label>
                 <select
                   className="inbound-select"
                   value={inboundWarehouse}
@@ -992,7 +989,7 @@ const CardComponent: React.FC<Props> = ({
 
               {/* 입고 수량 입력 */}
               <div className="inbound-form-group" style={{ marginTop: '0.85rem' }}>
-                <label className="inbound-label">📥 확정 입고 수량 (EA):</label>
+                <label className="inbound-label">확정 입고 수량 (EA):</label>
                 <div className="inbound-input-wrap">
                   <input
                     type="number"
@@ -1028,7 +1025,7 @@ const CardComponent: React.FC<Props> = ({
               </div>
 
               <p style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '0.85rem', marginBottom: 0 }}>
-                💡 입고 확정 시 지정한 창고로 수량이 즉시 합산되며, 카드 버튼이 다시 기본값인 <b>'견적요청'</b>으로 초기화됩니다.
+                입고 확정 시 지정한 창고로 수량이 즉시 합산되며, 카드 버튼이 다시 기본값인 <b>'견적요청'</b>으로 초기화됩니다.
               </p>
             </div>
             <div className="modal-actions">
@@ -1044,7 +1041,7 @@ const CardComponent: React.FC<Props> = ({
                 className="btn-submit inbound"
                 onClick={handleInboundSubmit}
               >
-                📥 입고 확정 및 재고 합산
+                입고 확정 및 재고 합산
               </button>
             </div>
           </div>
