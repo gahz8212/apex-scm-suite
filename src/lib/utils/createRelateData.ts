@@ -324,10 +324,10 @@ export const makeRelateData_View = (
       }
       inheritPoint = children[index].point;
       inheritPointArray.push(inheritPoint);
-      // 5개까지 1행(index 0~4), 6개(index 5)부터 다음 줄로 줄바꿈
+      // 한 줄에 총 5개(상위 어셈블리 1개 + 하위 부품 4개), 6번째 아이템(부품 5번째, index 4)부터 다음 줄(2열)로 줄바꿈
       // 같은 라인(어셈블리 소속)임을 나타내기 위해 줄바꿈된 카드와 바로 위 카드 사이의 세로 여백을 절반(45px -> 22.5px)으로 설정 (101 * SCALE_Y 2.5 = 252.5px - 230px = 22.5px)
-      const childCol = index % 5;
-      const childRow = Math.floor(index / 5);
+      const childCol = index % 4;
+      const childRow = Math.floor(index / 4);
       findChildren(
         children[index].current,
         itemName,
