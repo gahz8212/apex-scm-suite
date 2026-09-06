@@ -7,11 +7,32 @@ import { editActions } from '../../../store/slices/editSlice';
 import { formSelector, formActions } from '../../../store/slices/formSlice';
 import { makeRelateData_View, makeRelateData_View_Horizon } from '../../../lib/utils/createRelateData'
 import { SearchActions, SearchData } from '../../../store/slices/searchSlice';
+import { OrderAction, OrderData } from '../../../store/slices/orderSlice';
+import { updateRfqStatus } from '../../../lib/api/itemAPI';
+
 const CardContainer = () => {
     const dispatch = useDispatch();
     const { items, status, relations } = useSelector(itemData);
     const { search } = useSelector(SearchData);
-    const { totalPrice } = useSelector(relateData)
+    const { totalPrice } = useSelector(relateData);
+    const { orderData } = useSelector(OrderData);
+
+    useEffect(() => {
+        dispatch(SearchActions.typeALL(true));
+        dispatch(SearchActions.groupALL(true));
+        dispatch(SearchActions.setALL(true));
+        dispatch(itemActions.getItem());
+        dispatch(OrderAction.getOrderData());
+    }, [dispatch]);
+
+    const onUpdateRfqStatus = async (id: number, rfq_status: string, selected_supplier?: string) => {
+        dispatch(itemActions.updateItemRfqStatus({ id, rfq_status, selected_supplier }));
+        try {
+            await updateRfqStatus({ id, rfq_status, selected_supplier });
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
 
 
@@ -88,7 +109,7 @@ const CardContainer = () => {
     return (
         <div>
             <CardComponent
-                items={search.filteredItems}
+                items={search.filteredItems !== null ? search.filteredItems : items}
                 selectItem={selectItem}
                 dragItem={dragItem}
                 onDrop={onDrop}
@@ -96,7 +117,8 @@ const CardContainer = () => {
                 relations={relations}
                 showRelate={showRelate}
                 totalPrice={totalPrice}
-
+                orderData={orderData}
+                onUpdateRfqStatus={onUpdateRfqStatus}
             />
         </div>
     );

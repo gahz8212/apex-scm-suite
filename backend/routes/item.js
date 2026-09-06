@@ -176,6 +176,12 @@ router.get("/items", async (req, res) => {
         "number2",
         "use",
         "supplyer",
+        "stock",
+        "safety_stock",
+        "lead_time",
+        "suppliers",
+        "rfq_status",
+        "selected_supplier",
       ],
       include: [
         { model: Image, attributes: ["url"] },
@@ -292,4 +298,20 @@ router.get("/getPicked", async (req, res) => {
     return res.status(400).json(e.message);
   }
 });
+
+router.patch("/updateRfqStatus", async (req, res) => {
+  const { id, rfq_status, selected_supplier } = req.body;
+  try {
+    const updateData = {};
+    if (rfq_status !== undefined) updateData.rfq_status = rfq_status;
+    if (selected_supplier !== undefined) updateData.selected_supplier = selected_supplier;
+
+    await Item.update(updateData, { where: { id: parseInt(id, 10) } });
+    return res.status(200).json({ success: true, id, rfq_status, selected_supplier });
+  } catch (e) {
+    console.error(e);
+    return res.status(400).json(e.message);
+  }
+});
+
 module.exports = router;

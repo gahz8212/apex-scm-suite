@@ -70,8 +70,8 @@ router.post("/orderinput", async (req, res) => {
     const [results] = await sequelize.query(
       `
       SELECT 
-      G.itemName,
-      G.groupName,
+      L.itemName,
+      COALESCE(G.groupName, L.itemName) AS groupName,
       ${selectCols},
       L.descript,
       L.category,
@@ -85,10 +85,12 @@ router.post("/orderinput", async (req, res) => {
       L.number1,
       L.number2,
       L.use,
-      date_format(L.input_date,'%Y-%m-%d')
-      FROM good G inner join item L on G.id=L.id right join orders O on G.groupName=O.Item
-      WHERE L.use=1 
-      ORDER BY L.number1,L.number2
+      date_format(L.input_date,'%Y-%m-%d') as input_date
+      FROM Item L
+      LEFT JOIN Good G ON L.itemName = G.itemName
+      LEFT JOIN orders O ON (G.groupName = O.Item OR L.itemName = O.Item)
+      WHERE L.use = 1 
+      ORDER BY L.number1, L.number2, L.id
       `
     );
 
@@ -97,8 +99,8 @@ router.post("/orderinput", async (req, res) => {
     await sequelize.query(`
       create table ordersheet (
         SELECT 
-        G.itemName,
-        G.groupName,
+        L.itemName,
+        COALESCE(G.groupName, L.itemName) AS groupName,
         ${selectCols},
         L.descript,
         L.category,
@@ -112,10 +114,12 @@ router.post("/orderinput", async (req, res) => {
         L.number1,
         L.number2,
         L.use,
-        date_format(L.input_date,'%Y-%m-%d') 
-        FROM good G inner join item L on G.id=L.id right join orders O on G.groupName=O.Item
-        WHERE L.use=1 
-        ORDER BY L.number1,L.number2
+        date_format(L.input_date,'%Y-%m-%d') as input_date
+        FROM Item L
+        LEFT JOIN Good G ON L.itemName = G.itemName
+        LEFT JOIN orders O ON (G.groupName = O.Item OR L.itemName = O.Item)
+        WHERE L.use = 1 
+        ORDER BY L.number1, L.number2, L.id
       )
     `);
 

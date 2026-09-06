@@ -44,6 +44,12 @@ module.exports = class Item extends Sequelize.Model {
           allowNull: false,
           defaultValue: "",
         },
+        stock: { type: Sequelize.INTEGER, defaultValue: 0 },
+        safety_stock: { type: Sequelize.INTEGER, defaultValue: 0 },
+        lead_time: { type: Sequelize.STRING(20), defaultValue: "2주" },
+        suppliers: { type: Sequelize.TEXT, defaultValue: "[]" },
+        rfq_status: { type: Sequelize.STRING(20), defaultValue: "IDLE" },
+        selected_supplier: { type: Sequelize.STRING(50), defaultValue: "" },
       },
       {
         sequelize,

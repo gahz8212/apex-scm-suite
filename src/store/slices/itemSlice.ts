@@ -19,6 +19,12 @@ type State = {
         cbm: number;
         moq: number;
         set: boolean;
+        stock?: number;
+        safety_stock?: number;
+        lead_time?: string;
+        suppliers?: any;
+        rfq_status?: string;
+        selected_supplier?: string;
         Images: { url: string }[];
         Good: { groupName: string };
         left: number;
@@ -616,6 +622,28 @@ const itemSlice = createSlice({
     },
     changeRepair: (state, { payload: newPicked }) => {
       if (newPicked) state.pickedData = newPicked;
+    },
+    updateItemRfqStatus: (
+      state,
+      {
+        payload,
+      }: {
+        payload: {
+          id: number;
+          rfq_status: string;
+          selected_supplier?: string;
+        };
+      }
+    ) => {
+      if (state.items) {
+        const item = state.items.find((i) => i.id === payload.id);
+        if (item) {
+          item.rfq_status = payload.rfq_status;
+          if (payload.selected_supplier) {
+            item.selected_supplier = payload.selected_supplier;
+          }
+        }
+      }
     },
     removeDragItems: () => {},
   },

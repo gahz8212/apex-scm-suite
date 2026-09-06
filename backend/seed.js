@@ -64,6 +64,14 @@ async function seed() {
       number2: 1,
       use: true,
       supplyer: "자체제조",
+      stock: 250,
+      safety_stock: 200,
+      lead_time: "2주",
+      suppliers: JSON.stringify([
+        { name: "자체제조", price: 28500, lt: "2주", moq: 100 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "자체제조",
       GoodId: good1.id,
     },
     {
@@ -86,6 +94,14 @@ async function seed() {
       number2: 2,
       use: true,
       supplyer: "자체제조",
+      stock: 320,
+      safety_stock: 300,
+      lead_time: "2주",
+      suppliers: JSON.stringify([
+        { name: "자체제조", price: 19800, lt: "2주", moq: 200 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "자체제조",
       GoodId: good2.id,
     },
     {
@@ -108,6 +124,14 @@ async function seed() {
       number2: 1,
       use: true,
       supplyer: "자체제조",
+      stock: 150,
+      safety_stock: 150,
+      lead_time: "3주",
+      suppliers: JSON.stringify([
+        { name: "자체제조", price: 34200, lt: "3주", moq: 100 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "자체제조",
       GoodId: good3.id,
     },
 
@@ -132,6 +156,15 @@ async function seed() {
       number2: 1,
       use: true,
       supplyer: "협력사A",
+      stock: 4200,
+      safety_stock: 1000,
+      lead_time: "3주",
+      suppliers: JSON.stringify([
+        { name: "협력사A", price: 14200, lt: "3주", moq: 500 },
+        { name: "테크원", price: 14800, lt: "1.5주", moq: 300 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "협력사A",
       GoodId: null,
     },
     {
@@ -154,6 +187,15 @@ async function seed() {
       number2: 2,
       use: true,
       supplyer: "신성기구",
+      stock: 3800,
+      safety_stock: 800,
+      lead_time: "2주",
+      suppliers: JSON.stringify([
+        { name: "신성기구", price: 7800, lt: "2주", moq: 500 },
+        { name: "대일정밀", price: 8100, lt: "1주", moq: 500 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "신성기구",
       GoodId: null,
     },
     {
@@ -176,6 +218,15 @@ async function seed() {
       number2: 3,
       use: true,
       supplyer: "에너지텍",
+      stock: 3600,
+      safety_stock: 800,
+      lead_time: "2.5주",
+      suppliers: JSON.stringify([
+        { name: "에너지텍", price: 6500, lt: "2.5주", moq: 500 },
+        { name: "파워솔루션", price: 6700, lt: "1.5주", moq: 400 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "에너지텍",
       GoodId: null,
     },
 
@@ -200,6 +251,15 @@ async function seed() {
       number2: 1,
       use: true,
       supplyer: "ST마이크로",
+      stock: 4000,
+      safety_stock: 1000,
+      lead_time: "4주",
+      suppliers: JSON.stringify([
+        { name: "ST마이크로", price: 3500, lt: "4주", moq: 1000 },
+        { name: "디지키코리아", price: 3850, lt: "1주", moq: 500 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "ST마이크로",
       GoodId: null,
     },
     {
@@ -222,6 +282,15 @@ async function seed() {
       number2: 2,
       use: true,
       supplyer: "삼성전기",
+      stock: 35000,
+      safety_stock: 10000,
+      lead_time: "1주",
+      suppliers: JSON.stringify([
+        { name: "삼성전기", price: 20, lt: "1주", moq: 5000 },
+        { name: "아비코전자", price: 22, lt: "0.5주", moq: 5000 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "삼성전기",
       GoodId: null,
     },
     {
@@ -244,6 +313,15 @@ async function seed() {
       number2: 3,
       use: true,
       supplyer: "무라타",
+      stock: 30000,
+      safety_stock: 8000,
+      lead_time: "2주",
+      suppliers: JSON.stringify([
+        { name: "무라타", price: 30, lt: "2주", moq: 5000 },
+        { name: "삼화콘덴서", price: 32, lt: "1주", moq: 5000 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "무라타",
       GoodId: null,
     },
     {
@@ -266,6 +344,15 @@ async function seed() {
       number2: 4,
       use: true,
       supplyer: "알프스",
+      stock: 18000,
+      safety_stock: 4000,
+      lead_time: "2주",
+      suppliers: JSON.stringify([
+        { name: "알프스", price: 180, lt: "2주", moq: 2000 },
+        { name: "한영넉스", price: 195, lt: "1주", moq: 1000 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "알프스",
       GoodId: null,
     },
     {
@@ -288,6 +375,15 @@ async function seed() {
       number2: 1,
       use: true,
       supplyer: "삼화정밀",
+      stock: 3200,
+      safety_stock: 800,
+      lead_time: "2주",
+      suppliers: JSON.stringify([
+        { name: "삼화정밀", price: 2200, lt: "2주", moq: 1000 },
+        { name: "우성금형", price: 2350, lt: "1.5주", moq: 500 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "삼화정밀",
       GoodId: null,
     },
     {
@@ -310,6 +406,15 @@ async function seed() {
       number2: 2,
       use: true,
       supplyer: "삼화정밀",
+      stock: 3100,
+      safety_stock: 800,
+      lead_time: "2주",
+      suppliers: JSON.stringify([
+        { name: "삼화정밀", price: 2100, lt: "2주", moq: 1000 },
+        { name: "우성금형", price: 2250, lt: "1.5주", moq: 500 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "삼화정밀",
       GoodId: null,
     },
     {
@@ -332,6 +437,15 @@ async function seed() {
       number2: 3,
       use: true,
       supplyer: "한림고무",
+      stock: 12000,
+      safety_stock: 3000,
+      lead_time: "2주",
+      suppliers: JSON.stringify([
+        { name: "한림고무", price: 550, lt: "2주", moq: 3000 },
+        { name: "제일패킹", price: 590, lt: "1주", moq: 2000 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "한림고무",
       GoodId: null,
     },
     {
@@ -354,6 +468,15 @@ async function seed() {
       number2: 4,
       use: true,
       supplyer: "대동화스너",
+      stock: 25000,
+      safety_stock: 5000,
+      lead_time: "1주",
+      suppliers: JSON.stringify([
+        { name: "대동화스너", price: 45, lt: "1주", moq: 10000 },
+        { name: "태양볼트", price: 48, lt: "0.5주", moq: 5000 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "대동화스너",
       GoodId: null,
     },
     {
@@ -376,6 +499,15 @@ async function seed() {
       number2: 1,
       use: true,
       supplyer: "LG에너지",
+      stock: 4200,
+      safety_stock: 1000,
+      lead_time: "3주",
+      suppliers: JSON.stringify([
+        { name: "LG에너지", price: 4600, lt: "3주", moq: 1000 },
+        { name: "루비콘테크", price: 4800, lt: "1.5주", moq: 500 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "LG에너지",
       GoodId: null,
     },
     {
@@ -398,6 +530,15 @@ async function seed() {
       number2: 2,
       use: true,
       supplyer: "파트론",
+      stock: 3800,
+      safety_stock: 800,
+      lead_time: "2주",
+      suppliers: JSON.stringify([
+        { name: "파트론", price: 1350, lt: "2주", moq: 1000 },
+        { name: "아모텍", price: 1420, lt: "1주", moq: 1000 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "파트론",
       GoodId: null,
     },
     {
@@ -420,6 +561,15 @@ async function seed() {
       number2: 1,
       use: true,
       supplyer: "삼보판지",
+      stock: 5500,
+      safety_stock: 1500,
+      lead_time: "2주",
+      suppliers: JSON.stringify([
+        { name: "삼보판지", price: 980, lt: "2주", moq: 1000 },
+        { name: "대영포장", price: 1020, lt: "1주", moq: 1000 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "삼보판지",
       GoodId: null,
     },
     {
@@ -442,6 +592,15 @@ async function seed() {
       number2: 2,
       use: true,
       supplyer: "삼보판지",
+      stock: 1200,
+      safety_stock: 300,
+      lead_time: "2주",
+      suppliers: JSON.stringify([
+        { name: "삼보판지", price: 2400, lt: "2주", moq: 500 },
+        { name: "대영포장", price: 2550, lt: "1주", moq: 500 }
+      ]),
+      rfq_status: "IDLE",
+      selected_supplier: "삼보판지",
       GoodId: null,
     },
   ];
@@ -520,8 +679,8 @@ async function seed() {
   await sequelize.query(`
     create table ordersheet (
       SELECT 
-      G.itemName,
-      G.groupName,
+      L.itemName,
+      COALESCE(G.groupName, L.itemName) AS groupName,
       O.Sep, O.Oct, O.Nov, O.Dec, O.Jan,
       L.descript,
       L.category,
@@ -536,11 +695,11 @@ async function seed() {
       L.number2,
       L.use,
       date_format(L.input_date,'%Y-%m-%d') as input_date
-      FROM Good G 
-      inner join Item L on G.itemName=L.itemName
-      left join orders O on G.groupName=O.Item
+      FROM Item L 
+      LEFT JOIN Good G ON L.itemName=G.itemName
+      LEFT JOIN orders O ON (G.groupName=O.Item OR L.itemName=O.Item)
       WHERE L.use=1 
-      ORDER BY L.number1, L.number2
+      ORDER BY L.number1, L.number2, L.id
     )
   `);
   console.log("✅ 수출 오더시트(ordersheet) 테이블 생성 완료 (Sep ~ Jan)");

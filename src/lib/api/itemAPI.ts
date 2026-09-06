@@ -49,3 +49,7 @@ export const inputPicked = (picked: {}[] | null) => {
 export const getPicked = () => {
   return client.get("/item/getPicked");
 };
+export const updateRfqStatus = (data: { id: number; rfq_status: string; selected_supplier?: string }) => {
+  return client.patch("/item/updateRfqStatus", data);
+};
+
