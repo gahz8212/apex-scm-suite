@@ -506,61 +506,40 @@
           }
         }
 
-        // MRP 지표 영역 (3열 그리드: [소요, 현재고, 안전] + 아래 [예상잔여])
-        .mrp-table-block {
+        // 카드 뒷면 재고 지표 영역 ([현재고] & [안전재고] 만 표시)
+        .stock-metrics-block {
           background: #f8fafc;
           border: 1px solid #e2e8f0;
           border-radius: 6px;
-          padding: 0.5rem 0.6rem;
-          margin: 0.2rem 0;
+          padding: 0.85rem 0.6rem;
+          margin: auto 0; // 카드 세로 중앙 정렬
 
-          .mrp-col-grid {
+          .stock-col-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.25rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
             text-align: center;
-            padding-bottom: 0.4rem;
-            border-bottom: 1px solid #e2e8f0;
 
-            .mrp-col-cell {
+            .stock-col-cell {
               display: flex;
               flex-direction: column;
               align-items: center;
 
+              &:first-child {
+                border-right: 1px solid #e2e8f0;
+              }
+
               .cell-hdr {
-                font-size: 0.7rem;
+                font-size: 0.74rem;
                 color: #64748b;
                 font-weight: 600;
-                margin-bottom: 0.15rem;
+                margin-bottom: 0.35rem;
               }
               .cell-val {
-                font-size: 0.78rem;
-                font-weight: 700;
-                color: #1e293b;
+                font-size: 0.95rem;
+                font-weight: 800;
+                color: #0f172a;
               }
-            }
-          }
-
-          .mrp-forecast-block {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding-top: 0.35rem;
-
-            .forecast-hdr {
-              font-size: 0.7rem;
-              color: #64748b;
-              font-weight: 600;
-              margin-bottom: 0.1rem;
-            }
-            .forecast-num {
-              font-size: 0.95rem;
-              font-weight: 800;
-
-              &.danger { color: #dc2626; }
-              &.warning { color: #d97706; }
-              &.normal { color: #16a34a; }
             }
           }
         }

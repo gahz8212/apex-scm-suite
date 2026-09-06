@@ -214,17 +214,18 @@ const CardComponent: React.FC<Props> = ({
       {/* 2. 카드 목록 그리드 (viewMode일 때는 BOM 계층 트리 좌표로 absolute 렌더링) */}
       {/* ------------------------------------------------------------------ */}
       {(() => {
-        // 커진 카드 규격(230px × 230px, Item Master와 동일)에 대응하여 간격 확장 (가로 34px, 세로 45px 여백 확보)
-        // 오른쪽 화면의 모든 카드를 왼쪽으로 50px 일괄 이동
+        // 커진 카드 규격(230px × 230px, Item Master와 동일)에 대응한 배율
         const SCALE_X = 2.4;
         const SCALE_Y = 2.5;
-        const OFFSET_X = -50;
+
+        // 첫째줄 기준 최소 top
+        const minTop = items && items.length > 0 ? Math.min(...items.map((i) => i.top ?? 0)) : 15;
 
         const maxTop = items && items.length > 0
           ? Math.max(900, ...items.map((i) => ((i.top ?? 0) * SCALE_Y) + 320))
           : 900;
         const maxLeft = items && items.length > 0
-          ? Math.max(1300, ...items.map((i) => (((i.left ?? 0) * SCALE_X) + OFFSET_X) + 320))
+          ? Math.max(1300, ...items.map((i) => (((i.left ?? 0) * SCALE_X) - 80) + 320))
           : 1300;
 
         const containerStyle: React.CSSProperties = viewMode
@@ -244,11 +245,21 @@ const CardComponent: React.FC<Props> = ({
               const hasImage = item.Images && item.Images.length > 0 && Boolean(item.Images[0].url);
               const dtName = getDisplayItemName(item);
 
+              // 첫째줄: 위로 50px 이동 (X는 -50 유지)
+              // 둘째줄부터: 왼쪽으로 30px 추가 이동 (기존 -50에서 -30 ➔ -80px)
+              const isFirstRow = (item.top ?? 0) <= minTop + 10;
+              const cardLeft = isFirstRow
+                ? ((item.left ?? 0) * SCALE_X) - 50
+                : ((item.left ?? 0) * SCALE_X) - 80;
+              const cardTop = isFirstRow
+                ? Math.max(8, ((item.top ?? 0) * SCALE_Y) - 50)
+                : (item.top ?? 0) * SCALE_Y;
+
               const cardStyle: React.CSSProperties = viewMode
                 ? {
                     position: 'absolute',
-                    left: ((item.left ?? 0) * SCALE_X) + OFFSET_X,
-                    top: (item.top ?? 0) * SCALE_Y,
+                    left: cardLeft,
+                    top: cardTop,
                     zIndex: selected === item.id ? 10 : 2,
                   }
                 : {};
@@ -306,37 +317,54 @@ const CardComponent: React.FC<Props> = ({
                   <div className="spec-desc">{item.descript || item.itemName}</div>
                 </div>
 
-                {/* 3. 단가 미니 박스 (가로배치: 입고원가 ➔ 합산원가 ➔ 수출가 순서) */}
+                {/* 3. 단가 미니 박스 (입고원가나 합산원가가 0이면 아예 표시하지 않고 유효 가격만 가로배치) */}
                 {(() => {
                   const rollupPrice = totalPrice && totalPrice[item.id] > 0
                     ? totalPrice[item.id]
                     : (item.type !== 'PARTS' ? (item.im_price || 0) : 0);
 
-                  const showImPrice = item.type !== 'SET' && (item.im_price || 0) > 0;
-                  const showRollup = item.type !== 'PARTS';
+                  const priceCells = [];
 
-                  return (
-                    <div className="price-metrics-box horizontal-3">
-                      <div className="price-cell">
+                  // 1) 입고원가: 0보다 클 때만 표시 (0이면 아예 제외)
+                  if ((item.im_price || 0) > 0) {
+                    priceCells.push(
+                      <div key="im" className="price-cell">
                         <span className="label">입고원가</span>
                         <span className="val">
-                          {showImPrice
-                            ? `${formatCurrencySymbol(item.unit)}${(item.im_price || 0).toLocaleString()}`
-                            : '-'}
+                          {formatCurrencySymbol(item.unit)}{(item.im_price || 0).toLocaleString()}
                         </span>
                       </div>
-                      <div className="price-cell highlight">
+                    );
+                  }
+
+                  // 2) 합산원가: 0보다 클 때만 표시 (0이면 아예 제외)
+                  if ((rollupPrice || 0) > 0) {
+                    priceCells.push(
+                      <div key="rollup" className="price-cell highlight">
                         <span className="label">합산원가</span>
                         <span className="val">
-                          {showRollup
-                            ? `${formatCurrencySymbol(item.unit)}${rollupPrice.toLocaleString()}`
-                            : '-'}
+                          {formatCurrencySymbol(item.unit)}{rollupPrice.toLocaleString()}
                         </span>
                       </div>
-                      <div className="price-cell">
-                        <span className="label">수출가</span>
-                        <span className="val">${item.ex_price ? item.ex_price.toFixed(2) : '0.00'}</span>
-                      </div>
+                    );
+                  }
+
+                  // 3) 수출가: 항상 표시 (또는 다른 가격이 없을 때도 표시)
+                  priceCells.push(
+                    <div key="ex" className="price-cell">
+                      <span className="label">수출가</span>
+                      <span className="val">${item.ex_price ? item.ex_price.toFixed(2) : '0.00'}</span>
+                    </div>
+                  );
+
+                  return (
+                    <div
+                      className="price-metrics-box"
+                      style={{
+                        gridTemplateColumns: `repeat(${priceCells.length}, 1fr)`,
+                      }}
+                    >
+                      {priceCells}
                     </div>
                   );
                 })()}
@@ -425,62 +453,21 @@ const CardComponent: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* 2. MRP 지표: [소요, 현재고, 안전] 밑에 [값, 값, 값] (SET일 때 소요값은 삭제/-) */}
-                <div className="mrp-table-block">
-                  <div className="mrp-col-grid">
-                    <div className="mrp-col-cell">
-                      <span className="cell-hdr">소요</span>
-                      <span className="cell-val">
-                        {item.type === 'SET'
-                          ? '-'
-                          : mrp
-                          ? `${mrp.grossReq.toLocaleString()}`
-                          : '0'}
-                      </span>
-                    </div>
-                    <div className="mrp-col-cell">
+                {/* 2. 재고 지표: [현재고] & [안전재고] 만 2열로 표시 (소요, 예상잔여 삭제) */}
+                <div className="stock-metrics-block">
+                  <div className="stock-col-grid">
+                    <div className="stock-col-cell">
                       <span className="cell-hdr">현재고</span>
                       <span className="cell-val">
-                        {mrp ? mrp.stock.toLocaleString() : (item.stock || 0).toLocaleString()}
+                        {(mrp ? mrp.stock : (item.stock || 0)).toLocaleString()} {item.type === 'SET' ? 'SET' : 'EA'}
                       </span>
                     </div>
-                    <div className="mrp-col-cell">
-                      <span className="cell-hdr">안전</span>
+                    <div className="stock-col-cell">
+                      <span className="cell-hdr">안전재고</span>
                       <span className="cell-val">
-                        {mrp ? mrp.safety_stock.toLocaleString() : (item.safety_stock || 0).toLocaleString()}
+                        {(mrp ? mrp.safety_stock : (item.safety_stock || 0)).toLocaleString()} {item.type === 'SET' ? 'SET' : 'EA'}
                       </span>
                     </div>
-                  </div>
-
-                  {/* 3. 그 아래 [예상잔여] 밑에 [값] */}
-                  <div className="mrp-forecast-block">
-                    <span className="forecast-hdr">예상잔여</span>
-                    <span
-                      className={`forecast-num ${
-                        mrp?.status === 'DANGER'
-                          ? 'danger'
-                          : mrp?.status === 'WARNING'
-                          ? 'warning'
-                          : 'normal'
-                      }`}
-                      style={{
-                        fontWeight: 700,
-                        fontSize: '0.98rem',
-                        color:
-                          mrp?.status === 'DANGER'
-                            ? '#dc2626'
-                            : mrp?.status === 'WARNING'
-                            ? '#d97706'
-                            : '#16a34a',
-                      }}
-                    >
-                      {mrp && mrp.expectedBalance > 0
-                        ? `+${mrp.expectedBalance.toLocaleString()}`
-                        : mrp
-                        ? mrp.expectedBalance.toLocaleString()
-                        : 0}{' '}
-                      {item.type === 'SET' ? 'SET' : 'EA'}
-                    </span>
                   </div>
                 </div>
 

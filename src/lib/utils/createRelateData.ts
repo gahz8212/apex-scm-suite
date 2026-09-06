@@ -279,7 +279,7 @@ export const makeRelateData_View = (
     let calculatedTop = currentTop;
     if (type === "ASSY") {
       if (lastTop >= calculatedTop) {
-        calculatedTop = lastTop + 80;
+        calculatedTop = lastTop + 110;
       }
     }
 
@@ -309,7 +309,7 @@ export const makeRelateData_View = (
     }
 
     if (children.length === 0) {
-      lastTop = calculatedTop > lastTop ? calculatedTop + 60 : lastTop;
+      lastTop = calculatedTop > lastTop ? calculatedTop : lastTop;
       inheritPointArray.pop();
       history.pop();
       return;
