@@ -556,19 +556,124 @@ const CardComponent: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* 3. 하단 전면 [앞면으로 돌아가기] 버튼 (견적, 발주 버튼 삭제) */}
-                <div className="flip-back-bar">
-                  <button
-                    type="button"
-                    className="btn-flip-back"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleCardFlip(item.id);
-                    }}
-                  >
-                    <span>↩️ 앞면</span>
-                  </button>
-                </div>
+                {/* 3. Item Master 전용 조달 액션 영역: [견적요청] [발주요청] 버튼 및 앞면 버튼 */}
+                {isItemMaster ? (
+                  <div className="item-master-back-footer">
+                    <div className="procure-btn-grid">
+                      <button
+                        type="button"
+                        className={`btn-procure btn-rfq ${mrp?.rfq_status === 'RFQ_SENT' ? 'sent' : ''} ${
+                          (mrp?.status === 'DANGER' || mrp?.status === 'WARNING') && !mrp?.rfq_status ? 'urgent' : ''
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const targetVendor = mrp?.selected_supplier || mrp?.supplyer || item.supplyer || '공급업체 미정';
+                          setSelectedVendor(targetVendor);
+                          setRfqModalItem(
+                            mrp || ({
+                              id: item.id,
+                              itemName: item.itemName,
+                              type: item.type,
+                              category: item.category,
+                              stock: item.stock || 0,
+                              safety_stock: item.safety_stock || 0,
+                              moq: 1,
+                              supplyer: targetVendor,
+                              lead_time: item.lead_time || '2주',
+                              suppliers: item.suppliers || [],
+                              grossReq: 0,
+                              expectedBalance: item.stock || 0,
+                              status: 'NORMAL',
+                              shortage: 0,
+                              suggestedPo: item.safety_stock || 100,
+                              safeUntilMonth: null,
+                              depletionMonth: null,
+                              runwayText: '정상',
+                              runwayStatus: 'SAFE',
+                              monthlyReqMap: {},
+                              rfq_status: item.rfq_status || '',
+                              selected_supplier: targetVendor,
+                            } as any)
+                          );
+                        }}
+                        title="견적요청서(RFQ) 작성 및 복수 벤더 비교 견적 발송"
+                      >
+                        <span className="icon">{mrp?.rfq_status === 'RFQ_SENT' ? '✅' : '📋'}</span>
+                        <span className="txt">{mrp?.rfq_status === 'RFQ_SENT' ? '견적완료' : '견적요청'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`btn-procure btn-po ${mrp?.rfq_status === 'PO_SENT' ? 'sent' : ''} ${
+                          mrp?.rfq_status === 'RFQ_SENT' ? 'urgent' : ''
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const targetVendor = mrp?.selected_supplier || mrp?.supplyer || item.supplyer || '공급업체 미정';
+                          setPoModalItem(
+                            mrp || ({
+                              id: item.id,
+                              itemName: item.itemName,
+                              type: item.type,
+                              category: item.category,
+                              stock: item.stock || 0,
+                              safety_stock: item.safety_stock || 0,
+                              moq: 1,
+                              supplyer: targetVendor,
+                              lead_time: item.lead_time || '2주',
+                              suppliers: item.suppliers || [],
+                              grossReq: 0,
+                              expectedBalance: item.stock || 0,
+                              status: 'NORMAL',
+                              shortage: 0,
+                              suggestedPo: item.safety_stock || 100,
+                              safeUntilMonth: null,
+                              depletionMonth: null,
+                              runwayText: '정상',
+                              runwayStatus: 'SAFE',
+                              monthlyReqMap: {},
+                              rfq_status: item.rfq_status || '',
+                              selected_supplier: targetVendor,
+                            } as any)
+                          );
+                        }}
+                        title="정식 발주서(PO) 발행 및 전송"
+                      >
+                        <span className="icon">{mrp?.rfq_status === 'PO_SENT' ? '⏳' : '🛒'}</span>
+                        <span className="txt">{mrp?.rfq_status === 'PO_SENT' ? '입고대기' : '발주요청'}</span>
+                      </button>
+                    </div>
+
+                    <div className="flip-back-bar">
+                      <button
+                        type="button"
+                        className="btn-flip-back"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleCardFlip(item.id);
+                        }}
+                        title="카드 앞면으로 전환"
+                      >
+                        <span>↩️ 앞면</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* BOM Management 전용: 순수 앞면 복귀 버튼만 제공 */
+                  <div className="flip-back-bar">
+                    <button
+                      type="button"
+                      className="btn-flip-back"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleCardFlip(item.id);
+                      }}
+                      title="카드 앞면으로 전환"
+                    >
+                      <span>↩️ 앞면</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           );

@@ -353,6 +353,16 @@ flowchart LR
   - [x] **DB 및 시드 데이터 정합성 동기화 (`seed.js` & MySQL `Item` 테이블)**:
     - `seed.js`의 SET 품목(id 1, 2, 3) `im_price`를 `0`으로 수정
     - 가동 중인 MySQL `Item` 테이블의 `SET` 품목 `im_price`를 `0`으로 일괄 동기화
+- [x] **14. Item Master 메뉴 전용 카드 뒷면 견적요청(RFQ) 및 발주요청(PO) 버튼 복원 (2026-09-07)**
+  - [x] **Item Master 전용 조달 버튼 분기 (`isItemMaster === true`)**:
+    - BOM Management 메뉴(`!isItemMaster`)는 기존의 초간소화된 **`[현재고 | 안전재고]` 2열 지표 및 `[ ↩️ 앞면 ]` 복귀 버튼**을 그대로 유지하여 화면 복잡도 원천 차단
+    - Item Master 메뉴(`isItemMaster = true`)에만 카드 뒷면 하단에 **`[ 📋 견적요청 ]`** 및 **`[ 🛒 발주요청 ]`** 2열 조달 액션 버튼 바를 복원
+  - [x] **원클릭 모달 및 실시간 상태 연동**:
+    - `[ 📋 견적요청 ]` 클릭 시 복수 거래처 비교 견적 팝업 모달(`rfqModalItem`) 오픈 및 발송 처리, 발송 완료 시 `[ ✅ 견적완료 ]` 전환
+    - `[ 🛒 발주요청 ]` 클릭 시 정식 발주서 팝업 모달(`poModalItem`) 오픈 및 전송 처리, 발송 완료 시 `[ ⏳ 입고대기 ]` 전환
+    - 자재 부족(`DANGER`/`WARNING`) 상태 시 견적요청 버튼 자동 강조 및 견적 완료 후 발주 버튼 연쇄 하이라이트 제공
+  - [x] **230px 규격 최적화 CSS 스타일링 (`cardList.scss`)**:
+    - `.item-master-back-footer` 및 `.procure-btn-grid` 적용으로 230px 카드 높이 내에서 요소 찌그러짐 없이 쾌적한 2열 그리드 + 앞면 버튼 정렬 완성
 
 ---
 

@@ -656,7 +656,113 @@
           }
         }
 
-        // 하단 앞면 전환 버튼 바 (견적/발주 버튼 삭제)
+        // Item Master 전용 하단 조달 버튼 영역 ([견적요청] & [발주요청])
+        .item-master-back-footer {
+          margin-top: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+
+          .procure-btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.35rem;
+
+            .btn-procure {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              gap: 0.25rem;
+              padding: 0.42rem 0.2rem;
+              border-radius: 6px;
+              font-size: 0.76rem;
+              font-weight: 700;
+              cursor: pointer;
+              transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+              box-sizing: border-box;
+              text-align: center;
+              line-height: 1;
+
+              .icon {
+                font-size: 0.82rem;
+                line-height: 1;
+              }
+              .txt {
+                white-space: nowrap;
+              }
+
+              // 견적요청 (RFQ)
+              &.btn-rfq {
+                background: #2563eb;
+                color: #ffffff;
+                border: 1px solid #1d4ed8;
+                box-shadow: 0 1px 2px rgba(37, 99, 235, 0.15);
+
+                &:hover {
+                  background: #1d4ed8;
+                  border-color: #1e40af;
+                  transform: translateY(-1px);
+                  box-shadow: 0 3px 6px rgba(37, 99, 235, 0.25);
+                }
+
+                &.sent {
+                  background: #eff6ff;
+                  color: #1d4ed8;
+                  border-color: #93c5fd;
+                  &:hover {
+                    background: #dbeafe;
+                  }
+                }
+
+                &.urgent {
+                  background: #2563eb;
+                  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
+                }
+              }
+
+              // 발주요청 (PO)
+              &.btn-po {
+                background: #0f766e;
+                color: #ffffff;
+                border: 1px solid #115e59;
+                box-shadow: 0 1px 2px rgba(15, 118, 110, 0.15);
+
+                &:hover {
+                  background: #115e59;
+                  border-color: #134e4a;
+                  transform: translateY(-1px);
+                  box-shadow: 0 3px 6px rgba(15, 118, 110, 0.25);
+                }
+
+                &.sent {
+                  background: #f0fdf4;
+                  color: #15803d;
+                  border-color: #86efac;
+                  &:hover {
+                    background: #dcfce7;
+                  }
+                }
+
+                &.urgent {
+                  background: #0f766e;
+                  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.35);
+                }
+              }
+            }
+          }
+
+          .flip-back-bar {
+            margin-top: 0;
+            padding-top: 0;
+
+            .btn-flip-back {
+              padding: 0.35rem 0;
+              font-size: 0.74rem;
+            }
+          }
+        }
+
+        // 하단 앞면 전환 버튼 바 (BOM Management 전용 및 공통 기본)
         .flip-back-bar {
           margin-top: auto;
           display: flex;
