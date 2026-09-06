@@ -1,6 +1,6 @@
 .rsettingComponent {
   display: flex;
-  margin-top: 126px;
+  margin-top: 56px; // Header space (70px) + margin-top (56px) = 126px (directly below navigation bar)
   width: 100%;
 
   .left {

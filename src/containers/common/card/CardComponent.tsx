@@ -159,9 +159,9 @@ const CardComponent: React.FC<Props> = ({
   return (
     <div className="item-list-container">
       {/* ------------------------------------------------------------------ */}
-      {/* 1. 상단 MRP & 카드 일괄 제어 툴바 (viewMode가 아닐 때 표시)        */}
+      {/* 1. 상단 MRP & 카드 일괄 제어 툴바 (Item Master 전용)                */}
       {/* ------------------------------------------------------------------ */}
-      {!viewMode && (
+      {isItemMaster && !viewMode && (
         <div className="card-control-toolbar">
           <div className="toolbar-left">
             <button
@@ -210,6 +210,21 @@ const CardComponent: React.FC<Props> = ({
             <span className="summary-badge normal">✅ 정상 {summaryCounts.normal}</span>
           </div>
         </div>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* 1-B. BOM Management 전용 동그란 전체뒤집기 (재고뷰) 플로팅 버튼       */}
+      {/* ------------------------------------------------------------------ */}
+      {!isItemMaster && (
+        <button
+          type="button"
+          className={`bom-round-flip-btn ${isAllFlipped ? 'flipped' : ''}`}
+          onClick={handleToggleFlipAll}
+          title={isAllFlipped ? '전체 앞면 (단가/BOM 뷰)' : '전체뒤집기 ➔ 재고뷰'}
+        >
+          <span className="icon">{isAllFlipped ? '↩️' : '🔄'}</span>
+          <span className="label">{isAllFlipped ? '앞면' : '재고뷰'}</span>
+        </button>
       )}
 
       {/* ------------------------------------------------------------------ */}
