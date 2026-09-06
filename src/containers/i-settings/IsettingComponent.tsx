@@ -65,14 +65,14 @@ const IsettingComponent: React.FC<Props> = ({ input, edit, relate, openForm, cha
                 </div>
             </div>}
 
-            {edit.visible && <div>
-                <div {...editPos()} style={{ color: 'white', position: 'fixed', top: edit.position.y, left: edit.position.x, zIndex: 2, textAlign: 'center', width: '300px', boxSizing: 'border-box' }}>
-                    <div style={{ width: '300px', padding: '1rem', userSelect: 'none' }}></div>
-                </div>
-                <div style={{ position: 'fixed', top: edit.position.y, left: edit.position.x, zIndex: 1 }}>
+            {edit.visible && (
+                <div style={{ position: 'fixed', top: edit.position.y, left: edit.position.x, zIndex: 1000 }}>
+                    <div {...editPos()} style={{ color: 'white', position: 'absolute', top: 0, left: 0, zIndex: 1001, textAlign: 'center', width: '320px', cursor: 'grab' }}>
+                        <div style={{ width: '320px', height: '40px', userSelect: 'none' }}></div>
+                    </div>
                     <EditFormContainer />
                 </div>
-            </div>}
+            )}
             {picker.visible && <div>
                 <div {...pickerPos()} style={{
                     color: 'white',

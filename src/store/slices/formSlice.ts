@@ -18,7 +18,7 @@ type State = {
 const initialState: State = {
   input: { visible: false, position: { x: 180, y: 120 } },
   relate: { visible: false, position: { x: 180, y: 120 } },
-  edit: { visible: false, position: { x: 180, y: 120 } },
+  edit: { visible: false, position: { x: 950, y: 130 } },
   invoice: { visible: false, position: { x: 60, y: 120 } },
   packing: { visible: false, position: { x: 500, y: 120 } },
   pallet: { visible: false, position: { x: 720, y: 120 } },

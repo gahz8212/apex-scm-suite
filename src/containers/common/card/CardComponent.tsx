@@ -54,7 +54,6 @@ const CardComponent: React.FC<Props> = ({
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
   const [isAllFlipped, setIsAllFlipped] = useState(false);
   const [selectedMonths, setSelectedMonths] = useState<string[]>(['Sep']);
-  const [relateVisible, setRelateVisible] = useState(false);
 
   // 모달 상태
   const [previewImage, setPreviewImage] = useState<{
@@ -287,32 +286,12 @@ const CardComponent: React.FC<Props> = ({
                   {/* [카드 앞면]: 단가 & 스펙 마스터 뷰                             */}
                   {/* ============================================================== */}
               <div className="info front">
-                {/* 1. 상단 헤더 스트립 */}
+                {/* 1. 상단 헤더 스트립 (카메라 버튼은 하단으로 이동) */}
                 <div className="card-header-strip">
                   <div className="badge-group">
                     <span className={`type-badge ${item.type}`}>{item.type}</span>
                     <span className="cat-chip">{item.category}</span>
                   </div>
-                  <button
-                    type="button"
-                    className={`photo-btn ${hasImage ? 'has-photo' : 'no-photo'}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (hasImage) {
-                        setPreviewImage({
-                          url: item.Images[0].url,
-                          itemName: item.itemName,
-                          type: item.type,
-                          category: item.category,
-                        });
-                      }
-                    }}
-                    title={hasImage ? '고해상도 실물/도면 사진 보기' : '등록된 이미지가 없습니다'}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>
-                      photo_camera
-                    </span>
-                  </button>
                 </div>
 
                 {/* 2. DT 품명 & 규격 */}
@@ -321,67 +300,31 @@ const CardComponent: React.FC<Props> = ({
                   <div className="spec-desc">{item.descript || item.itemName}</div>
                 </div>
 
-                {/* 3. 단가 미니 박스 (옵션 C: 원래 방식 복원 - ASSY는 합산원가, 입고원가, 수출가 3가지 지원) */}
+                {/* 3. 단가 미니 박스 (가로배치: 입고원가 ➔ 합산원가 ➔ 수출가 순서) */}
                 {(() => {
-                  const isAssy = item.type === 'ASSY';
-                  const isParts = item.type === 'PARTS';
-                  const hasOwnImPrice = (item.im_price ?? 0) > 0;
-                  const isTriple = isAssy && hasOwnImPrice;
                   const rollupPrice = totalPrice && totalPrice[item.id] > 0
                     ? totalPrice[item.id]
-                    : (item.im_price || 0);
+                    : (item.type !== 'PARTS' ? (item.im_price || 0) : 0);
 
-                  if (isParts) {
-                    return (
-                      <div className="price-metrics-box">
-                        <div className="price-cell highlight">
-                          <span className="label">입고원가</span>
-                          <span className="val">
-                            {formatCurrencySymbol(item.unit)}
-                            {(item.im_price || 0).toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="price-cell">
-                          <span className="label">수출가</span>
-                          <span className="val">${item.ex_price ? item.ex_price.toFixed(2) : '0.00'}</span>
-                        </div>
-                      </div>
-                    );
-                  }
+                  const showImPrice = item.type !== 'SET' && (item.im_price || 0) > 0;
+                  const showRollup = item.type !== 'PARTS';
 
-                  if (isTriple) {
-                    return (
-                      <div className="price-metrics-box triple">
-                        <div className="price-cell highlight">
-                          <span className="label">합산원가</span>
-                          <span className="val">
-                            {formatCurrencySymbol(item.unit)}
-                            {rollupPrice.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="price-cell">
-                          <span className="label">입고원가</span>
-                          <span className="val">
-                            {formatCurrencySymbol(item.unit)}
-                            {(item.im_price || 0).toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="price-cell full-row">
-                          <span className="label">수출가</span>
-                          <span className="val">${item.ex_price ? item.ex_price.toFixed(2) : '0.00'}</span>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  // SET 또는 자체 입고가가 없는 ASSY
                   return (
-                    <div className="price-metrics-box">
+                    <div className="price-metrics-box horizontal-3">
+                      <div className="price-cell">
+                        <span className="label">입고원가</span>
+                        <span className="val">
+                          {showImPrice
+                            ? `${formatCurrencySymbol(item.unit)}${(item.im_price || 0).toLocaleString()}`
+                            : '-'}
+                        </span>
+                      </div>
                       <div className="price-cell highlight">
                         <span className="label">합산원가</span>
                         <span className="val">
-                          {formatCurrencySymbol(item.unit)}
-                          {rollupPrice.toLocaleString()}
+                          {showRollup
+                            ? `${formatCurrencySymbol(item.unit)}${rollupPrice.toLocaleString()}`
+                            : '-'}
                         </span>
                       </div>
                       <div className="price-cell">
@@ -392,7 +335,7 @@ const CardComponent: React.FC<Props> = ({
                   );
                 })()}
 
-                {/* 4. 하단 액션 버튼 바 (아이콘 전용 동일 규격 버튼) */}
+                {/* 4. 하단 액션 버튼 바: [edit] ➔ [mrp] ➔ [카메라] 순서 (bom 삭제) */}
                 <div className="card-footer-actions">
                   <button
                     type="button"
@@ -402,23 +345,9 @@ const CardComponent: React.FC<Props> = ({
                       selectItem(item.id);
                       setSelected(item.id);
                     }}
-                    title="품목 정보 수정"
+                    title="품목 정보 수정 (Edit)"
                   >
                     <span className="material-symbols-outlined icon">edit</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn-action-icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setRelateVisible(!relateVisible);
-                      showRelate(item.id, item.type, e, relateVisible);
-                      setSelected(item.id);
-                    }}
-                    title="하위 부품 BOM 관계도 확인"
-                  >
-                    <span className="material-symbols-outlined icon">account_tree</span>
                   </button>
 
                   <button
@@ -432,11 +361,30 @@ const CardComponent: React.FC<Props> = ({
                   >
                     <span className="material-symbols-outlined icon">sync_alt</span>
                   </button>
+
+                  <button
+                    type="button"
+                    className={`btn-action-icon photo-btn ${hasImage ? 'has-photo' : 'no-photo'}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (hasImage) {
+                        setPreviewImage({
+                          url: item.Images[0].url,
+                          itemName: item.itemName,
+                          type: item.type,
+                          category: item.category,
+                        });
+                      }
+                    }}
+                    title={hasImage ? '고해상도 실물/도면 사진 보기' : '등록된 이미지가 없습니다'}
+                  >
+                    <span className="material-symbols-outlined icon">photo_camera</span>
+                  </button>
                 </div>
               </div>
 
               {/* ============================================================== */}
-              {/* [카드 뒷면]: MRP 재고예측 & 원클릭 조달 상태 머신               */}
+              {/* [카드 뒷면]: MRP 재고예측 뷰 (견적/발주 버튼 삭제, 깔끔한 3열+잔여 배치) */}
               {/* ============================================================== */}
               <div className="info back">
                 {/* 1. 뒷면 헤더 & 미니 썸네일 */}
@@ -471,27 +419,38 @@ const CardComponent: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* 2. MRP 지표 그리드 (불필요한 뱃지/배너 제거, 예상잔여만 색상 구분) */}
-                <div className="mrp-metrics-grid">
-                  <div className="mrp-row">
-                    <span className="mrp-lbl">소요:</span>
-                    <span className="mrp-val">
-                      {mrp ? mrp.grossReq.toLocaleString() : 0} {item.type === 'SET' ? 'SET' : 'EA'}
-                    </span>
-                  </div>
-                  <div className="mrp-row">
-                    <span className="mrp-lbl">현재고 / 안전:</span>
-                    <span className="mrp-val">
-                      {mrp ? mrp.stock.toLocaleString() : 0} / {mrp ? mrp.safety_stock.toLocaleString() : 0}
-                    </span>
+                {/* 2. MRP 지표: [소요, 현재고, 안전] 밑에 [값, 값, 값] (SET일 때 소요값은 삭제/-) */}
+                <div className="mrp-table-block">
+                  <div className="mrp-col-grid">
+                    <div className="mrp-col-cell">
+                      <span className="cell-hdr">소요</span>
+                      <span className="cell-val">
+                        {item.type === 'SET'
+                          ? '-'
+                          : mrp
+                          ? `${mrp.grossReq.toLocaleString()}`
+                          : '0'}
+                      </span>
+                    </div>
+                    <div className="mrp-col-cell">
+                      <span className="cell-hdr">현재고</span>
+                      <span className="cell-val">
+                        {mrp ? mrp.stock.toLocaleString() : (item.stock || 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="mrp-col-cell">
+                      <span className="cell-hdr">안전</span>
+                      <span className="cell-val">
+                        {mrp ? mrp.safety_stock.toLocaleString() : (item.safety_stock || 0).toLocaleString()}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="divider" />
-
-                  <div className="mrp-row">
-                    <span className="mrp-lbl">예상잔여:</span>
+                  {/* 3. 그 아래 [예상잔여] 밑에 [값] */}
+                  <div className="mrp-forecast-block">
+                    <span className="forecast-hdr">예상잔여</span>
                     <span
-                      className={`forecast-val ${
+                      className={`forecast-num ${
                         mrp?.status === 'DANGER'
                           ? 'danger'
                           : mrp?.status === 'WARNING'
@@ -500,7 +459,7 @@ const CardComponent: React.FC<Props> = ({
                       }`}
                       style={{
                         fontWeight: 700,
-                        fontSize: '0.88rem',
+                        fontSize: '0.98rem',
                         color:
                           mrp?.status === 'DANGER'
                             ? '#dc2626'
@@ -519,55 +478,18 @@ const CardComponent: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* 4. 하단 Full-width 스마트 조달 상태 머신 버튼 */}
-                <div className="state-action-area">
-                  {mrp?.rfq_status === 'PO_SENT' ? (
-                    <button type="button" className="btn-state-action btn-waiting">
-                      ⏳ 입고 대기중 (PO 완료)
-                    </button>
-                  ) : mrp?.rfq_status === 'RFQ_SENT' ? (
-                    <button
-                      type="button"
-                      className="btn-state-action btn-po"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPoModalItem(mrp);
-                      }}
-                      title="견적 회신 확인 후 정식 발주서(PO) 발행"
-                    >
-                      🛒 2단계: 발주서 발행 (PO)
-                    </button>
-                  ) : mrp?.status === 'DANGER' || mrp?.status === 'WARNING' ? (
-                    <button
-                      type="button"
-                      className="btn-state-action btn-rfq"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedVendor(mrp.selected_supplier || mrp.supplyer);
-                        setRfqModalItem(mrp);
-                      }}
-                      title="부족 자재 견적요청서(RFQ) 작성"
-                    >
-                      📋 1단계: 견적요청서 (RFQ)
-                    </button>
-                  ) : (
-                    <button type="button" className="btn-state-action btn-normal">
-                      ✅ 재고 정상 (발주 불필요)
-                    </button>
-                  )}
-
-                  <div className="flip-back-bar">
-                    <button
-                      type="button"
-                      className="btn-flip-back"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleCardFlip(item.id);
-                      }}
-                    >
-                      <span>↩️ 앞면</span>
-                    </button>
-                  </div>
+                {/* 4. 하단 전면 [앞면으로 돌아가기] 버튼 (견적, 발주 버튼 삭제) */}
+                <div className="flip-back-bar">
+                  <button
+                    type="button"
+                    className="btn-flip-back"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleCardFlip(item.id);
+                    }}
+                  >
+                    <span>↩️ 앞면</span>
+                  </button>
                 </div>
               </div>
             </div>
