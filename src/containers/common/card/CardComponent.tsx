@@ -350,8 +350,8 @@ const CardComponent: React.FC<Props> = ({
 
                   const priceCells = [];
 
-                  // 1) 입고원가: 0보다 클 때만 표시 (0이면 아예 제외)
-                  if ((item.im_price || 0) > 0) {
+                  // 1) 입고원가: SET은 조립 완제품이므로 단품 입고원가 제외, 0보다 클 때만 표시
+                  if (item.type !== 'SET' && (item.im_price || 0) > 0) {
                     priceCells.push(
                       <div key="im" className="price-cell">
                         <span className="label">입고원가</span>
@@ -362,8 +362,8 @@ const CardComponent: React.FC<Props> = ({
                     );
                   }
 
-                  // 2) 합산원가: 0보다 클 때만 표시 (0이면 아예 제외)
-                  if ((rollupPrice || 0) > 0) {
+                  // 2) 합산원가: PARTS는 하위 품목이 없으므로 제외, 0보다 클 때만 표시
+                  if (item.type !== 'PARTS' && (rollupPrice || 0) > 0) {
                     priceCells.push(
                       <div key="rollup" className="price-cell highlight">
                         <span className="label">합산원가</span>

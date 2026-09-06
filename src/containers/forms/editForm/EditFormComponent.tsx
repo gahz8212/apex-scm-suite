@@ -220,9 +220,9 @@ const EditFormComponent: React.FC<Props> = ({ prev, next, onChange, editImage, e
                                         <input type="text" name="ex_price" id="ex_price" value={next.ex_price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} onChange={onChange} min={0} placeholder='출고단가 입력' onFocus={e => e.target.select()} style={{ textAlign: 'right' }} />
                                     </div>
                                     <div className="ex_price">
-                                        <label htmlFor="ex_price">입고합산</label>
-                                        <label htmlFor="$_edit">\</label>
-                                        <input type="text" name="ex_price" id="ex_price" value={totalPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} onChange={onChange} min={0} placeholder='출고단가 입력' onFocus={e => e.target.select()} style={{ textAlign: 'right' }} />
+                                        <label htmlFor="sum_im_price">합산원가</label>
+                                        <label htmlFor="sum_im_price">\</label>
+                                        <input type="text" name="sum_im_price" id="sum_im_price" value={totalPrice.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} readOnly placeholder='BOM 하위 합산' style={{ textAlign: 'right', backgroundColor: '#f8fafc', color: '#1e40af', fontWeight: 600 }} />
                                     </div>
                                 </div>
                                 <div className="sets">
