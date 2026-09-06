@@ -214,12 +214,16 @@ const CardComponent: React.FC<Props> = ({
       {/* 2. 카드 목록 그리드 (viewMode일 때는 BOM 계층 트리 좌표로 absolute 렌더링) */}
       {/* ------------------------------------------------------------------ */}
       {(() => {
+        // 커진 카드 규격(230px × 230px, Item Master와 동일)에 대응하여 간격 확장 (가로 34px, 세로 45px 여백 확보)
+        const SCALE_X = 2.4;
+        const SCALE_Y = 2.5;
+
         const maxTop = items && items.length > 0
-          ? Math.max(700, ...items.map((i) => ((i.top ?? 0) * 1.7) + 260))
-          : 700;
-        const maxLeft = items && items.length > 0
-          ? Math.max(900, ...items.map((i) => ((i.left ?? 0) * 1.5) + 240))
+          ? Math.max(900, ...items.map((i) => ((i.top ?? 0) * SCALE_Y) + 320))
           : 900;
+        const maxLeft = items && items.length > 0
+          ? Math.max(1400, ...items.map((i) => ((i.left ?? 0) * SCALE_X) + 320))
+          : 1400;
 
         const containerStyle: React.CSSProperties = viewMode
           ? {
@@ -241,8 +245,8 @@ const CardComponent: React.FC<Props> = ({
               const cardStyle: React.CSSProperties = viewMode
                 ? {
                     position: 'absolute',
-                    left: (item.left ?? 0) * 1.5,
-                    top: (item.top ?? 0) * 1.7,
+                    left: (item.left ?? 0) * SCALE_X,
+                    top: (item.top ?? 0) * SCALE_Y,
                     zIndex: selected === item.id ? 10 : 2,
                   }
                 : {};
