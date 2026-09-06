@@ -215,15 +215,17 @@ const CardComponent: React.FC<Props> = ({
       {/* ------------------------------------------------------------------ */}
       {(() => {
         // 커진 카드 규격(230px × 230px, Item Master와 동일)에 대응하여 간격 확장 (가로 34px, 세로 45px 여백 확보)
+        // 오른쪽 화면의 모든 카드를 왼쪽으로 50px 일괄 이동
         const SCALE_X = 2.4;
         const SCALE_Y = 2.5;
+        const OFFSET_X = -50;
 
         const maxTop = items && items.length > 0
           ? Math.max(900, ...items.map((i) => ((i.top ?? 0) * SCALE_Y) + 320))
           : 900;
         const maxLeft = items && items.length > 0
-          ? Math.max(1400, ...items.map((i) => ((i.left ?? 0) * SCALE_X) + 320))
-          : 1400;
+          ? Math.max(1300, ...items.map((i) => (((i.left ?? 0) * SCALE_X) + OFFSET_X) + 320))
+          : 1300;
 
         const containerStyle: React.CSSProperties = viewMode
           ? {
@@ -245,7 +247,7 @@ const CardComponent: React.FC<Props> = ({
               const cardStyle: React.CSSProperties = viewMode
                 ? {
                     position: 'absolute',
-                    left: (item.left ?? 0) * SCALE_X,
+                    left: ((item.left ?? 0) * SCALE_X) + OFFSET_X,
                     top: (item.top ?? 0) * SCALE_Y,
                     zIndex: selected === item.id ? 10 : 2,
                   }
