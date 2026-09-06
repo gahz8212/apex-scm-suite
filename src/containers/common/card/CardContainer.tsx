@@ -119,6 +119,7 @@ const CardContainer = () => {
                 totalPrice={totalPrice}
                 orderData={orderData}
                 onUpdateRfqStatus={onUpdateRfqStatus}
+                isItemMaster={true}
             />
         </div>
     );

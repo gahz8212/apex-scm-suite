@@ -36,6 +36,7 @@ type Props = {
   totalPrice: { [key: number]: number } | undefined;
   orderData?: any[] | null;
   onUpdateRfqStatus?: (id: number, rfq_status: string, selected_supplier?: string) => void;
+  isItemMaster?: boolean;
 };
 
 const CardComponent: React.FC<Props> = ({
@@ -49,6 +50,7 @@ const CardComponent: React.FC<Props> = ({
   totalPrice,
   orderData = null,
   onUpdateRfqStatus,
+  isItemMaster = false,
 }) => {
   const [selected, setSelected] = useState<number | ''>();
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
@@ -453,25 +455,85 @@ const CardComponent: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* 2. 재고 지표: [현재고] & [안전재고] 만 2열로 표시 (소요, 예상잔여 삭제) */}
-                <div className="stock-metrics-block">
-                  <div className="stock-col-grid">
-                    <div className="stock-col-cell">
-                      <span className="cell-hdr">현재고</span>
-                      <span className="cell-val">
-                        {(mrp ? mrp.stock : (item.stock || 0)).toLocaleString()} {item.type === 'SET' ? 'SET' : 'EA'}
-                      </span>
+                {/* 2. 재고 지표: Item Master에서는 수정 전 상태(소요, 현재고, 안전, 예상잔여) 복원, BOM에서는 현재고/안전재고만 표시 */}
+                {isItemMaster ? (
+                  <div className="mrp-table-block">
+                    <div className="mrp-col-grid">
+                      <div className="mrp-col-cell">
+                        <span className="cell-hdr">소요</span>
+                        <span className="cell-val">
+                          {item.type === 'SET'
+                            ? '-'
+                            : mrp
+                            ? `${mrp.grossReq.toLocaleString()}`
+                            : '0'}
+                        </span>
+                      </div>
+                      <div className="mrp-col-cell">
+                        <span className="cell-hdr">현재고</span>
+                        <span className="cell-val">
+                          {mrp ? mrp.stock.toLocaleString() : (item.stock || 0).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="mrp-col-cell">
+                        <span className="cell-hdr">안전</span>
+                        <span className="cell-val">
+                          {mrp ? mrp.safety_stock.toLocaleString() : (item.safety_stock || 0).toLocaleString()}
+                        </span>
+                      </div>
                     </div>
-                    <div className="stock-col-cell">
-                      <span className="cell-hdr">안전재고</span>
-                      <span className="cell-val">
-                        {(mrp ? mrp.safety_stock : (item.safety_stock || 0)).toLocaleString()} {item.type === 'SET' ? 'SET' : 'EA'}
+
+                    {/* 예상잔여 */}
+                    <div className="mrp-forecast-block">
+                      <span className="forecast-hdr">예상잔여</span>
+                      <span
+                        className={`forecast-num ${
+                          mrp?.status === 'DANGER'
+                            ? 'danger'
+                            : mrp?.status === 'WARNING'
+                            ? 'warning'
+                            : 'normal'
+                        }`}
+                        style={{
+                          fontWeight: 700,
+                          fontSize: '0.98rem',
+                          color:
+                            mrp?.status === 'DANGER'
+                              ? '#dc2626'
+                              : mrp?.status === 'WARNING'
+                              ? '#d97706'
+                              : '#16a34a',
+                        }}
+                      >
+                        {mrp && mrp.expectedBalance > 0
+                          ? `+${mrp.expectedBalance.toLocaleString()}`
+                          : mrp
+                          ? mrp.expectedBalance.toLocaleString()
+                          : 0}{' '}
+                        {item.type === 'SET' ? 'SET' : 'EA'}
                       </span>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="stock-metrics-block">
+                    <div className="stock-col-grid">
+                      <div className="stock-col-cell">
+                        <span className="cell-hdr">현재고</span>
+                        <span className="cell-val">
+                          {(mrp ? mrp.stock : (item.stock || 0)).toLocaleString()} {item.type === 'SET' ? 'SET' : 'EA'}
+                        </span>
+                      </div>
+                      <div className="stock-col-cell">
+                        <span className="cell-hdr">안전재고</span>
+                        <span className="cell-val">
+                          {(mrp ? mrp.safety_stock : (item.safety_stock || 0)).toLocaleString()} {item.type === 'SET' ? 'SET' : 'EA'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                {/* 4. 하단 전면 [앞면으로 돌아가기] 버튼 (견적, 발주 버튼 삭제) */}
+                {/* 3. 하단 전면 [앞면으로 돌아가기] 버튼 (견적, 발주 버튼 삭제) */}
                 <div className="flip-back-bar">
                   <button
                     type="button"
