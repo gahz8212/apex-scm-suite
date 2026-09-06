@@ -212,44 +212,80 @@ const CardComponent: React.FC<Props> = ({
       )}
 
       {/* ------------------------------------------------------------------ */}
-      {/* 2. 카드 목록 그리드                                                */}
+      {/* 2. 카드 목록 그리드 (viewMode일 때는 BOM 계층 트리 좌표로 absolute 렌더링) */}
       {/* ------------------------------------------------------------------ */}
-      <div className="item-list">
-        {items?.map((item) => {
-          const mrp = mrpMap.get(item.id);
-          const isFlipped = flippedCards.has(item.id);
-          const hasImage = item.Images && item.Images.length > 0 && Boolean(item.Images[0].url);
-          const dtName = getDisplayItemName(item);
+      {(() => {
+        const maxTop = items && items.length > 0
+          ? Math.max(700, ...items.map((i) => ((i.top ?? 0) * 1.7) + 260))
+          : 700;
+        const maxLeft = items && items.length > 0
+          ? Math.max(900, ...items.map((i) => ((i.left ?? 0) * 1.5) + 240))
+          : 900;
 
-          return (
-            <div
-              key={item.id}
-              className={`infos ${selected === item.id ? 'selected' : ''} ${
-                isFlipped ? 'is-flipped' : ''
-              } ${item.category} ${item.type}`}
-              draggable
-              onDragStart={(e) => {
-                dragItem(item.id);
-                const img = new Image();
-                img.src = './images/package.png';
-                e.dataTransfer.setDragImage(img, 50, 50);
-                e.dataTransfer.setData(
-                  'pickedItem',
-                  JSON.stringify({
-                    ItemId: item.id,
-                    itemName: item.itemName,
-                    unit: item.unit,
-                    im_price: item.im_price,
-                    ex_price: item.ex_price,
-                    type: item.type,
-                  })
-                );
-              }}
-              onDragEnd={onDrop}
-            >
-              {/* ============================================================== */}
-              {/* [카드 앞면]: 단가 & 스펙 마스터 뷰                             */}
-              {/* ============================================================== */}
+        const containerStyle: React.CSSProperties = viewMode
+          ? {
+              position: 'relative',
+              width: '100%',
+              minHeight: `${maxTop}px`,
+              minWidth: `${maxLeft}px`,
+            }
+          : {};
+
+        return (
+          <div className={`item-list ${viewMode ? 'view-mode' : ''}`} style={containerStyle}>
+            {items?.map((item) => {
+              const mrp = mrpMap.get(item.id);
+              const isFlipped = flippedCards.has(item.id);
+              const hasImage = item.Images && item.Images.length > 0 && Boolean(item.Images[0].url);
+              const dtName = getDisplayItemName(item);
+
+              const cardStyle: React.CSSProperties = viewMode
+                ? {
+                    position: 'absolute',
+                    left: (item.left ?? 0) * 1.5,
+                    top: (item.top ?? 0) * 1.7,
+                    zIndex: selected === item.id ? 10 : 2,
+                  }
+                : {};
+
+              return (
+                <div
+                  key={item.id}
+                  className={`infos ${selected === item.id ? 'selected' : ''} ${
+                    isFlipped ? 'is-flipped' : ''
+                  } ${item.category} ${item.type} ${viewMode ? 'absolute' : 'relative'}`}
+                  style={cardStyle}
+                  onClick={() => setSelected(item.id)}
+                  draggable
+                  onDragStart={(e) => {
+                    dragItem(item.id);
+                    const img = new Image();
+                    img.src = './images/package.png';
+                    e.dataTransfer.setDragImage(img, 50, 50);
+                    e.dataTransfer.setData(
+                      'pickedItem',
+                      JSON.stringify({
+                        ItemId: item.id,
+                        itemName: item.itemName,
+                        unit: item.unit,
+                        im_price: item.im_price,
+                        ex_price: item.ex_price,
+                        type: item.type,
+                      })
+                    );
+                  }}
+                  onDragEnd={onDrop}
+                >
+                  {/* BOM viewMode 시 하위 품목 소요량 배율 뱃지 (원복) */}
+                  {viewMode && item.type !== 'SET' && (item.point ?? 0) > 0 && (
+                    <div className="badge" title={`소요 수량: x${item.point}`}>
+                      <div className="point">x{item.point}</div>
+                    </div>
+                  )}
+
+                  {/* ============================================================== */}
+                  {/* [카드 앞면]: 단가 & 스펙 마스터 뷰                             */}
+                  {/* ============================================================== */}
               <div className="info front">
                 {/* 1. 상단 헤더 스트립 */}
                 <div className="card-header-strip">
@@ -502,6 +538,8 @@ const CardComponent: React.FC<Props> = ({
           );
         })}
       </div>
+    );
+  })()}
 
       {/* ==================================================================== */}
       {/* 3. 고해상도 이미지 라이트박스 팝업 (Image Lightbox Modal)           */}

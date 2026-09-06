@@ -270,6 +270,13 @@ flowchart LR
   - [x] **옵션 A 백엔드 조인 개편 (LEFT JOIN 전면 적용)**:
     - `ordersheet` 생성 쿼리를 `Item L LEFT JOIN Good G ON ... LEFT JOIN orders O ON ...`으로 개편
     - `Good` 매핑 여부와 상관없이 125개 전 품목 및 수정된 품목 속성이 발주서/오더시트에 누락 없이 100% 반영됨
+- [x] **6. BOM 메뉴 view Relation 시각화 위치값 및 수량 배율 뱃지 복원 (★완료)**
+  - [x] **BOM 계층 트리 좌표 복원**: `viewMode` 활성화 시 각 카드가 원래의 좌표 계산식(`position: absolute, left: (item.left || 0) * 1.5, top: (item.top || 0) * 1.7`)에 따라 시각적으로 정확히 배치되도록 복원
+  - [x] **소요 배율 뱃지 복원**: 하위 자재(`item.type !== 'SET' && item.point > 0`) 상단에 배율 배지(`.badge .point`, 예: `x2`, `x4`) 복원
+  - [x] **view-mode 캔버스 및 반응형 스크롤 최적화**:
+    - 트리 구조가 우측/아래로 넓게 펼쳐져도 캔버스 크기(`minWidth`, `minHeight`)가 아이템 좌표에 맞추어 자동 확장
+    - `.right` 영역에 `overflow: auto`를 적용하여 수평/수직 스크롤로 전체 BOM 트리를 쾌적하게 탐색 가능
+    - view-mode 전용 컴팩트 규격(`155px × 190px`)을 적용하여 165px 간격 사이 겹침 현상을 원천 방지
 
 
 ---

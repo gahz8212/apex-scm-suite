@@ -114,14 +114,17 @@
   .right {
     margin-left: 420px;
     width: calc(100% - 420px);
+    min-height: calc(100vh - 126px);
     display: flex;
     flex-direction: column;
     padding: 0.5rem 1.5rem;
     box-sizing: border-box;
+    overflow: auto;
 
     .cards {
       width: 100%;
       background-color: transparent;
+      overflow: visible;
 
       .item-list {
         margin: 0;
