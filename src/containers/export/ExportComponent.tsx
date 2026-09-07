@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useDispatch } from 'react-redux';
 import InvoiceContainer from '../forms/invoiceForm/InvoiceContainer';
 import PackingContainer from '../forms/packingListForm/PackingContainer';
 import PalletContainer from '../forms/packingListForm/PalletContainer';
@@ -6,7 +7,8 @@ import { useDrag } from 'react-use-gesture';
 import { calculatePackingData } from '../../lib/utils/calculatePackingData';
 import ScheduleSearchModal from '../modals/ScheduleSearchModal';
 import { ScheduleItem } from '../../lib/api/schedule';
-import { syncExportShipment } from '../../lib/api/tracking';
+import { syncExportShipment, confirmDispatch, cancelDispatch } from '../../lib/api/tracking';
+import { itemActions } from '../../store/slices/itemSlice';
 type Props = {
     model: string
     setModel: React.Dispatch<React.SetStateAction<string>>
@@ -106,6 +108,7 @@ const ExportComponent: React.FC<Props> = ({
         vesselVoy: string;
         selectedSchedule: ScheduleItem | null;
         isSaved: boolean;
+        dispatchStatus?: 'TEMP' | 'CONFIRMED' | 'CANCELED';
         subMaterials?: any[];
     };
 
@@ -182,6 +185,8 @@ const ExportComponent: React.FC<Props> = ({
         return {};
     });
 
+    const dispatch = useDispatch();
+    const [isDispatching, setIsDispatching] = useState<boolean>(false);
     const [vesselVoy, setVesselVoy] = useState<string>('');
     const [selectedSchedule, setSelectedSchedule] = useState<ScheduleItem | null>(null);
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState<boolean>(false);
@@ -331,6 +336,8 @@ const ExportComponent: React.FC<Props> = ({
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeMonth, savedMonthShipping, pickedData]);
+
+    const savedInfo = getSavedShippingForMonth(savedMonthShipping, activeMonth);
 
     const isProductChecked = (itemName: string): boolean => {
         return checkedProducts[itemName] !== undefined ? checkedProducts[itemName] : true;
@@ -793,6 +800,15 @@ const ExportComponent: React.FC<Props> = ({
                                         <div className='input_type'>
                                             <div>
                                                 <label htmlFor='exNo'>출고넘버</label>
+                                                {savedInfo?.dispatchStatus && (
+                                                    <span className={`dispatch-status-tag ${savedInfo.dispatchStatus}`}>
+                                                        {savedInfo.dispatchStatus === 'CONFIRMED'
+                                                            ? '[출고확정: 재고차감완료]'
+                                                            : savedInfo.dispatchStatus === 'CANCELED'
+                                                            ? '[출고취소: 재고원복완료]'
+                                                            : '[임시저장]'}
+                                                    </span>
+                                                )}
                                             </div>
                                             <input
                                                 type="text"
@@ -1020,105 +1036,280 @@ const ExportComponent: React.FC<Props> = ({
                                     </div>
                                 </div>
                                 <div className='btns'>
-                                    <button type='button' onClick={() => handleSelectAll(true)}>전체 선택</button>
-                                    <button type='button' onClick={() => handleSelectAll(false)}>전체 취소</button>
-                                    <button type='button' onClick={async () => {
-                                        const currentMonth = activeMonth || '';
-                                        const trimmedExportNo = exportNo ? exportNo.trim() : '';
-                                        if (!trimmedExportNo || trimmedExportNo === 'EK-') {
-                                            alert(`${currentMonth ? `[${currentMonth}월] ` : ''}출고넘버를 입력해 주세요. (예: EK-260905)`);
-                                            return;
-                                        }
-                                        if (!vesselVoy || !vesselVoy.trim()) {
-                                            alert(`${currentMonth ? `[${currentMonth}월] ` : ''}Vessel/Voy를 선택하거나 입력해 주세요.`);
-                                            return;
-                                        }
+                                    <button
+                                        type='button'
+                                        className='btn-select-all'
+                                        onClick={() => handleSelectAll(true)}
+                                    >
+                                        전체 선택
+                                    </button>
+                                    <button
+                                        type='button'
+                                        className='btn-select-none'
+                                        onClick={() => handleSelectAll(false)}
+                                    >
+                                        전체 취소
+                                    </button>
 
-                                        // 1. 선택된 부자재가 있으면 ordersheet에 반영
-                                        const checkedPicked = activeSubMaterials?.filter(data => data.check) || [];
-                                        const result = checkedPicked.map(data => ({
-                                            id: data.id,
-                                            ItemId: data.ItemId,
-                                            check: data.check,
-                                            itemName: data.itemName,
-                                            month: currentMonth,
-                                            quantity: data.quantity !== '' ? Number(data.quantity) : 0,
-                                            description: '',
-                                            category: 'REPAIR',
-                                            unit: '$',
-                                            im_price: data.im_price || 0,
-                                            ex_price: data.ex_price || 0,
-                                            sets: 'EA',
-                                            weight: data.weight !== '' ? Number(data.weight) : 0,
-                                            cbm: data.cbm && data.cbm !== '선택' ? Number(data.cbm) : 0,
-                                            CT_qty: data.CT_qty !== '' ? Number(data.CT_qty) : 0,
-                                            number1: 9,
-                                            use: true,
-                                        }));
-                                        if (result.length > 0) {
-                                            inputRepairToOrdersheet(result);
-                                        }
-
-                                        // 2. 출고넘버 및 선박 스케줄을 트래킹 시스템에 즉시 저장
-                                        try {
-                                            let vName = 'MSC VESSEL';
-                                            let voy = 'V001';
-                                            if (selectedSchedule) {
-                                                vName = selectedSchedule.vesselName;
-                                                voy = selectedSchedule.voyage;
-                                            } else if (vesselVoy) {
-                                                const parts = vesselVoy.split('/');
-                                                vName = parts[0].trim() || 'MSC VESSEL';
-                                                voy = parts.length > 1 ? parts[1].trim() : 'V001';
+                                    {/* 1. 임시저장 버튼 */}
+                                    <button
+                                        type='button'
+                                        className='btn-save-temp'
+                                        disabled={isDispatching}
+                                        onClick={async () => {
+                                            const currentMonth = activeMonth || '';
+                                            const trimmedExportNo = exportNo ? exportNo.trim() : '';
+                                            if (!trimmedExportNo || trimmedExportNo === 'EK-') {
+                                                alert(`${currentMonth ? `[${currentMonth}월] ` : ''}출고넘버를 입력해 주세요. (예: EK-260905)`);
+                                                return;
+                                            }
+                                            if (!vesselVoy || !vesselVoy.trim()) {
+                                                alert(`${currentMonth ? `[${currentMonth}월] ` : ''}Vessel/Voy를 선택하거나 입력해 주세요.`);
+                                                return;
                                             }
 
-                                            const totalCbm = result.reduce((acc, curr) => acc + (Number(curr.cbm) || 0), 0).toFixed(2);
-                                            const totalWeight = result.reduce((acc, curr) => acc + (Number(curr.weight) || 0), 0).toFixed(1);
-                                            const summary = result.length > 0
-                                                ? `출하 저장 [${currentMonth}/${containerType}]: ${result.length}개 품목 (${totalCbm} CBM / ${totalWeight} kg)`
-                                                : `출하 등록 [${currentMonth}/${containerType}]: ${vName} (${voy})`;
+                                            // 부자재 오더시트 반영
+                                            const checkedPicked = activeSubMaterials?.filter(data => data.check) || [];
+                                            const result = checkedPicked.map(data => ({
+                                                id: data.id,
+                                                ItemId: data.ItemId,
+                                                check: data.check,
+                                                itemName: data.itemName,
+                                                month: currentMonth,
+                                                quantity: data.quantity !== '' ? Number(data.quantity) : 0,
+                                                description: '',
+                                                category: 'REPAIR',
+                                                unit: '$',
+                                                im_price: data.im_price || 0,
+                                                ex_price: data.ex_price || 0,
+                                                sets: 'EA',
+                                                weight: data.weight !== '' ? Number(data.weight) : 0,
+                                                cbm: data.cbm && data.cbm !== '선택' ? Number(data.cbm) : 0,
+                                                CT_qty: data.CT_qty !== '' ? Number(data.CT_qty) : 0,
+                                                number1: 9,
+                                                use: true,
+                                            }));
+                                            if (result.length > 0) {
+                                                inputRepairToOrdersheet(result);
+                                            }
 
-                                            await syncExportShipment({
-                                                export_no: trimmedExportNo,
-                                                vessel_name: vName,
-                                                voyage: voy,
-                                                carrier: selectedSchedule?.carrier || 'MSC',
-                                                pol: selectedSchedule?.pol || 'KRPUS',
-                                                pod: selectedSchedule?.pod || 'USLGB',
-                                                etd: selectedSchedule?.etd || null,
-                                                eta: selectedSchedule?.eta || null,
-                                                doc_closing_date: selectedSchedule?.docClosingDate || null,
-                                                cargo_closing_date: selectedSchedule?.cargoClosingDate || null,
-                                                vessel_imo: selectedSchedule?.vesselImo || null,
-                                                item_summary: summary
-                                            });
-
-                                            // 3. 현재 월(activeMonth)에 저장 완료 상태 기록 및 localStorage 영구 보존
-                                            if (currentMonth) {
-                                                const updatedMap = {
-                                                    ...savedMonthShipping,
-                                                    [currentMonth]: {
-                                                        exportNo: trimmedExportNo,
-                                                        vesselVoy: vesselVoy.trim(),
-                                                        selectedSchedule: selectedSchedule,
-                                                        isSaved: true,
-                                                        subMaterials: activeSubMaterials,
-                                                    }
-                                                };
-                                                setSavedMonthShipping(updatedMap);
-                                                try {
-                                                    localStorage.setItem('apex_export_month_shipping', JSON.stringify(updatedMap));
-                                                } catch (e) {
-                                                    console.error('localStorage save error', e);
+                                            try {
+                                                setIsDispatching(true);
+                                                let vName = 'MSC VESSEL';
+                                                let voy = 'V001';
+                                                if (selectedSchedule) {
+                                                    vName = selectedSchedule.vesselName;
+                                                    voy = selectedSchedule.voyage;
+                                                } else if (vesselVoy) {
+                                                    const parts = vesselVoy.split('/');
+                                                    vName = parts[0].trim() || 'MSC VESSEL';
+                                                    voy = parts.length > 1 ? parts[1].trim() : 'V001';
                                                 }
-                                            }
 
-                                            alert(`[${currentMonth}월] 출고 정보가 성공적으로 저장되었습니다.\n(출고넘버: ${trimmedExportNo} | 선박: ${vName} / ${voy})`);
-                                        } catch (err: any) {
-                                            console.error('Tracking sync error:', err);
-                                            alert('출고 정보 저장 중 오류가 발생했습니다: ' + (err?.response?.data?.message || err.message));
-                                        }
-                                    }}>저장</button>
+                                                const totalCbm = result.reduce((acc, curr) => acc + (Number(curr.cbm) || 0), 0).toFixed(2);
+                                                const totalWeight = result.reduce((acc, curr) => acc + (Number(curr.weight) || 0), 0).toFixed(1);
+                                                const summary = result.length > 0
+                                                    ? `출하 임시저장 [${currentMonth}/${containerType}]: ${result.length}개 품목 (${totalCbm} CBM / ${totalWeight} kg)`
+                                                    : `출하 등록 [${currentMonth}/${containerType}]: ${vName} (${voy})`;
+
+                                                await syncExportShipment({
+                                                    export_no: trimmedExportNo,
+                                                    vessel_name: vName,
+                                                    voyage: voy,
+                                                    carrier: selectedSchedule?.carrier || 'MSC',
+                                                    pol: selectedSchedule?.pol || 'KRPUS',
+                                                    pod: selectedSchedule?.pod || 'USLGB',
+                                                    etd: selectedSchedule?.etd || null,
+                                                    eta: selectedSchedule?.eta || null,
+                                                    doc_closing_date: selectedSchedule?.docClosingDate || null,
+                                                    cargo_closing_date: selectedSchedule?.cargoClosingDate || null,
+                                                    vessel_imo: selectedSchedule?.vesselImo || null,
+                                                    item_summary: summary
+                                                });
+
+                                                if (currentMonth) {
+                                                    const prevSaved = savedMonthShipping[currentMonth];
+                                                    const updatedMap = {
+                                                        ...savedMonthShipping,
+                                                        [currentMonth]: {
+                                                            exportNo: trimmedExportNo,
+                                                            vesselVoy: vesselVoy.trim(),
+                                                            selectedSchedule: selectedSchedule,
+                                                            isSaved: true,
+                                                            dispatchStatus: prevSaved?.dispatchStatus || ('TEMP' as const),
+                                                            subMaterials: activeSubMaterials,
+                                                        }
+                                                    };
+                                                    setSavedMonthShipping(updatedMap);
+                                                    try {
+                                                        localStorage.setItem('apex_export_month_shipping', JSON.stringify(updatedMap));
+                                                    } catch (e) {
+                                                        console.error('localStorage save error', e);
+                                                    }
+                                                }
+
+                                                alert(`[${currentMonth}월] 출고 정보가 성공적으로 임시저장되었습니다.\n(출고넘버: ${trimmedExportNo} | 선박: ${vName} / ${voy})`);
+                                            } catch (err: any) {
+                                                console.error('임시저장 에러:', err);
+                                                alert('출고 정보 임시저장 중 오류가 발생했습니다: ' + (err?.response?.data?.message || err.message));
+                                            } finally {
+                                                setIsDispatching(false);
+                                            }
+                                        }}
+                                    >
+                                        임시저장
+                                    </button>
+
+                                    {/* 2. 출고 확정 / 출고 취소 분기 버튼 */}
+                                    {savedInfo?.dispatchStatus === 'CONFIRMED' ? (
+                                        <button
+                                            type='button'
+                                            className='btn-cancel-dispatch'
+                                            disabled={isDispatching}
+                                            onClick={async () => {
+                                                const currentMonth = activeMonth || '';
+                                                const trimmedExportNo = exportNo ? exportNo.trim() : '';
+                                                if (!trimmedExportNo) {
+                                                    alert('출고 번호가 없습니다.');
+                                                    return;
+                                                }
+
+                                                const confirmMsg = `[${currentMonth}월 출고 취소]\n출고넘버: ${trimmedExportNo}\n\n출고를 취소하시겠습니까?\nBOM 역전개로 차감되었던 모든 부품 재고가 원래대로 전량 원복(Rollback)됩니다.`;
+                                                if (!window.confirm(confirmMsg)) {
+                                                    return;
+                                                }
+
+                                                try {
+                                                    setIsDispatching(true);
+                                                    const res = await cancelDispatch(trimmedExportNo);
+
+                                                    if (currentMonth) {
+                                                        const updatedMap = {
+                                                            ...savedMonthShipping,
+                                                            [currentMonth]: {
+                                                                ...savedMonthShipping[currentMonth],
+                                                                dispatchStatus: 'CANCELED' as const,
+                                                            }
+                                                        };
+                                                        setSavedMonthShipping(updatedMap);
+                                                        localStorage.setItem('apex_export_month_shipping', JSON.stringify(updatedMap));
+                                                    }
+
+                                                    // 재고 리덕스 최신화
+                                                    dispatch(itemActions.getItem());
+
+                                                    alert(`[출고 취소 완료]\n출고가 정상적으로 취소되었습니다.\n(차감되었던 부품 총 ${res.data?.restoredItems?.length || 0}종 재고 전량 원복 완료)\n\n필요시 품목/수량을 수정하신 후 다시 [출고 확정]을 진행하시면 됩니다.`);
+                                                } catch (err: any) {
+                                                    console.error('출고 취소 에러:', err);
+                                                    alert('출고 취소 중 오류가 발생했습니다: ' + (err?.response?.data?.message || err.message));
+                                                } finally {
+                                                    setIsDispatching(false);
+                                                }
+                                            }}
+                                        >
+                                            {isDispatching ? '원복 처리 중...' : '출고 취소 (재고 원복)'}
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type='button'
+                                            className='btn-confirm-dispatch'
+                                            disabled={isDispatching}
+                                            onClick={async () => {
+                                                const currentMonth = activeMonth || '';
+                                                const trimmedExportNo = exportNo ? exportNo.trim() : '';
+                                                if (!trimmedExportNo || trimmedExportNo === 'EK-') {
+                                                    alert(`${currentMonth ? `[${currentMonth}월] ` : ''}출고넘버를 먼저 입력해 주세요. (예: EK-260905)`);
+                                                    return;
+                                                }
+                                                if (!vesselVoy || !vesselVoy.trim()) {
+                                                    alert(`${currentMonth ? `[${currentMonth}월] ` : ''}Vessel/Voy를 먼저 선택하거나 입력해 주세요.`);
+                                                    return;
+                                                }
+
+                                                // 1. 출고 대상 완제품(SET) 목록 수집
+                                                const productsToDispatch = (productPackingData || [])
+                                                    .filter(p => isProductChecked(p.itemName))
+                                                    .map(p => {
+                                                        const override = productOverrides[p.itemName];
+                                                        const qty = override?.quantity !== undefined && override?.quantity !== ''
+                                                            ? Number(override.quantity)
+                                                            : Number(p.quantity) || 0;
+                                                        return {
+                                                            id: p.id,
+                                                            itemName: p.itemName,
+                                                            quantity: qty
+                                                        };
+                                                    })
+                                                    .filter(p => p.quantity > 0);
+
+                                                // 2. 출고 대상 부자재 목록 수집
+                                                const subsToDispatch = (activeSubMaterials || [])
+                                                    .filter(s => s.check)
+                                                    .map(s => ({
+                                                        id: s.id,
+                                                        ItemId: s.ItemId,
+                                                        itemName: s.itemName,
+                                                        quantity: s.quantity !== '' ? Number(s.quantity) : 0
+                                                    }))
+                                                    .filter(s => s.quantity > 0);
+
+                                                if (productsToDispatch.length === 0 && subsToDispatch.length === 0) {
+                                                    alert('출고할 대상 완제품 또는 부자재가 없습니다.');
+                                                    return;
+                                                }
+
+                                                const confirmMsg = `[${currentMonth}월 출고 확정 진행]\n출고넘버: ${trimmedExportNo}\n완제품: ${productsToDispatch.length}종 / 부자재: ${subsToDispatch.length}종\n\n출고를 확정하시겠습니까?\nBOM 역전개에 따라 소요되는 모든 원부자재 실물 재고가 자동 차감(Backflush)됩니다.`;
+                                                if (!window.confirm(confirmMsg)) {
+                                                    return;
+                                                }
+
+                                                try {
+                                                    setIsDispatching(true);
+                                                    const res = await confirmDispatch({
+                                                        export_no: trimmedExportNo,
+                                                        month: currentMonth,
+                                                        products: productsToDispatch,
+                                                        subMaterials: subsToDispatch
+                                                    });
+
+                                                    if (currentMonth) {
+                                                        const updatedMap = {
+                                                            ...savedMonthShipping,
+                                                            [currentMonth]: {
+                                                                exportNo: trimmedExportNo,
+                                                                vesselVoy: vesselVoy.trim(),
+                                                                selectedSchedule: selectedSchedule,
+                                                                isSaved: true,
+                                                                dispatchStatus: 'CONFIRMED' as const,
+                                                                subMaterials: activeSubMaterials,
+                                                            }
+                                                        };
+                                                        setSavedMonthShipping(updatedMap);
+                                                        localStorage.setItem('apex_export_month_shipping', JSON.stringify(updatedMap));
+                                                    }
+
+                                                    // 재고 최신화
+                                                    dispatch(itemActions.getItem());
+
+                                                    if (res.data?.hasNegativeStock) {
+                                                        const warnings = res.data.warningItems
+                                                            .map((w: any) => `- ${w.itemName}: 현재고 ${w.currentStock} ➔ 차감 ${w.reqQty} (부족: -${w.shortage} EA)`)
+                                                            .join('\n');
+                                                        alert(`[출고 확정 완료 - 전산 재고 부족 주의]\n출고는 정상 처리되었으나, 다음 부품들의 재고가 부족하여 마이너스 재고로 반영되었습니다:\n\n${warnings}\n\n* 실물 생산 완료 후 전산 재고 정합성을 위해 즉시 추가 발주를 권장합니다.`);
+                                                    } else {
+                                                        alert(`[${currentMonth}월] 출고 확정이 성공적으로 완료되었습니다.\n(BOM 역전개 부품 총 ${res.data?.deductions?.length || 0}종 재고 자동 차감 완료)`);
+                                                    }
+                                                } catch (err: any) {
+                                                    console.error('출고 확정 에러:', err);
+                                                    alert('출고 확정 중 오류가 발생했습니다: ' + (err?.response?.data?.message || err.message));
+                                                } finally {
+                                                    setIsDispatching(false);
+                                                }
+                                            }}
+                                        >
+                                            {isDispatching ? '확정 처리 중...' : '출고 확정 (부품 차감)'}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>

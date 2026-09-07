@@ -497,41 +497,80 @@
             }
           }
           .btns {
-            text-align: right;
-            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            padding: 0.6rem;
             box-sizing: border-box;
+
             button {
               font-size: 0.82rem;
-              font-weight: 600;
-              margin-left: 0.4rem;
-              padding: 0.35rem 0.75rem;
+              font-weight: 700;
+              padding: 0.4rem 0.8rem;
               border-radius: 6px;
               cursor: pointer;
-              transition: all 0.2s ease;
+              transition: all 0.15s ease;
+              border: 1px solid transparent;
 
-              &:nth-child(1) {
+              &.btn-select-all {
                 background: #eff6ff;
-                border: 1px solid #bfdbfe;
+                border-color: #bfdbfe;
                 color: #1d4ed8;
                 &:hover {
                   background-color: #dbeafe;
                 }
               }
-              &:nth-child(2) {
+
+              &.btn-select-none {
                 background: #f8fafc;
-                border: 1px solid #cbd5e1;
+                border-color: #cbd5e1;
                 color: #64748b;
                 &:hover {
                   background-color: #f1f5f9;
                   color: #334155;
                 }
               }
-              &:nth-child(3) {
+
+              &.btn-save-temp {
                 background: #2563eb;
-                border: 1px solid #2563eb;
+                border-color: #1d4ed8;
                 color: #ffffff;
                 &:hover {
                   background-color: #1d4ed8;
+                }
+              }
+
+              &.btn-confirm-dispatch {
+                background: #0f766e;
+                border-color: #115e59;
+                color: #ffffff;
+                box-shadow: 0 1px 3px rgba(15, 118, 110, 0.25);
+                &:hover {
+                  background-color: #115e59;
+                  transform: translateY(-1px);
+                }
+                &:disabled {
+                  opacity: 0.6;
+                  cursor: not-allowed;
+                  transform: none;
+                }
+              }
+
+              &.btn-cancel-dispatch {
+                background: #dc2626;
+                border-color: #b91c1c;
+                color: #ffffff;
+                box-shadow: 0 1px 3px rgba(220, 38, 38, 0.25);
+                &:hover {
+                  background-color: #b91c1c;
+                  transform: translateY(-1px);
+                }
+                &:disabled {
+                  opacity: 0.6;
+                  cursor: not-allowed;
+                  transform: none;
                 }
               }
             }
@@ -557,3 +596,31 @@
     }
   }
 }
+
+.dispatch-status-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  letter-spacing: -0.2px;
+
+  &.CONFIRMED {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+  }
+  &.CANCELED {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+  }
+  &.TEMP {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+  }
+}
+

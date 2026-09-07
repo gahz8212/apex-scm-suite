@@ -80,6 +80,22 @@ module.exports = class Shipment extends Sequelize.Model {
           allowNull: true,
           comment: "출하 품목 요약 (품목수, CBM, 무게 등 JSON or 텍스트)",
         },
+        dispatch_status: {
+          type: Sequelize.STRING(20),
+          allowNull: false,
+          defaultValue: "TEMP",
+          comment: "출고 상태 (TEMP: 임시저장, CONFIRMED: 출고확정, CANCELED: 출고취소)",
+        },
+        deducted_items: {
+          type: Sequelize.TEXT,
+          allowNull: true,
+          comment: "BOM 역전개로 차감된 부품 목록 및 수량 (원복용 JSON)",
+        },
+        confirmed_at: {
+          type: Sequelize.DATE,
+          allowNull: true,
+          comment: "출고 확정 일시",
+        },
       },
       {
         sequelize,

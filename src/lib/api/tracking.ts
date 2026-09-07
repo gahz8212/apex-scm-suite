@@ -25,6 +25,9 @@ export interface TrackingShipment {
   shipper?: string;
   consignee?: string;
   item_summary?: string | null;
+  dispatch_status?: 'TEMP' | 'CONFIRMED' | 'CANCELED';
+  deducted_items?: string | null;
+  confirmed_at?: string | null;
   step: number; // 1 to 5
   statusKey: 'PENDING_DOCS' | 'TRUCKING_GATE_IN' | 'LOADED' | 'IN_TRANSIT' | 'DELIVERED';
   statusLabel: string;
@@ -50,6 +53,13 @@ export interface SyncExportPayload {
   item_summary?: string | null;
 }
 
+export interface ConfirmDispatchPayload {
+  export_no: string;
+  month?: string;
+  products: { id?: number; itemName: string; quantity: number }[];
+  subMaterials?: { id?: number; ItemId?: number; itemName?: string; quantity: number }[];
+}
+
 export const getAllShipments = async (): Promise<TrackingShipment[]> => {
   const response = await client.get('/tracking/all');
   return response.data.data;
@@ -64,3 +74,14 @@ export const syncExportShipment = async (payload: SyncExportPayload): Promise<Tr
   const response = await client.post('/tracking/sync-export', payload);
   return response.data.data;
 };
+
+export const confirmDispatch = async (payload: ConfirmDispatchPayload) => {
+  const response = await client.post('/tracking/confirm-dispatch', payload);
+  return response.data;
+};
+
+export const cancelDispatch = async (exportNo: string) => {
+  const response = await client.post('/tracking/cancel-dispatch', { export_no: exportNo });
+  return response.data;
+};
+
