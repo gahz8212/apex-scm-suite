@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { response } from '../../store/slices/authSlice';
 import InvoiceContainer from '../forms/invoiceForm/InvoiceContainer';
 import PackingContainer from '../forms/packingListForm/PackingContainer';
 import PalletContainer from '../forms/packingListForm/PalletContainer';
@@ -186,6 +187,8 @@ const ExportComponent: React.FC<Props> = ({
     });
 
     const dispatch = useDispatch();
+    const { auth } = useSelector(response);
+    const isManagerOrAdmin = auth?.role === 'ADMIN' || auth?.role === 'MANAGER';
     const [isDispatching, setIsDispatching] = useState<boolean>(false);
     const [vesselVoy, setVesselVoy] = useState<string>('');
     const [selectedSchedule, setSelectedSchedule] = useState<ScheduleItem | null>(null);
@@ -658,12 +661,14 @@ const ExportComponent: React.FC<Props> = ({
                     </div>
                 </div>
                 <div className="summary">
-                    <div className='buttons'>
-                        <label htmlFor="orders">Order 입력 <img src='/images/excel_btn.png' alt='excel'></img></label>
-                        <input type="file" name="orders" id="orders" onChange={onChangeOrder} ref={orderInput} />
-                        <label htmlFor="parts">아이템 입력 <img src='/images/excel_btn.png' alt='excel'></img></label>
-                        <input type="file" name="parts" id="parts" onChange={onChangeItem} ref={itemsInput} />
-                    </div>
+                    {isManagerOrAdmin && (
+                        <div className='buttons'>
+                            <label htmlFor="orders">Order 입력 <img src='/images/excel_btn.png' alt='excel'></img></label>
+                            <input type="file" name="orders" id="orders" onChange={onChangeOrder} ref={orderInput} />
+                            <label htmlFor="parts">아이템 입력 <img src='/images/excel_btn.png' alt='excel'></img></label>
+                            <input type="file" name="parts" id="parts" onChange={onChangeItem} ref={itemsInput} />
+                        </div>
+                    )}
 
                     <div className="selector">
                         {months?.map((month, index) =>
@@ -712,26 +717,28 @@ const ExportComponent: React.FC<Props> = ({
                                                 <div className={`item col-name ${picked.check ? 'selected' : ''}`} title={picked.itemName}>
                                                     <span className="badge-part">부자재</span>
                                                     <span className="name-text">{picked.itemName}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRemoveSubMaterial(picked.ItemId || picked.id);
-                                                        }}
-                                                        title="부자재 삭제"
-                                                        style={{
-                                                            marginLeft: 'auto',
-                                                            background: 'transparent',
-                                                            border: 'none',
-                                                            color: '#94a3b8',
-                                                            cursor: 'pointer',
-                                                            fontSize: '0.8rem',
-                                                            padding: '0 4px',
-                                                            lineHeight: 1
-                                                        }}
-                                                    >
-                                                        ✕
-                                                    </button>
+                                                    {isManagerOrAdmin && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRemoveSubMaterial(picked.ItemId || picked.id);
+                                                            }}
+                                                            title="부자재 삭제"
+                                                            style={{
+                                                                marginLeft: 'auto',
+                                                                background: 'transparent',
+                                                                border: 'none',
+                                                                color: '#94a3b8',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.8rem',
+                                                                padding: '0 4px',
+                                                                lineHeight: 1
+                                                            }}
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 <div className='item col-qty'>
                                                     <input
@@ -816,7 +823,8 @@ const ExportComponent: React.FC<Props> = ({
                                                 id="exNo"
                                                 placeholder='EK-'
                                                 value={exportNo}
-                                                onChange={(e) => setExportNo(e.target.value)}
+                                                readOnly={!isManagerOrAdmin}
+                                                onChange={(e) => isManagerOrAdmin && setExportNo(e.target.value)}
                                             />
                                         </div>
                                         <div className='input_type vessel_type'>
@@ -827,10 +835,11 @@ const ExportComponent: React.FC<Props> = ({
                                                 type="text"
                                                 name="vess"
                                                 id="vess"
-                                                placeholder="클릭하여 스케줄 선택"
+                                                placeholder={isManagerOrAdmin ? "클릭하여 스케줄 선택" : "선박 스케줄 (조회 전용)"}
                                                 value={vesselVoy}
-                                                onClick={() => setIsScheduleModalOpen(true)}
-                                                onChange={(e) => setVesselVoy(e.target.value)}
+                                                readOnly={!isManagerOrAdmin}
+                                                onClick={() => isManagerOrAdmin && setIsScheduleModalOpen(true)}
+                                                onChange={(e) => isManagerOrAdmin && setVesselVoy(e.target.value)}
                                             />
                                             {selectedSchedule && (
                                                 <div className="vessel_info_preview" title="선택된 선박 스케줄 정보">
@@ -885,6 +894,7 @@ const ExportComponent: React.FC<Props> = ({
                                                             name="check"
                                                             id={`prod-check-${pIdx}`}
                                                             checked={isChecked}
+                                                            disabled={!isManagerOrAdmin}
                                                             onChange={() => toggleProductCheck(prod.itemName)}
                                                         />
                                                     </div>
@@ -897,7 +907,7 @@ const ExportComponent: React.FC<Props> = ({
                                                             type="number"
                                                             name="quantity"
                                                             value={currentQty !== undefined && currentQty !== null ? currentQty : ''}
-                                                            disabled={!isChecked}
+                                                            disabled={!isChecked || !isManagerOrAdmin}
                                                             onChange={(e) => handleProductQtyChange(prod, e.target.value)}
                                                             className="input_box input_qty"
                                                         />
@@ -907,7 +917,7 @@ const ExportComponent: React.FC<Props> = ({
                                                             type="number"
                                                             name="CT_qty"
                                                             value={currentCT !== undefined && currentCT !== null ? currentCT : ''}
-                                                            disabled={!isChecked}
+                                                            disabled={!isChecked || !isManagerOrAdmin}
                                                             onChange={(e) => handleProductCTChange(prod.itemName, e.target.value)}
                                                             className="input_box input_ct"
                                                         />
@@ -917,7 +927,7 @@ const ExportComponent: React.FC<Props> = ({
                                                             type="number"
                                                             name="weight"
                                                             value={currentWeight !== undefined && currentWeight !== null ? currentWeight : ''}
-                                                            disabled={!isChecked}
+                                                            disabled={!isChecked || !isManagerOrAdmin}
                                                             onChange={(e) => handleProductWeightChange(prod.itemName, e.target.value)}
                                                             className="input_box input_weight"
                                                         />
@@ -927,7 +937,7 @@ const ExportComponent: React.FC<Props> = ({
                                                             className='input_box sel_cbm'
                                                             name='cbm'
                                                             value={currentCbm || '선택'}
-                                                            disabled={!isChecked}
+                                                            disabled={!isChecked || !isManagerOrAdmin}
                                                             onChange={(e) => handleProductCbmChange(prod.itemName, e.target.value)}
                                                         >
                                                             <option value="선택">선택</option>
@@ -952,32 +962,35 @@ const ExportComponent: React.FC<Props> = ({
                                                         name="check"
                                                         id={String(picked.ItemId || picked.id)}
                                                         checked={picked.check}
+                                                        disabled={!isManagerOrAdmin}
                                                         onChange={handleSubMaterialChange}
                                                     />
                                                 </div>
                                                 <div className={`item col-name ${picked.check ? 'selected' : ''}`} title={picked.itemName}>
                                                     <span className="badge-part">부자재</span>
                                                     <span className="name-text">{picked.itemName}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRemoveSubMaterial(picked.ItemId || picked.id);
-                                                        }}
-                                                        title="부자재 삭제"
-                                                        style={{
-                                                            marginLeft: 'auto',
-                                                            background: 'transparent',
-                                                            border: 'none',
-                                                            color: '#94a3b8',
-                                                            cursor: 'pointer',
-                                                            fontSize: '0.8rem',
-                                                            padding: '0 4px',
-                                                            lineHeight: 1
-                                                        }}
-                                                    >
-                                                        ✕
-                                                    </button>
+                                                    {isManagerOrAdmin && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRemoveSubMaterial(picked.ItemId || picked.id);
+                                                            }}
+                                                            title="부자재 삭제"
+                                                            style={{
+                                                                marginLeft: 'auto',
+                                                                background: 'transparent',
+                                                                border: 'none',
+                                                                color: '#94a3b8',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.8rem',
+                                                                padding: '0 4px',
+                                                                lineHeight: 1
+                                                            }}
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 <div className='item col-qty'>
                                                     <input
@@ -985,7 +998,7 @@ const ExportComponent: React.FC<Props> = ({
                                                         name="quantity"
                                                         id={String(picked.ItemId || picked.id)}
                                                         value={picked.quantity !== undefined && picked.quantity !== null ? picked.quantity : ''}
-                                                        disabled={!picked.check}
+                                                        disabled={!picked.check || !isManagerOrAdmin}
                                                         onChange={handleSubMaterialChange}
                                                         className="input_box input_qty"
                                                     />
@@ -996,7 +1009,7 @@ const ExportComponent: React.FC<Props> = ({
                                                         name="CT_qty"
                                                         id={String(picked.ItemId || picked.id)}
                                                         value={picked.CT_qty !== undefined && picked.CT_qty !== null ? picked.CT_qty : ''}
-                                                        disabled={!picked.check}
+                                                        disabled={!picked.check || !isManagerOrAdmin}
                                                         onChange={handleSubMaterialChange}
                                                         className='input_box input_ct'
                                                     />
@@ -1007,7 +1020,7 @@ const ExportComponent: React.FC<Props> = ({
                                                         name="weight"
                                                         id={String(picked.ItemId || picked.id)}
                                                         value={picked.weight !== undefined && picked.weight !== null ? picked.weight : ''}
-                                                        disabled={!picked.check}
+                                                        disabled={!picked.check || !isManagerOrAdmin}
                                                         onChange={handleSubMaterialChange}
                                                         className='input_box input_weight'
                                                     />
@@ -1018,7 +1031,7 @@ const ExportComponent: React.FC<Props> = ({
                                                         name='cbm'
                                                         value={picked.cbm || '선택'}
                                                         id={String(picked.ItemId || picked.id)}
-                                                        disabled={!picked.check}
+                                                        disabled={!picked.check || !isManagerOrAdmin}
                                                         onChange={handleSubMaterialChange}
                                                     >
                                                         <option value="선택">선택</option>
@@ -1051,8 +1064,11 @@ const ExportComponent: React.FC<Props> = ({
                                         전체 취소
                                     </button>
 
-                                    {/* 1. 임시저장 버튼 */}
-                                    <button
+                                    {/* 작업 권한(MANAGER, ADMIN)이 있을 때만 임시저장 및 출고확정/취소 버튼 노출 */}
+                                    {isManagerOrAdmin ? (
+                                        <>
+                                            {/* 1. 임시저장 버튼 */}
+                                            <button
                                         type='button'
                                         className='btn-save-temp'
                                         disabled={isDispatching}
@@ -1310,7 +1326,24 @@ const ExportComponent: React.FC<Props> = ({
                                             {isDispatching ? '확정 처리 중...' : '출고 확정 (부품 차감)'}
                                         </button>
                                     )}
-                                </div>
+                                </>
+                            ) : (
+                                <span style={{
+                                    fontSize: '0.82rem',
+                                    color: '#64748b',
+                                    padding: '7px 14px',
+                                    background: '#f8fafc',
+                                    borderRadius: '6px',
+                                    border: '1px dashed #cbd5e1',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontWeight: 500
+                                }}>
+                                    🔒 조회 전용 (출고 및 저장 권한 없음)
+                                </span>
+                            )}
+                        </div>
                             </div>
                         </div>
                     </div>

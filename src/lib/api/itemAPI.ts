@@ -57,4 +57,8 @@ export const inboundItem = (data: { id: number; inbound_qty: number; warehouse: 
   return client.patch("/item/inbound", data);
 };
 
+export const getItemStockHistory = (id: number) => {
+  return client.get(`/item/${id}/history`);
+};
+
 

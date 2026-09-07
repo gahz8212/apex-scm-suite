@@ -2,8 +2,9 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
-const { Item, Image, Good, Relation, Picker } = require("../models");
+const { Item, Image, Good, Relation, Picker, User, StockHistory, sequelize } = require("../models");
 const { Op } = require("sequelize");
+const { isLoggedIn, requireRole } = require("../middlewares/auth");
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -21,7 +22,7 @@ const upload = multer({
   }),
   limits: { fileSize: 5 * 1024 * 1024 },
 });
-router.post("/images", upload.array("images"), async (req, res) => {
+router.post("/images", isLoggedIn, upload.array("images"), async (req, res) => {
   try {
     const files = req.files.map((file) => ({ url: `/img/${file.filename}` }));
     return res.status(200).json(files);
@@ -29,7 +30,7 @@ router.post("/images", upload.array("images"), async (req, res) => {
     return res.status(400).json(e.message);
   }
 });
-router.post("/item", async (req, res) => {
+router.post("/item", requireRole("ADMIN", "MANAGER"), async (req, res) => {
   const {
     type,
     groupType,
@@ -52,108 +53,120 @@ router.post("/item", async (req, res) => {
   // console.log("dragItems", dragItems);
 
   try {
-    //set가 들어오면 Item에
-    //assy나 item이 들어오면 item에 입력
-    //image는 image의 goodId에 입력
-    if (type === "SET") {
-      const [good, create] = await Good.findOrCreate({
-        where: {
-          groupName,
-          itemName,
-        },
+    const [newItem, relations] = await sequelize.transaction(async (t) => {
+      if (type === "SET") {
+        const [good] = await Good.findOrCreate({
+          where: {
+            groupName,
+            itemName,
+          },
+          transaction: t,
+        });
+
+        await Item.upsert(
+          {
+            type,
+            groupType,
+            descript,
+            category,
+            unit,
+            im_price,
+            ex_price,
+            weight,
+            cbm,
+            sets,
+            moq,
+            use,
+            supplyer,
+            itemName,
+            groupName,
+            GoodId: good.id,
+          },
+          { transaction: t }
+        );
+      } else if (type === "ASSY") {
+        await Item.create(
+          {
+            category,
+            type,
+            groupType: null,
+            itemName,
+            descript,
+            unit,
+            im_price,
+            ex_price,
+            use,
+            weight,
+            cbm,
+            moq,
+            supplyer,
+          },
+          { transaction: t }
+        );
+      } else {
+        await Item.create(
+          {
+            category,
+            type,
+            itemName,
+            groupType: null,
+            descript,
+            unit,
+            im_price,
+            ex_price,
+            use,
+            weight,
+            cbm,
+            moq,
+            supplyer,
+          },
+          { transaction: t }
+        );
+      }
+
+      const item = await Item.findOne({
+        where: { itemName },
+        attributes: ["id"],
+        transaction: t,
       });
 
-      await Item.upsert({
-        type,
-        groupType,
-        descript,
-        category,
-        unit,
-        im_price,
-        ex_price,
-        weight,
-        cbm,
-        sets,
-        moq,
-        use,
-        supplyer,
-        itemName,
-        groupName,
-        GoodId: good.id,
-        where: { itemName: good.itemName },
+      if (imageList && imageList.length > 0) {
+        await Image.bulkCreate(
+          imageList.map((image) => ({ url: image.url, ItemId: item.id })),
+          { transaction: t }
+        );
+      }
+
+      let createdRelations = [];
+      if (dragItems && dragItems.length > 0) {
+        const relData = dragItems.map((dragItem) => ({
+          LowerId: dragItem.id,
+          UpperId: item.id,
+          point: dragItem.point,
+        }));
+        await Relation.destroy({ where: { UpperId: item.id }, transaction: t });
+        createdRelations = await Relation.bulkCreate(relData, { transaction: t });
+      }
+
+      const foundItem = await Item.findOne({
+        where: { id: item.id },
+        include: [
+          { model: Image, attributes: ["url"] },
+          { model: Good, attributes: ["groupName"] },
+        ],
+        transaction: t,
       });
-    } else if (type === "ASSY") {
-      await Item.create({
-        category,
-        type,
-        groupType: null,
-        itemName,
-        descript,
-        unit,
-        im_price,
-        ex_price,
-        use,
-        weight,
-        cbm,
-        moq,
-        supplyer,
-      });
-    } else {
-      await Item.create({
-        category,
-        type,
-        itemName,
-        groupType: null,
-        descript,
-        unit,
-        im_price,
-        ex_price,
-        use,
-        weight,
-        cbm,
-        moq,
-        supplyer,
-      });
-    }
-    const item = await Item.findOne({
-      where: { itemName },
-      attributes: ["id"],
+
+      return [foundItem, createdRelations];
     });
-    // console.log("item", item);
-    const image_promise = await Promise.all(
-      imageList.map((image) =>
-        Image.create({ url: image.url, ItemId: item.id })
-      )
-    );
-    item.addImage(image_promise.map((image) => image[0]));
 
-    const newItem = await Item.findOne({
-      where: { id: item.id }, //배열일 경우엔 where:{id:{[Op.in]:itemIds}} 또는 where:{id:itemIds}
-
-      include: [
-        { model: Image, attributes: ["url"] },
-        { model: Good, attributes: ["groupName"] },
-      ],
-    });
-    // console.log("newItem", newItem);
-    if (dragItems && dragItems.length > 0) {
-      const relations = dragItems.map((dragItem) => ({
-        LowerId: dragItem.id,
-        UpperId: item.id,
-        point: dragItem.point,
-      }));
-      await Relation.destroy({ where: { UpperId: item.id } });
-      await Relation.bulkCreate(relations);
-      return res.status(200).json([newItem, relations]);
-    }
-
-    return res.status(200).json([newItem, []]);
+    return res.status(200).json([newItem, relations]);
   } catch (e) {
     console.error(e);
     return res.status(400).json(e.message);
   }
 });
-router.get("/items", async (req, res) => {
+router.get("/items", isLoggedIn, async (req, res) => {
   try {
     const items = await Item.findAll({
       where: { use: true },
@@ -197,7 +210,7 @@ router.get("/items", async (req, res) => {
   }
 });
 
-router.patch("/edit", async (req, res) => {
+router.patch("/edit", requireRole("ADMIN", "MANAGER"), async (req, res) => {
   let { id, Images, dragItems, mode, ...rest } = req.body;
 
   const relations = dragItems.map((dragItem) => ({
@@ -210,18 +223,40 @@ router.patch("/edit", async (req, res) => {
   try {
     id = parseInt(id, 10);
     console.log(id, rest);
-    await Item.update(rest, { where: { id }, individualHooks: true });
 
-    if (Images && Images.length > 0) {
-      await Image.destroy({ where: { ItemId: id } });
-      await Image.bulkCreate(
-        Images.map((image) => ({ url: image.url, ItemId: id }))
-      );
-    }
-    if (relations && relations.length > 0) {
-      await Relation.destroy({ where: { UpperId: id } });
-      await Relation.bulkCreate(relations);
-    }
+    await sequelize.transaction(async (t) => {
+      const currentItem = await Item.findByPk(id, { lock: t.LOCK.UPDATE, transaction: t });
+      if (currentItem && rest.stock !== undefined && Number(rest.stock) !== Number(currentItem.stock)) {
+        const prevStock = Number(currentItem.stock) || 0;
+        const nextStock = Number(rest.stock) || 0;
+        await StockHistory.create(
+          {
+            ItemId: id,
+            UserId: req.user ? req.user.id : null,
+            change_type: "ADJUSTMENT",
+            qty_change: nextStock - prevStock,
+            prev_stock: prevStock,
+            next_stock: nextStock,
+            reason: `관리자 수동 재고 조정 (${prevStock} ➔ ${nextStock} EA)`,
+          },
+          { transaction: t }
+        );
+      }
+      await Item.update(rest, { where: { id }, individualHooks: true, transaction: t });
+
+      if (Images && Images.length > 0) {
+        await Image.destroy({ where: { ItemId: id }, transaction: t });
+        await Image.bulkCreate(
+          Images.map((image) => ({ url: image.url, ItemId: id })),
+          { transaction: t }
+        );
+      }
+      if (relations && relations.length > 0) {
+        await Relation.destroy({ where: { UpperId: id }, transaction: t });
+        await Relation.bulkCreate(relations, { transaction: t });
+      }
+    });
+
     if (mode === "rest") {
       return res.status(200).json("edit_ok");
     } else {
@@ -232,7 +267,7 @@ router.patch("/edit", async (req, res) => {
     return res.status(400).json(e.message);
   }
 });
-router.delete("/delete/:id", async (req, res) => {
+router.delete("/delete/:id", requireRole("ADMIN"), async (req, res) => {
   const id = parseInt(req.params.id, 10);
   try {
     await Item.destroy({ where: { id }, individualHooks: true });
@@ -243,7 +278,7 @@ router.delete("/delete/:id", async (req, res) => {
   }
 });
 
-router.post("/excelAdd", async (req, res) => {
+router.post("/excelAdd", requireRole("ADMIN", "MANAGER"), async (req, res) => {
   const datas = req.body;
   try {
     if (datas) {
@@ -261,7 +296,7 @@ router.post("/excelAdd", async (req, res) => {
     return res.status(400).json(e.message);
   }
 });
-router.post("/inputPicked", async (req, res) => {
+router.post("/inputPicked", isLoggedIn, async (req, res) => {
   const picked = req.body;
   console.log("picked", picked);
   try {
@@ -286,7 +321,7 @@ router.post("/inputPicked", async (req, res) => {
     return res.status(400).json(e.message);
   }
 });
-router.get("/getPicked", async (req, res) => {
+router.get("/getPicked", isLoggedIn, async (req, res) => {
   try {
     const pickedDatas = await Picker.findAll({});
     if (pickedDatas) {
@@ -299,7 +334,7 @@ router.get("/getPicked", async (req, res) => {
   }
 });
 
-router.patch("/updateRfqStatus", async (req, res) => {
+router.patch("/updateRfqStatus", requireRole("ADMIN", "MANAGER"), async (req, res) => {
   const { id, rfq_status, selected_supplier, po_qty } = req.body;
   try {
     const updateData = {};
@@ -315,31 +350,56 @@ router.patch("/updateRfqStatus", async (req, res) => {
   }
 });
 
-router.patch("/inbound", async (req, res) => {
+router.patch("/inbound", requireRole("ADMIN", "MANAGER"), async (req, res) => {
   const { id, inbound_qty, warehouse, is_completed, remain_qty } = req.body;
   try {
     const itemId = parseInt(id, 10);
-    const item = await Item.findByPk(itemId);
-    if (!item) {
-      return res.status(404).json({ error: "Item not found" });
-    }
     const qty = parseInt(inbound_qty, 10) || 0;
-    const prevStock = item.stock || 0;
-    const newStock = prevStock + qty;
-
     const completed = is_completed !== false; // 기본값 true (완료)
     const nextStatus = completed ? "IDLE" : "PO_SENT";
     const nextPoQty = completed ? 0 : Math.max(0, parseInt(remain_qty, 10) || 0);
 
-    await Item.update(
-      { stock: newStock, rfq_status: nextStatus, po_qty: nextPoQty },
-      { where: { id: itemId } }
-    );
+    const result = await sequelize.transaction(async (t) => {
+      const item = await Item.findByPk(itemId, {
+        lock: t.LOCK.UPDATE,
+        transaction: t,
+      });
+
+      if (!item) {
+        const err = new Error("Item not found");
+        err.statusCode = 404;
+        throw err;
+      }
+
+      const prevStock = Number(item.stock) || 0;
+      const newStock = prevStock + qty;
+
+      await item.update(
+        { stock: newStock, rfq_status: nextStatus, po_qty: nextPoQty },
+        { transaction: t }
+      );
+
+      await StockHistory.create(
+        {
+          ItemId: itemId,
+          UserId: req.user ? req.user.id : null,
+          change_type: "INBOUND",
+          qty_change: qty,
+          prev_stock: prevStock,
+          next_stock: newStock,
+          reason: `자재 입고 등록 (${warehouse || '기본 창고'}, +${qty} EA)`,
+        },
+        { transaction: t }
+      );
+
+      return { prevStock, newStock };
+    });
+
     return res.status(200).json({
       success: true,
       id: itemId,
-      prevStock,
-      stock: newStock,
+      prevStock: result.prevStock,
+      stock: result.newStock,
       rfq_status: nextStatus,
       po_qty: nextPoQty,
       warehouse: warehouse || "제1 중앙물류창고",
@@ -347,7 +407,35 @@ router.patch("/inbound", async (req, res) => {
     });
   } catch (e) {
     console.error(e);
-    return res.status(400).json(e.message);
+    return res.status(e.statusCode || 400).json({
+      success: false,
+      message: e.message,
+    });
+  }
+});
+
+/**
+ * 특정 품목의 재고 수불부(변경 이력) 조회
+ * GET /item/:id/history
+ */
+router.get("/:id/history", async (req, res) => {
+  try {
+    const itemId = parseInt(req.params.id, 10);
+    const histories = await StockHistory.findAll({
+      where: { ItemId: itemId },
+      include: [
+        {
+          model: User,
+          attributes: ["id", "name", "email", "role"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+      limit: 100,
+    });
+    return res.status(200).json({ success: true, data: histories });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).json({ success: false, message: e.message });
   }
 });
 

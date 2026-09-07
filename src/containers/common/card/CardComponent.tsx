@@ -1,6 +1,9 @@
 import React, { useState, useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import { response } from '../../../store/slices/authSlice';
 import { formatCurrencySymbol } from '../../../lib/utils/formatCurrency';
 import { calculateMRP, MRPItemResult } from '../../../lib/utils/calculateMRP';
+import { getItemStockHistory } from '../../../lib/api/itemAPI';
 
 type Props = {
   items: {
@@ -83,6 +86,8 @@ const CardComponent: React.FC<Props> = ({
   onInboundStock,
   isItemMaster = false,
 }) => {
+  const { auth } = useSelector(response);
+  const isManagerOrAdmin = auth?.role === 'ADMIN' || auth?.role === 'MANAGER';
   const [selected, setSelected] = useState<number | ''>();
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
   const [isAllFlipped, setIsAllFlipped] = useState(false);
@@ -95,6 +100,24 @@ const CardComponent: React.FC<Props> = ({
     type: string;
     category: string;
   } | null>(null);
+
+  const [historyModalItem, setHistoryModalItem] = useState<{
+    id: number;
+    itemName: string;
+    loading: boolean;
+    data: any[];
+  } | null>(null);
+
+  const fetchAndShowHistory = async (id: number, itemName: string) => {
+    setHistoryModalItem({ id, itemName, loading: true, data: [] });
+    try {
+      const res = await getItemStockHistory(id);
+      setHistoryModalItem({ id, itemName, loading: false, data: res.data?.data || [] });
+    } catch (e) {
+      console.error(e);
+      setHistoryModalItem({ id, itemName, loading: false, data: [] });
+    }
+  };
 
   const [rfqModalItem, setRfqModalItem] = useState<MRPItemResult | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<string>('');
@@ -583,18 +606,20 @@ const CardComponent: React.FC<Props> = ({
 
                 {/* 4. 하단 액션 버튼 바: [edit] ➔ [mrp] ➔ [카메라] 순서 (bom 삭제) */}
                 <div className="card-footer-actions">
-                  <button
-                    type="button"
-                    className="btn-action-icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      selectItem(item.id);
-                      setSelected(item.id);
-                    }}
-                    title="품목 정보 수정 (Edit)"
-                  >
-                    <span className="material-symbols-outlined icon">edit</span>
-                  </button>
+                  {isManagerOrAdmin && (
+                    <button
+                      type="button"
+                      className="btn-action-icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectItem(item.id);
+                        setSelected(item.id);
+                      }}
+                      title="품목 정보 수정 (Edit)"
+                    >
+                      <span className="material-symbols-outlined icon">edit</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -625,6 +650,18 @@ const CardComponent: React.FC<Props> = ({
                     title={hasImage ? '고해상도 실물/도면 사진 보기' : '등록된 이미지가 없습니다'}
                   >
                     <span className="material-symbols-outlined icon">photo_camera</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn-action-icon btn-history"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fetchAndShowHistory(item.id, item.itemName);
+                    }}
+                    title="재고 수불부 (입출고 변동 이력 보기)"
+                  >
+                    <span className="material-symbols-outlined icon">history</span>
                   </button>
                 </div>
               </div>
@@ -747,7 +784,19 @@ const CardComponent: React.FC<Props> = ({
                 {isItemMaster ? (
                   <div className="item-master-back-footer">
                     <div className="procure-lifecycle-wrap">
-                      {item.rfq_status === 'PO_SENT' || mrp?.rfq_status === 'PO_SENT' ? (
+                      {!isManagerOrAdmin ? (
+                        <div style={{
+                          fontSize: '0.75rem',
+                          color: '#64748b',
+                          background: '#f1f5f9',
+                          padding: '4px 10px',
+                          borderRadius: '4px',
+                          fontWeight: 500,
+                          textAlign: 'center'
+                        }}>
+                          상태: {item.rfq_status === 'PO_SENT' || mrp?.rfq_status === 'PO_SENT' ? '입고대기 (발주완료)' : item.rfq_status === 'RFQ_SENT' || mrp?.rfq_status === 'RFQ_SENT' ? '발주요청 대기' : '견적요청 대기'} (조회 전용)
+                        </div>
+                      ) : item.rfq_status === 'PO_SENT' || mrp?.rfq_status === 'PO_SENT' ? (
                         <button
                           type="button"
                           className="btn-lifecycle btn-inbound"
@@ -955,6 +1004,95 @@ const CardComponent: React.FC<Props> = ({
                 분류: <b>{previewImage.type}</b> / <b>{previewImage.category}</b>
               </span>
               <span>ESC 키 또는 바깥 영역 클릭 시 닫힙니다</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 3.5 재고 수불부(Stock History) 모달                                  */}
+      {/* ==================================================================== */}
+      {historyModalItem && (
+        <div className="procure-modal-overlay" onClick={() => setHistoryModalItem(null)}>
+          <div className="procure-modal" style={{ maxWidth: '780px', width: '90%' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head" style={{ borderBottom: '1px solid #e2e8f0', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="material-symbols-outlined" style={{ color: '#2563eb', fontSize: '1.4rem' }}>
+                  history
+                </span>
+                <span className="title" style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
+                  [{historyModalItem.itemName}] 재고 수불부 (입출고 변동 이력)
+                </span>
+              </div>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setHistoryModalItem(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-content" style={{ maxHeight: '450px', overflowY: 'auto', padding: '16px 20px' }}>
+              {historyModalItem.loading ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>이력 데이터를 불러오는 중...</div>
+              ) : historyModalItem.data.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>기록된 재고 변동 이력이 없습니다.</div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                      <th style={{ padding: '8px 10px', color: '#475569' }}>일시</th>
+                      <th style={{ padding: '8px 10px', color: '#475569' }}>구분</th>
+                      <th style={{ padding: '8px 10px', color: '#475569', textAlign: 'right' }}>변동수량</th>
+                      <th style={{ padding: '8px 10px', color: '#475569', textAlign: 'center' }}>변동 전 ➔ 후</th>
+                      <th style={{ padding: '8px 10px', color: '#475569' }}>작업자</th>
+                      <th style={{ padding: '8px 10px', color: '#475569' }}>상세 사유</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historyModalItem.data.map((h: any) => {
+                      const isMinus = h.qty_change < 0;
+                      const badgeBg = h.change_type === 'DISPATCH' ? '#fee2e2' : h.change_type === 'INBOUND' ? '#dcfce7' : h.change_type === 'DISPATCH_CANCEL' ? '#fef3c7' : '#f1f5f9';
+                      const badgeColor = h.change_type === 'DISPATCH' ? '#b91c1c' : h.change_type === 'INBOUND' ? '#15803d' : h.change_type === 'DISPATCH_CANCEL' ? '#b45309' : '#475569';
+                      const typeLabel = h.change_type === 'DISPATCH' ? '출고 차감' : h.change_type === 'INBOUND' ? '자재 입고' : h.change_type === 'DISPATCH_CANCEL' ? '취소 원복' : '수동 조정';
+
+                      return (
+                        <tr key={h.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '8px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                            {new Date(h.createdAt).toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                          <td style={{ padding: '8px 10px' }}>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', background: badgeBg, color: badgeColor }}>
+                              {typeLabel}
+                            </span>
+                          </td>
+                          <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 700, color: isMinus ? '#ef4444' : '#10b981' }}>
+                            {h.qty_change > 0 ? `+${h.qty_change}` : h.qty_change} EA
+                          </td>
+                          <td style={{ padding: '8px 10px', textAlign: 'center', color: '#475569' }}>
+                            {h.prev_stock} ➔ <b style={{ color: '#1e293b' }}>{h.next_stock}</b>
+                          </td>
+                          <td style={{ padding: '8px 10px', color: '#475569', whiteSpace: 'nowrap' }}>
+                            {h.User ? `${h.User.name} [${h.User.role}]` : '시스템'}
+                          </td>
+                          <td style={{ padding: '8px 10px', color: '#334155' }}>
+                            {h.reason || '-'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="modal-actions" style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => setHistoryModalItem(null)}
+              >
+                닫기
+              </button>
             </div>
           </div>
         </div>

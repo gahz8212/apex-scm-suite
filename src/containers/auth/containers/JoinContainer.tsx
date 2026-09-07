@@ -15,15 +15,15 @@ const JoinContainer = () => {
         const { changeField } = authActions;
         const { name, value } = e.target;
 
-
         dispatch(changeField({ form: 'join', key: name, value }))
-
-
     }
     const join = () => {
-        // console.log(joinData.email, joinData.password, joinData.name)
         if (!joinData.email || !joinData.name || !joinData.password) return;
-        dispatch(authActions.join({ email: joinData.email, password: joinData.password, name: joinData.name }))
+        dispatch(authActions.join({
+            email: joinData.email,
+            password: joinData.password,
+            name: joinData.name
+        }))
     }
     useEffect(() => {
         if (error) { setTimeout(() => { dispatch(authActions.errorReset()) }, 2000); return; }

@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { fetchMscSchedule } = require('../services/mscService');
+const { isLoggedIn } = require('../middlewares/auth');
 
 // GET /schedule/ports - 자주 사용하는 주요 항구 목록
-router.get('/ports', (req, res) => {
+router.get('/ports', isLoggedIn, (req, res) => {
   res.json({
     success: true,
     data: {
@@ -23,7 +24,7 @@ router.get('/ports', (req, res) => {
 });
 
 // GET /schedule/search?pol=KRPUS&pod=USLGB&token=...
-router.get('/search', async (req, res) => {
+router.get('/search', isLoggedIn, async (req, res) => {
   try {
     const { pol = 'KRPUS', pod = 'USLGB', token } = req.query;
     if (!pol || !pod) {
@@ -51,7 +52,7 @@ router.get('/search', async (req, res) => {
 });
 
 // POST /schedule/msc (Body: { pol, pod, token })
-router.post('/msc', async (req, res) => {
+router.post('/msc', isLoggedIn, async (req, res) => {
   try {
     const { pol = 'KRPUS', pod = 'USLGB', token } = req.body;
     if (!pol || !pod) {

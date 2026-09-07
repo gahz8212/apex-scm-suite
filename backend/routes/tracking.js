@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { Shipment, Item, Relation } = require('../models');
+const { Sequelize, sequelize, Shipment, Item, Relation, StockHistory } = require('../models');
+const { isLoggedIn, requireRole } = require('../middlewares/auth');
 
 /**
  * 마감일자 및 운항일정을 기준으로 현재 물류 단계를 100% 자동 산정하는 함수
@@ -209,7 +210,7 @@ async function ensureSeedShipments() {
 }
 
 // GET /tracking/all - 전체 출고건 트래킹 목록 조회
-router.get('/all', async (req, res) => {
+router.get('/all', isLoggedIn, async (req, res) => {
   try {
     await ensureSeedShipments();
     const shipments = await Shipment.findAll({
@@ -234,7 +235,7 @@ router.get('/all', async (req, res) => {
 });
 
 // GET /tracking/:exportNo - 특정 출고번호 상세 조회
-router.get('/:exportNo', async (req, res) => {
+router.get('/:exportNo', isLoggedIn, async (req, res) => {
   try {
     const { exportNo } = req.params;
     const shipment = await Shipment.findOne({
@@ -265,7 +266,7 @@ router.get('/:exportNo', async (req, res) => {
 });
 
 // POST /tracking/sync-export - Export 화면에서 출고 정보 저장 시 자동 동기화
-router.post('/sync-export', async (req, res) => {
+router.post('/sync-export', requireRole('ADMIN', 'MANAGER'), async (req, res) => {
   try {
     const {
       export_no,
@@ -333,7 +334,7 @@ router.post('/sync-export', async (req, res) => {
 });
 
 // POST /tracking/confirm-dispatch - BOM 역전개 부품 재고 자동 차감 (출고 확정)
-router.post('/confirm-dispatch', async (req, res) => {
+router.post('/confirm-dispatch', requireRole('ADMIN', 'MANAGER'), async (req, res) => {
   try {
     const { export_no, products = [], subMaterials = [] } = req.body;
 
@@ -345,153 +346,194 @@ router.post('/confirm-dispatch', async (req, res) => {
     }
 
     const cleanExportNo = export_no.trim();
-    let shipment = await Shipment.findOne({ where: { export_no: cleanExportNo } });
 
-    if (shipment && shipment.dispatch_status === 'CONFIRMED') {
-      return res.status(400).json({
-        success: false,
-        message: `출고 건 [${cleanExportNo}]은(는) 이미 출고 확정 상태입니다. 수정을 원하시면 먼저 [출고 취소]를 진행해 주세요.`
+    // 트랜잭션 및 비관적 락으로 원자성 및 동시성 보호 (READ_COMMITTED로 Gap Lock 데드락 방지)
+    const result = await sequelize.transaction({
+      isolationLevel: Sequelize.Transaction.ISOLATION_LEVELS.READ_COMMITTED
+    }, async (t) => {
+      let shipment = await Shipment.findOne({
+        where: { export_no: cleanExportNo },
+        lock: t.LOCK.UPDATE,
+        transaction: t
       });
-    }
 
-    // 1. 전체 부품 및 BOM 관계 데이터 조회
-    const allItems = await Item.findAll();
-    const allRelations = await Relation.findAll();
-
-    const itemMapById = new Map();
-    const itemMapByName = new Map();
-    allItems.forEach((it) => {
-      itemMapById.set(it.id, it);
-      itemMapByName.set(it.itemName, it);
-    });
-
-    const childrenMap = new Map();
-    allRelations.forEach((r) => {
-      const uId = Number(r.UpperId);
-      if (!childrenMap.has(uId)) {
-        childrenMap.set(uId, []);
+      if (shipment && shipment.dispatch_status === 'CONFIRMED') {
+        const err = new Error(`출고 건 [${cleanExportNo}]은(는) 이미 출고 확정 상태입니다. 수정을 원하시면 먼저 [출고 취소]를 진행해 주세요.`);
+        err.statusCode = 409;
+        throw err;
       }
-      childrenMap.get(uId).push({ LowerId: Number(r.LowerId), point: Number(r.point) || 1 });
-    });
 
-    // 2. BOM 역전개 소요량 계산
-    const requiredQtyMap = new Map();
+      // 1. 전체 부품 및 BOM 관계 데이터 조회
+      const allItems = await Item.findAll({ transaction: t });
+      const allRelations = await Relation.findAll({ transaction: t });
 
-    // 완제품(SET) 부품 소요량 전개
-    products.forEach((prod) => {
-      const setQty = Number(prod.quantity) || 0;
-      if (setQty <= 0) return;
+      const itemMapById = new Map();
+      const itemMapByName = new Map();
+      allItems.forEach((it) => {
+        itemMapById.set(it.id, it);
+        itemMapByName.set(it.itemName, it);
+      });
 
-      const setItem = itemMapByName.get(prod.itemName) || itemMapById.get(prod.id);
-      if (!setItem) return;
+      const childrenMap = new Map();
+      allRelations.forEach((r) => {
+        const uId = Number(r.UpperId);
+        if (!childrenMap.has(uId)) {
+          childrenMap.set(uId, []);
+        }
+        childrenMap.get(uId).push({ LowerId: Number(r.LowerId), point: Number(r.point) || 1 });
+      });
 
-      const queue = [{ id: setItem.id, multiplier: setQty }];
+      // 2. BOM 역전개 소요량 계산
+      const requiredQtyMap = new Map();
 
-      while (queue.length > 0) {
-        const { id, multiplier } = queue.shift();
-        const children = childrenMap.get(id) || [];
+      // 완제품(SET) 부품 소요량 전개
+      products.forEach((prod) => {
+        const setQty = Number(prod.quantity) || 0;
+        if (setQty <= 0) return;
 
-        for (let i = 0; i < children.length; i++) {
-          const child = children[i];
-          const childQty = multiplier * child.point;
-          const prev = requiredQtyMap.get(child.LowerId) || 0;
-          requiredQtyMap.set(child.LowerId, prev + childQty);
+        const setItem = itemMapByName.get(prod.itemName) || itemMapById.get(prod.id);
+        if (!setItem) return;
 
-          const childItem = itemMapById.get(child.LowerId);
-          if (childItem && childItem.type === 'ASSY') {
-            queue.push({ id: child.LowerId, multiplier: childQty });
+        const queue = [{ id: setItem.id, multiplier: setQty }];
+
+        while (queue.length > 0) {
+          const { id, multiplier } = queue.shift();
+          const children = childrenMap.get(id) || [];
+
+          for (let i = 0; i < children.length; i++) {
+            const child = children[i];
+            const childQty = multiplier * child.point;
+            const prev = requiredQtyMap.get(child.LowerId) || 0;
+            requiredQtyMap.set(child.LowerId, prev + childQty);
+
+            const childItem = itemMapById.get(child.LowerId);
+            if (childItem && childItem.type === 'ASSY') {
+              queue.push({ id: child.LowerId, multiplier: childQty });
+            }
           }
         }
-      }
-    });
+      });
 
-    // 선택된 부자재 소요량 합산
-    subMaterials.forEach((sub) => {
-      const subQty = Number(sub.quantity) || 0;
-      if (subQty <= 0) return;
+      // 선택된 부자재 소요량 합산
+      subMaterials.forEach((sub) => {
+        const subQty = Number(sub.quantity) || 0;
+        if (subQty <= 0) return;
 
-      const targetId = Number(sub.ItemId || sub.id);
-      if (targetId && itemMapById.has(targetId)) {
-        const prev = requiredQtyMap.get(targetId) || 0;
-        requiredQtyMap.set(targetId, prev + subQty);
-      }
-    });
+        const targetId = Number(sub.ItemId || sub.id);
+        if (targetId && itemMapById.has(targetId)) {
+          const prev = requiredQtyMap.get(targetId) || 0;
+          requiredQtyMap.set(targetId, prev + subQty);
+        }
+      });
 
-    // 3. 재고 차감 및 경고 목록 산출 (Q1-2 B안: 마이너스 재고 허용)
-    const deductions = [];
-    const warningItems = [];
+      // 3. 재고 차감 및 경고 목록 산출 (데드락 방지를 위해 ID 오름차순으로 정렬 후 비관적 락 적용)
+      const sortedItemIds = Array.from(requiredQtyMap.keys()).sort((a, b) => a - b);
+      const deductions = [];
+      const warningItems = [];
 
-    for (const [itemId, reqQty] of requiredQtyMap.entries()) {
-      const item = itemMapById.get(itemId);
-      if (!item) continue;
+      for (const itemId of sortedItemIds) {
+        const reqQty = requiredQtyMap.get(itemId);
+        // 비관적 행 배타락(SELECT ... FOR UPDATE) 획득
+        const item = await Item.findByPk(itemId, {
+          lock: t.LOCK.UPDATE,
+          transaction: t
+        });
+        if (!item) continue;
 
-      const currentStock = Number(item.stock) || 0;
-      const newStock = currentStock - reqQty;
+        const currentStock = Number(item.stock) || 0;
+        const newStock = currentStock - reqQty;
 
-      if (newStock < 0) {
-        warningItems.push({
+        if (newStock < 0) {
+          warningItems.push({
+            id: itemId,
+            itemName: item.itemName,
+            category: item.category,
+            currentStock,
+            reqQty,
+            shortage: Math.abs(newStock)
+          });
+        }
+
+        // 실물 재고 업데이트 (트랜잭션에 포함)
+        await item.update({ stock: newStock }, { transaction: t });
+
+        // 재고 수불부(StockHistory) 기록
+        await StockHistory.create({
+          ItemId: itemId,
+          UserId: req.user ? req.user.id : null,
+          export_no: cleanExportNo,
+          change_type: 'DISPATCH',
+          qty_change: -reqQty,
+          prev_stock: currentStock,
+          next_stock: newStock,
+          reason: `[${cleanExportNo}] 출고 확정 자동 차감 (-${reqQty} EA)`,
+        }, { transaction: t });
+
+        deductions.push({
           id: itemId,
           itemName: item.itemName,
           category: item.category,
-          currentStock,
-          reqQty,
-          shortage: Math.abs(newStock)
+          deductedQty: reqQty,
+          prevStock: currentStock,
+          newStock
         });
       }
 
-      // 실물 재고 업데이트
-      await item.update({ stock: newStock });
+      // 4. 출고 건 상태를 CONFIRMED로 변경 및 차감 내역 영구 보존
+      if (!shipment) {
+        shipment = await Shipment.create({
+          export_no: cleanExportNo,
+          dispatch_status: 'CONFIRMED',
+          deducted_items: JSON.stringify(deductions),
+          confirmed_at: new Date()
+        }, { transaction: t });
+      } else {
+        await shipment.update({
+          dispatch_status: 'CONFIRMED',
+          deducted_items: JSON.stringify(deductions),
+          confirmed_at: new Date()
+        }, { transaction: t });
+      }
 
-      deductions.push({
-        id: itemId,
-        itemName: item.itemName,
-        category: item.category,
-        deductedQty: reqQty,
-        prevStock: currentStock,
-        newStock
-      });
-    }
+      return { shipment, deductions, warningItems };
+    });
 
-    // 4. 출고 건 상태를 CONFIRMED로 변경 및 차감 내역 영구 보존
-    if (!shipment) {
-      shipment = await Shipment.create({
-        export_no: cleanExportNo,
-        dispatch_status: 'CONFIRMED',
-        deducted_items: JSON.stringify(deductions),
-        confirmed_at: new Date()
-      });
-    } else {
-      await shipment.update({
-        dispatch_status: 'CONFIRMED',
-        deducted_items: JSON.stringify(deductions),
-        confirmed_at: new Date()
-      });
-    }
-
-    const enriched = computeShipmentStatus(shipment);
+    const enriched = computeShipmentStatus(result.shipment);
 
     res.json({
       success: true,
-      message: `[${cleanExportNo}] 출고 확정이 완료되었습니다. (BOM 역전개 부품 총 ${deductions.length}종 재고 자동 차감)`,
+      message: `[${cleanExportNo}] 출고 확정이 완료되었습니다. (BOM 역전개 부품 총 ${result.deductions.length}종 재고 자동 차감)`,
       data: {
         shipment: enriched,
-        deductions,
-        warningItems,
-        hasNegativeStock: warningItems.length > 0
+        deductions: result.deductions,
+        warningItems: result.warningItems,
+        hasNegativeStock: result.warningItems.length > 0
       }
     });
   } catch (error) {
     console.error('출고 확정 처리 실패:', error);
-    res.status(500).json({
+    if (
+      error.name === 'SequelizeUniqueConstraintError' ||
+      error.original?.code === 'ER_DUP_ENTRY' ||
+      error.original?.code === 'ER_LOCK_WAIT_TIMEOUT' ||
+      error.original?.code === 'ER_LOCK_DEADLOCK'
+    ) {
+      return res.status(409).json({
+        success: false,
+        message: `출고 건 [${cleanExportNo}]은(는) 이미 다른 프로세스에서 동시 처리되어 확정되었습니다.`,
+        error: error.message
+      });
+    }
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: '출고 확정 중 오류가 발생했습니다.',
+      message: error.message || '출고 확정 중 오류가 발생했습니다.',
       error: error.message
     });
   }
 });
 
 // POST /tracking/cancel-dispatch - 출고 취소 및 차감 부품 재고 전량 원복 (Rollback)
-router.post('/cancel-dispatch', async (req, res) => {
+router.post('/cancel-dispatch', requireRole('ADMIN', 'MANAGER'), async (req, res) => {
   try {
     const { export_no } = req.body;
 
@@ -503,74 +545,99 @@ router.post('/cancel-dispatch', async (req, res) => {
     }
 
     const cleanExportNo = export_no.trim();
-    const shipment = await Shipment.findOne({ where: { export_no: cleanExportNo } });
 
-    if (!shipment) {
-      return res.status(404).json({
-        success: false,
-        message: `출고 건 [${cleanExportNo}]을(를) 찾을 수 없습니다.`
+    // 트랜잭션 및 비관적 락으로 원자성 및 동시성 보호
+    const result = await sequelize.transaction(async (t) => {
+      const shipment = await Shipment.findOne({
+        where: { export_no: cleanExportNo },
+        lock: t.LOCK.UPDATE,
+        transaction: t
       });
-    }
 
-    if (shipment.dispatch_status !== 'CONFIRMED') {
-      return res.status(400).json({
-        success: false,
-        message: `출고 건 [${cleanExportNo}]은(는) 확정 상태가 아니므로 취소할 수 없습니다. (현재 상태: ${shipment.dispatch_status})`
-      });
-    }
-
-    // 1. 저장되어 있던 차감 목록 복원
-    let deductions = [];
-    try {
-      if (shipment.deducted_items) {
-        deductions = JSON.parse(shipment.deducted_items);
+      if (!shipment) {
+        const err = new Error(`출고 건 [${cleanExportNo}]을(를) 찾을 수 없습니다.`);
+        err.statusCode = 404;
+        throw err;
       }
-    } catch (e) {
-      console.error('차감 목록 JSON 파싱 오류:', e);
-    }
 
-    const restoredItems = [];
+      if (shipment.dispatch_status !== 'CONFIRMED') {
+        const err = new Error(`출고 건 [${cleanExportNo}]은(는) 확정 상태가 아니므로 취소할 수 없습니다. (현재 상태: ${shipment.dispatch_status})`);
+        err.statusCode = 400;
+        throw err;
+      }
 
-    // 2. 부품 재고 원복
-    for (const d of deductions) {
-      const item = await Item.findByPk(d.id);
-      if (item) {
-        const currentStock = Number(item.stock) || 0;
-        const restoredStock = currentStock + Number(d.deductedQty);
-        await item.update({ stock: restoredStock });
+      // 1. 저장되어 있던 차감 목록 복원
+      let deductions = [];
+      try {
+        if (shipment.deducted_items) {
+          deductions = JSON.parse(shipment.deducted_items);
+        }
+      } catch (e) {
+        console.error('차감 목록 JSON 파싱 오류:', e);
+      }
 
-        restoredItems.push({
-          id: d.id,
-          itemName: d.itemName,
-          restoredQty: d.deductedQty,
-          beforeStock: currentStock,
-          restoredStock
+      // 데드락 방지를 위해 ID 오름차순으로 정렬
+      deductions.sort((a, b) => Number(a.id) - Number(b.id));
+      const restoredItems = [];
+
+      // 2. 부품 재고 원복 (비관적 락으로 행을 독점 획득 후 복구)
+      for (const d of deductions) {
+        const item = await Item.findByPk(d.id, {
+          lock: t.LOCK.UPDATE,
+          transaction: t
         });
-      }
-    }
+        if (item) {
+          const currentStock = Number(item.stock) || 0;
+          const restoredStock = currentStock + Number(d.deductedQty);
+          await item.update({ stock: restoredStock }, { transaction: t });
 
-    // 3. 출고 건 상태를 CANCELED(취소)로 변경 및 차감 내역 초기화
-    await shipment.update({
-      dispatch_status: 'CANCELED',
-      deducted_items: null,
-      confirmed_at: null
+          // 재고 수불부(StockHistory) 기록
+          await StockHistory.create({
+            ItemId: d.id,
+            UserId: req.user ? req.user.id : null,
+            export_no: cleanExportNo,
+            change_type: 'DISPATCH_CANCEL',
+            qty_change: Number(d.deductedQty),
+            prev_stock: currentStock,
+            next_stock: restoredStock,
+            reason: `[${cleanExportNo}] 출고 취소 재고 원복 (+${d.deductedQty} EA)`,
+          }, { transaction: t });
+
+          restoredItems.push({
+            id: d.id,
+            itemName: d.itemName,
+            restoredQty: d.deductedQty,
+            beforeStock: currentStock,
+            restoredStock
+          });
+        }
+      }
+
+      // 3. 출고 건 상태를 CANCELED(취소)로 변경 및 차감 내역 초기화
+      await shipment.update({
+        dispatch_status: 'CANCELED',
+        deducted_items: null,
+        confirmed_at: null
+      }, { transaction: t });
+
+      return { shipment, restoredItems };
     });
 
-    const enriched = computeShipmentStatus(shipment);
+    const enriched = computeShipmentStatus(result.shipment);
 
     res.json({
       success: true,
-      message: `[${cleanExportNo}] 출고가 정상적으로 취소되었습니다. (차감되었던 부품 총 ${restoredItems.length}종 재고 전량 원복 완료)`,
+      message: `[${cleanExportNo}] 출고가 정상적으로 취소되었습니다. (차감되었던 부품 총 ${result.restoredItems.length}종 재고 전량 원복 완료)`,
       data: {
         shipment: enriched,
-        restoredItems
+        restoredItems: result.restoredItems
       }
     });
   } catch (error) {
     console.error('출고 취소 처리 실패:', error);
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: '출고 취소 중 오류가 발생했습니다.',
+      message: error.message || '출고 취소 중 오류가 발생했습니다.',
       error: error.message
     });
   }

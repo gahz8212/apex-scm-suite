@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { Good, Item, Order, Pallet } = require("../models");
-const { sequelize } = require("../models");
-router.get("/getOrderData", async (req, res) => {
+const { Good, Item, Order, Pallet, sequelize } = require("../models");
+const { isLoggedIn, requireRole } = require("../middlewares/auth");
+
+router.get("/getOrderData", isLoggedIn, async (req, res) => {
   try {
     const [order, metadata] = await sequelize.query(
       `
@@ -51,7 +52,7 @@ router.get("/getOrderData", async (req, res) => {
 //     return res.status(400).json(e.message);
 //   }
 // });
-router.post("/orderinput", async (req, res) => {
+router.post("/orderinput", requireRole("ADMIN", "MANAGER"), async (req, res) => {
   try {
     const { order } = req.body;
     if (!order || !Array.isArray(order) || !order[0] || !order[1]) {
@@ -130,44 +131,47 @@ router.post("/orderinput", async (req, res) => {
   }
 });
 
-router.post("/goodinput", async (req, res) => {
+router.post("/goodinput", requireRole("ADMIN", "MANAGER"), async (req, res) => {
   try {
     const { good } = req.body;
 
     if (Object.keys(good[0]).includes("undefined")) {
       throw new Error("오더리스트를 선택함.");
     }
-    if (Object.keys(good[0]).includes("groupName")) {
-      await sequelize.query(`delete from good;`);
-      if (Array.isArray(good)) {
-        await Good.bulkCreate(good);
+    await sequelize.transaction(async (t) => {
+      if (Object.keys(good[0]).includes("groupName")) {
+        await Good.destroy({ where: {}, transaction: t });
+        if (Array.isArray(good)) {
+          await Good.bulkCreate(good, { transaction: t });
+        }
+      } else if (Object.keys(good[0]).includes("itemName")) {
+        if (Array.isArray(good)) {
+          for (const item of good) {
+            await Item.upsert(
+              {
+                type: item.type,
+                itemName: item.itemName,
+                groupType: item.groupType,
+                descript: item.descript,
+                category: item.category,
+                unit: item.unit,
+                im_price: item.im_price,
+                ex_price: item.ex_price,
+                weight: item.weight,
+                cbm: item.cbm,
+                moq: item.moq,
+                sets: item.sets,
+                number1: item.number1,
+                number2: item.number2,
+                use: item.use,
+                input_date: item.input_date,
+              },
+              { transaction: t }
+            );
+          }
+        }
       }
-    } else if (Object.keys(good[0]).includes("itemName")) {
-      if (Array.isArray(good)) {
-        await Promise.all(
-          good.map(async (item) => {
-            await Item.upsert({
-              type: item.type,
-              itemName: item.itemName,
-              groupType: item.groupType,
-              descript: item.descript,
-              category: item.category,
-              unit: item.unit,
-              im_price: item.im_price,
-              ex_price: item.ex_price,
-              weight: item.weight,
-              cbm: item.cbm,
-              moq: item.moq,
-              sets: item.sets,
-              number1: item.number1,
-              number2: item.number2,
-              use: item.use,
-              input_date: item.input_date,
-            });
-          })
-        );
-      }
-    }
+    });
     return res.status(200).json("good_input_ok");
   } catch (e) {
     console.error(e);
@@ -175,29 +179,31 @@ router.post("/goodinput", async (req, res) => {
   }
 });
 
-router.post("/palletData", async (req, res) => {
+router.post("/palletData", requireRole("ADMIN", "MANAGER"), async (req, res) => {
   try {
     const palletData = req.body;
-    await Pallet.destroy({ where: {} });
-    const records = [];
-    for (let i = 0; i < 10; i++) {
-      if (Array.isArray(palletData[i])) {
-        palletData[i].forEach((pallet) => {
-          records.push({
-            no: i,
-            item: pallet.item,
-            CT_qty: pallet.CT_qty,
-            moq: pallet.moq,
-            sets: pallet.sets,
-            weight: pallet.weight,
-            cbm: pallet.cbm,
+    await sequelize.transaction(async (t) => {
+      await Pallet.destroy({ where: {}, transaction: t });
+      const records = [];
+      for (let i = 0; i < 10; i++) {
+        if (Array.isArray(palletData[i])) {
+          palletData[i].forEach((pallet) => {
+            records.push({
+              no: i,
+              item: pallet.item,
+              CT_qty: pallet.CT_qty,
+              moq: pallet.moq,
+              sets: pallet.sets,
+              weight: pallet.weight,
+              cbm: pallet.cbm,
+            });
           });
-        });
+        }
       }
-    }
-    if (records.length > 0) {
-      await Pallet.bulkCreate(records);
-    }
+      if (records.length > 0) {
+        await Pallet.bulkCreate(records, { transaction: t });
+      }
+    });
     return res.status(200).json("pallet_input_ok");
   } catch (e) {
     console.error(e);
@@ -205,7 +211,7 @@ router.post("/palletData", async (req, res) => {
   }
 });
 
-router.get("/getPalletData", async (req, res) => {
+router.get("/getPalletData", isLoggedIn, async (req, res) => {
   try {
     const data = await Pallet.findAll({
       attributes: ["no", "item", "CT_qty", "moq", "sets", "weight", "cbm"],
@@ -217,7 +223,7 @@ router.get("/getPalletData", async (req, res) => {
   }
 });
 
-router.post("/inputRepair", async (req, res) => {
+router.post("/inputRepair", requireRole("ADMIN", "MANAGER"), async (req, res) => {
   const repair = req.body;
   try {
     await sequelize.query(`delete from ordersheet where category='REPAIR'`);

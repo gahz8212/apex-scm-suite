@@ -6,6 +6,7 @@ interface Props {
   fromCurrency: string;
   resultCurrency: { [key: string]: { [key: string]: number } } | null;
   selectedMonth: string;
+  accumulatedMonths: string[];
   availableMonths: string[];
   onSelectMonth: (month: string) => void;
   fxRates: { usd: number; eur: number; jpy: number; cny: number } | null;
@@ -35,6 +36,7 @@ interface Props {
 
 const HomeComponent: React.FC<Props> = ({
   selectedMonth,
+  accumulatedMonths,
   availableMonths,
   onSelectMonth,
   fxRates,
@@ -49,52 +51,22 @@ const HomeComponent: React.FC<Props> = ({
   return (
     <div className="dashboard-container">
       {/* =================================================================== */}
-      {/* 상단 관제 센터 헤더 & 제어 툴바 */}
-      {/* =================================================================== */}
-      <div className="dashboard-header">
-        <div className="header-left">
-          <div className="dashboard-badge">APEX SCM ENTERPRISE SUITE</div>
-          <h1 className="dashboard-title">SCM 종합 운영 현황판</h1>
-          <p className="dashboard-subtitle">
-            글로벌 환율, 부품 결품 예측(MRP), 완제품 수출 출하 계획 및 해상 선박 물류 통합 관제 센터
-          </p>
-        </div>
-
-        <div className="header-right">
-          {/* 기준 월 선택 탭 */}
-          <div className="month-selector-group">
-            <span className="selector-label">기준월:</span>
-            {availableMonths.map((m) => (
-              <button
-                key={m}
-                type="button"
-                className={`btn-month-tab ${selectedMonth === m ? 'active' : ''}`}
-                onClick={() => onSelectMonth(m)}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-
-          {/* 새로고침 버튼 */}
-          <button
-            type="button"
-            className="btn-refresh"
-            onClick={onRefresh}
-            disabled={isRefreshing}
-          >
-            {isRefreshing ? '데이터 갱신 중...' : '데이터 갱신'}
-          </button>
-        </div>
-      </div>
-
-      {/* =================================================================== */}
       {/* 1. 실시간 글로벌 외환 지표 (Global FX Market Overview) */}
       {/* =================================================================== */}
       <section className="fx-section">
         <div className="section-title-wrap">
           <h2 className="sec-title">글로벌 주요 통화 환율 지표 (KRW 기준)</h2>
-          <span className="sec-meta">최종 동기화 시각: {lastUpdatedTime || '-'}</span>
+          <div className="sec-actions">
+            <span className="sec-meta">최종 동기화 시각: {lastUpdatedTime || '-'}</span>
+            <button
+              type="button"
+              className="btn-refresh"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? '데이터 갱신 중...' : '데이터 갱신'}
+            </button>
+          </div>
         </div>
 
         <div className="fx-cards-grid">
@@ -172,7 +144,9 @@ const HomeComponent: React.FC<Props> = ({
         <div className="widget-panel">
           <div className="panel-header">
             <div className="panel-title-wrap">
-              <h3 className="panel-title">자재 결품 및 안전재고 모니터링 ({selectedMonth} 기준)</h3>
+              <h3 className="panel-title">
+                자재 결품 및 안전재고 모니터링 ({accumulatedMonths.length > 1 ? `${accumulatedMonths[0]}~${accumulatedMonths[accumulatedMonths.length - 1]} 누적` : `${selectedMonth} 기준`})
+              </h3>
               {shortageStats.dangerCount > 0 && (
                 <span className="badge-danger">발주긴급: {shortageStats.dangerCount}건</span>
               )}
@@ -186,10 +160,37 @@ const HomeComponent: React.FC<Props> = ({
             <button
               type="button"
               className="btn-link-action"
-              onClick={() => onNavigate('/item-management')}
+              onClick={() => onNavigate('/view')}
             >
               자재마스터 관리 [이동] ➔
             </button>
+          </div>
+
+          {/* 기준월 누적 선택 툴바 */}
+          <div className="shortage-month-toolbar">
+            <div className="month-selector-group">
+              <span className="selector-label">기준월 (누적):</span>
+              {availableMonths.map((m) => {
+                const isAccumulated = accumulatedMonths.includes(m);
+                const isCurrentEnd = selectedMonth === m;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    className={`btn-month-tab ${isAccumulated ? 'accumulated' : ''} ${isCurrentEnd ? 'active' : ''}`}
+                    onClick={() => onSelectMonth(m)}
+                    title={`${availableMonths[0]} ~ ${m} 누적 소요량 반영`}
+                  >
+                    {m}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="cumulative-badge">
+              {accumulatedMonths.length > 1
+                ? `${accumulatedMonths[0]} ~ ${accumulatedMonths[accumulatedMonths.length - 1]} 누적 (${accumulatedMonths.length}개월)`
+                : `${accumulatedMonths[0]} 당월 (1개월)`}
+            </span>
           </div>
 
           <div className="panel-body">
@@ -202,7 +203,9 @@ const HomeComponent: React.FC<Props> = ({
                       <th>부품명</th>
                       <th style={{ width: '55px' }}>분류</th>
                       <th style={{ width: '70px', textAlign: 'right' }}>현재고</th>
-                      <th style={{ width: '70px', textAlign: 'right' }}>소요량</th>
+                      <th style={{ width: '75px', textAlign: 'right' }}>
+                        소요량 ({accumulatedMonths.length > 1 ? `${accumulatedMonths.length}M` : '당월'})
+                      </th>
                       <th style={{ width: '75px', textAlign: 'right' }}>순부족량</th>
                       <th style={{ width: '75px', textAlign: 'center' }}>조달상태</th>
                       <th style={{ width: '110px' }}>소진시점</th>
@@ -257,7 +260,7 @@ const HomeComponent: React.FC<Props> = ({
               </div>
             ) : (
               <div className="empty-shortage">
-                [정상] {selectedMonth} 기준 생산 계획에 필요한 모든 원부자재가 안전재고 이상 확보되어 있습니다.
+                [정상] {accumulatedMonths.length > 1 ? `${accumulatedMonths[0]}~${accumulatedMonths[accumulatedMonths.length - 1]} 누적` : selectedMonth} 기준 생산 계획에 필요한 모든 원부자재가 안전재고 이상 확보되어 있습니다.
               </div>
             )}
           </div>
@@ -272,7 +275,7 @@ const HomeComponent: React.FC<Props> = ({
             <button
               type="button"
               className="btn-link-action"
-              onClick={() => onNavigate('/ordersheet')}
+              onClick={() => onNavigate('/Export')}
             >
               발주관리 [이동] ➔
             </button>
@@ -357,7 +360,7 @@ const HomeComponent: React.FC<Props> = ({
           <button
             type="button"
             className="btn-link-action"
-            onClick={() => onNavigate('/export')}
+            onClick={() => onNavigate('/Export')}
           >
             수출물류 관리 [이동] ➔
           </button>

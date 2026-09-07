@@ -2,14 +2,14 @@ import { createSlice, createSelector, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../";
 type State = {
   [key: string]: {
-    [key: string]: string | { id: number | ""; name: string } | null;
+    [key: string]: string | { id: number | ""; name: string; role?: string; email?: string } | null;
   };
   login: { email: string; password: string };
   join: { email: string; password: string; name: string };
   status: {
     message: string;
     error: string;
-    auth: { id: number | ""; name: string } | null;
+    auth: { id: number | ""; name: string; role?: string; email?: string } | null;
   };
 };
 

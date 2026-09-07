@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
+import { response } from '../../store/slices/authSlice';
 import { useDrag } from 'react-use-gesture';
 import InputFormContainer from '../forms/inputForm/InputFormContainer';
 import EditFormContainer from "../forms/editForm/EditFormContainer";
@@ -21,6 +23,8 @@ type Props = {
 }
 
 const IsettingComponent: React.FC<Props> = ({ input, edit, relate, openForm, changePosition, picker }) => {
+    const { auth } = useSelector(response);
+    const isManagerOrAdmin = auth?.role === 'ADMIN' || auth?.role === 'MANAGER';
     const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
 
 
@@ -110,12 +114,16 @@ const IsettingComponent: React.FC<Props> = ({ input, edit, relate, openForm, cha
             />
             <CardContainer />
             <div style={{ height: '90px' }}></div>
-            <span onClick={() => openForm('input')} className="material-symbols-outlined write">
-                edit_document
-            </span>
-            <span onClick={() => openForm('picker')} className="material-symbols-outlined picker">
-                edit_document
-            </span>
+            {isManagerOrAdmin && (
+                <>
+                    <span onClick={() => openForm('input')} className="material-symbols-outlined write" title="신규 품목 등록">
+                        edit_document
+                    </span>
+                    <span onClick={() => openForm('picker')} className="material-symbols-outlined picker" title="품목 선택 등록">
+                        edit_document
+                    </span>
+                </>
+            )}
         </div >
     );
 };

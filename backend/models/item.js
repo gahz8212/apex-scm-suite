@@ -55,57 +55,76 @@ module.exports = class Item extends Sequelize.Model {
       {
         sequelize,
         hooks: {
-          afterUpdate: async (item) => {
-            await sequelize.models.ItemBackup.create({
-              type: item.type,
-              groupType: item.groupType,
-              itemName: item.itemName,
-              category: item.category,
-              unit: item.unit,
-              im_price: item.previous().im_price,
-              ex_price: item.previous().ex_price,
-              weight: item.weight,
-              cbm: item.cbm,
-              moq: item.moq,
-              sets: item.sets,
-              use: item.use,
-              delete: 0,
-              supplyer: item.supplyer,
-              createdAt: item.createdAt,
-              updateAt: Date.now(),
-              ItemId: item.id,
-            });
-            await sequelize.models.Picker.update(
+          afterUpdate: async (item, options) => {
+            const tx = options ? options.transaction : undefined;
+            // 품목 마스터 속성(이름, 단가, 공급처 등)이 변경되었을 때만 백업 및 피커 동기화 실행
+            if (
+              item.changed("itemName") ||
+              item.changed("im_price") ||
+              item.changed("ex_price") ||
+              item.changed("unit") ||
+              item.changed("supplyer") ||
+              item.changed("category") ||
+              item.changed("groupType")
+            ) {
+              await sequelize.models.ItemBackup.create(
+                {
+                  type: item.type,
+                  groupType: item.groupType,
+                  itemName: item.itemName,
+                  category: item.category,
+                  unit: item.unit,
+                  im_price: item.previous().im_price,
+                  ex_price: item.previous().ex_price,
+                  weight: item.weight,
+                  cbm: item.cbm,
+                  moq: item.moq,
+                  sets: item.sets,
+                  use: item.use,
+                  delete: 0,
+                  supplyer: item.supplyer,
+                  createdAt: item.createdAt,
+                  updateAt: Date.now(),
+                  ItemId: item.id,
+                },
+                { transaction: tx }
+              );
+              await sequelize.models.Picker.update(
+                {
+                  item: item.itemName,
+                  unit: item.unit,
+                  im_price: item.im_price,
+                  ex_price: item.ex_price,
+                  supplyer: item.supplyer,
+                },
+                { where: { ItemId: item.id }, transaction: tx }
+              );
+            }
+          },
+          afterDestroy: async (item, options) => {
+            const tx = options ? options.transaction : undefined;
+            await sequelize.models.ItemBackup.create(
               {
-                item: item.itemName,
+                type: item.type,
+                groupType: item.groupType,
+                itemName: item.itemName,
+                category: item.category,
                 unit: item.unit,
                 im_price: item.im_price,
                 ex_price: item.ex_price,
+                weight: item.weight,
+                cbm: item.cbm,
+                moq: item.moq,
+                sets: item.sets,
+                use: item.use,
+                delete: 1,
                 supplyer: item.supplyer,
+                createdAt: item.createdAt,
+                deletedAt: Date.now(),
+                ItemId: item.id,
               },
-              { where: { ItemId: item.id } }
+              { transaction: tx }
             );
-          },
-          afterDestroy: async (item) => {
-            await sequelize.models.ItemBackup.create({
-              type: item.type,
-              groupType: item.groupType,
-              itemName: item.itemName,
-              category: item.category,
-              unit: item.unit,
-              im_price: item.im_price,
-              ex_price: item.ex_price,
-              weight: item.weight,
-              cbm: item.cbm,
-              moq: item.moq,
-              sets: item.sets,
-              use: item.use,
-              delete: 1,
-              supplyer: item.supplyer,
-              createdAt: item.createdAt,
-              deletedAt: Date.now(),
-              ItemId: item.id,
-            });
           },
         },
         timestamps: true,
@@ -132,5 +151,6 @@ module.exports = class Item extends Sequelize.Model {
       as: "Lower",
       foreignKey: "UpperId",
     });
+    db.Item.hasMany(db.StockHistory, { foreignKey: "ItemId", sourceKey: "id" });
   }
 };

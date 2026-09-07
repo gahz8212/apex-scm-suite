@@ -44,7 +44,7 @@ const AuthForm: React.FC<Props> = ({ type, form, onChange, onSubmit, error }) =>
                     {type === 'join' && <input type="text" placeholder='이름 입력' name='name' value={form.name} onChange={onChange} />}
                     <input type="password" placeholder='비밀번호 입력' name="password" value={form.password} onChange={onChange} />
                 </div>
-                <div>
+                <div style={{ marginTop: '14px' }}>
                     <StyledButton type='submit' option={type}>{type}</StyledButton>
                 </div>
             </div>

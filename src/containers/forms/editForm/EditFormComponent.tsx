@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { response } from '../../../store/slices/authSlice';
 type Props = {
     prev: {
         [key: string]: string | number | boolean | { groupName: string } | { url: string }[],
@@ -75,6 +77,9 @@ type Props = {
 }
 const EditFormComponent: React.FC<Props> = ({ prev, next, onChange, editImage, editItem, removeItem, removeImage, closeForm, goodType, supplyers,
     insertGroupType, insertSupplyer, dragItems, addCount, removeCount, drag_on, drag_on_relation, dragedItem, relations, totalPrice, viewMode }) => {
+    const { auth } = useSelector(response);
+    const isManagerOrAdmin = auth?.role === 'ADMIN' || auth?.role === 'MANAGER';
+    const isAdmin = auth?.role === 'ADMIN';
     // const [openViewer, setOpenViewer] = useState<boolean>(true);
     const [inter, setInter] = useState<NodeJS.Timeout | undefined>(undefined)
     const [tout, setTout] = useState<NodeJS.Timeout | undefined>(undefined)
@@ -451,9 +456,8 @@ const EditFormComponent: React.FC<Props> = ({ prev, next, onChange, editImage, e
                     </div>
 
                     <div className="input-submit_edit">
-
-                        <button type='submit'>수정</button>
-                        <button type='button' onClick={() => { removeItem(next.id) }}>삭제</button>
+                        {isManagerOrAdmin && <button type='submit'>수정</button>}
+                        {isAdmin && <button type='button' onClick={() => { removeItem(next.id) }}>삭제</button>}
                         <button type='button' onClick={closeForm}>닫기</button>
                     </div>
                 </div>

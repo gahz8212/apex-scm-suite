@@ -6,6 +6,11 @@ module.exports = class User extends Sequelize.Model {
         email: { type: Sequelize.STRING(100), unique: true, allowNull: false },
         name: { type: Sequelize.STRING(10), allowNull: false },
         password: { type: Sequelize.STRING(200), allowNull: false },
+        role: {
+          type: Sequelize.ENUM("ADMIN", "MANAGER", "USER"),
+          defaultValue: "USER",
+          allowNull: false,
+        },
       },
       {
         sequelize,
@@ -18,5 +23,9 @@ module.exports = class User extends Sequelize.Model {
         collate: "utf8_general_ci",
       }
     );
+  }
+
+  static associate(db) {
+    db.User.hasMany(db.StockHistory, { foreignKey: "UserId", sourceKey: "id" });
   }
 };

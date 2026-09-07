@@ -409,6 +409,47 @@ flowchart LR
     - 최근 납기(예: `2주`)가 있으면 그 납기 수치에서 시작, 없으면 기본 `1주`에서 시작
     - `(- 최근 납기 또는 기본1주 +)` 원형 테두리 스텝 버튼(`.btn-circle-step`)으로 1주 단위 증가/감소 (최소 1주 보장)
 
+- [x] **19. SCM 통합 관제 대시보드 고도화 및 네비게이션/누적월 개편 (2026-09-07)**
+  - [x] **바로가기 이동 버튼 3종 정상화**:
+    - `자재마스터 관리 [이동]` ➔ Item Master (`/view`, Redux `PageActions.changePage('View')`)
+    - `발주관리 [이동]` ➔ Export Logistics (`/Export`, Redux `PageActions.changePage('Export')`)
+    - `수출물류 관리 [이동]` ➔ Export Logistics (`/Export`, Redux `PageActions.changePage('Export')`)
+    - `App.tsx` 내 대소문자 및 라우트 별칭(`/ordersheet`, `/item-management`, `/export`, `/view`, `/tracking`) 전면 등록
+  - [x] **기준월 단일 선택 ➔ 자재결품 모니터링 영역 내 '월 누적' 연산으로 전환**:
+    - 대시보드 최상단 기준월 탭 제거 ➔ `자재 결품 및 안전재고 모니터링` 위젯 전용 툴바(`.shortage-month-toolbar`)로 이동
+    - 단일 월 선택에서 시작월(`Sep`)부터 타겟월까지의 순차 누적(`accumulatedMonths`)으로 개편
+    - 클릭된 기간까지의 누적 소요량(`grossReq`)을 `calculateMRP`에 전달하여 실무형 자재 결품 및 런웨이 실시간 계산
+    - UI에 누적 기간 뱃지(예: `Sep ~ Nov 누적 (3개월)`) 및 소요량 컬럼 헤더 동적 표기
+  - [x] **SCM종합운영현황판 헤더 삭제**:
+    - 군더더기 상단 배너(`<h1 className="dashboard-title">SCM 종합 운영 현황판</h1>`) 전면 삭제
+    - 실시간 데이터 갱신 버튼 및 최종 동기화 시각을 `글로벌 주요 통화 환율 지표` 헤더 우측(`.sec-actions`)으로 정돈
+
+- [x] **20. 엔터프라이즈 RBAC 권한 관리 & 화면 제어 완성 (2026-09-07)**
+  - [x] **회원가입 셀프 권한 부여 보안 취약점 차단**:
+    - 회원가입 폼(`JoinForm`)에서 사용자가 본인의 `role`을 선택하던 셀렉트박스 영구 제거
+    - 신규 가입자는 서버에서 `USER`(일반 조회 권한)로만 안전하게 자동 가입되도록 백엔드 강제 처리
+  - [x] **작업 권한별 UI 요소 조건부 렌더링 (권한 없는 버튼 완전 숨김)**:
+    - `USER` 계정 로그인 시 출고/수정/발주 관련 조작 버튼 전면 숨김 처리:
+      - Export Logistics: `[임시저장]`, `[출고 확정]`, `[출고 취소]`, 엑셀 업로드 버튼 3종, 부자재 삭제 버튼
+      - Item Master: 카드 앞면 `[수정]` 버튼, 카드 뒷면 `[견적요청]`/`[발주요청]`/`[입고대기]` 조달 라이프사이클 버튼
+      - BOM Management: `[품목 추가]`, `[BOM 저장]` 버튼
+    - 백엔드 RBAC 미들웨어(`isLoggedIn`, `requireRole`)를 적용하여 클라이언트 우회 API 호출 시 403 Forbidden 차단
+
+- [x] **21. 엔터프라이즈 2단계: 데이터 무결성(수불부), 동시성 락 & 멱등성 방어 (2026-09-07)**
+  - [x] **실무 재고 수불부 (Audit Log / Inventory History) 구축**:
+    - `StockHistory` 테이블 신설 및 모든 재고 변동 트랜잭션과 강제 바인딩 (일시, 작업자, 작업구분, 변동수량, 전후 재고, 출고넘버)
+    - 출고 확정(`DISPATCH`), 출고 취소(`DISPATCH_CANCEL`), 자재 입고(`INBOUND`), 수동 조정(`ADJUSTMENT`) 전 내역 자동 기록
+    - 품목 카드 하단에 수불부 타임라인 조회 팝업 모달 연동
+  - [x] **동시성 제어 및 비관적 락(Pessimistic Row Lock)**:
+    - 완제품 출고 시 하위 부품 재고 일괄 차감에 `lock: t.LOCK.UPDATE` 적용하여 다중 작업자 동시 출고 시 경쟁 상태(Race Condition) 원천 차단
+  - [x] **ORM 트랜잭션 전파 누락 및 50초 락 타임아웃 장애 해결**:
+    - `Item.afterUpdate` 훅이 트랜잭션 없이 별도 커넥션으로 실행되던 버그 수정 (처리 시간: 97초 ➔ **0.18초**로 500배 단축)
+    - `READ_COMMITTED` 격리 수준 적용으로 MySQL InnoDB의 불필요한 Gap Lock 데드락 완벽 제거
+  - [x] **출고 멱등성(Idempotency) 및 중복 광클 방어 (409 Conflict)**:
+    - 동일 출고 건에 대한 중복 확정 요청 시 409 Conflict로 차단하여 재고 이중 차감 0건 보장
+  - [x] **10건 동시 요청 자동화 스트레스 테스트 검증 (`scripts/test_concurrency.js`)**:
+    - 0.001초 차이로 10개 병렬 요청 스트레스 테스트 결과 **100% PASS** (1건 성공, 9건 409 차단, 중복 차감 0건)
+
 ---
 
 ## 💡 최종 완료 후 전환 방법

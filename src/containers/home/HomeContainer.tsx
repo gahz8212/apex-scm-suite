@@ -6,6 +6,7 @@ import { relateActions } from '../../store/slices/relationSlice';
 import { editActions } from '../../store/slices/editSlice';
 import { currencyActions, currencyData } from '../../store/slices/currencySlice';
 import { OrderAction, OrderData } from '../../store/slices/orderSlice';
+import { PageActions } from '../../store/slices/pageSlice';
 import { calculateMRP, ALL_ORDER_MONTHS } from '../../lib/utils/calculateMRP';
 import { getAllShipments, TrackingShipment } from '../../lib/api/tracking';
 
@@ -60,6 +61,15 @@ const HomeContainer = () => {
     return ALL_ORDER_MONTHS;
   }, [months]);
 
+  // 3-1. 기준월 누적 목록 산출: 시작월부터 선택된 월까지 순차 누적 (예: Sep ~ Nov)
+  const accumulatedMonths = useMemo(() => {
+    const endIdx = availableMonths.indexOf(selectedMonth);
+    if (endIdx === -1) {
+      return [availableMonths[0] || 'Sep'];
+    }
+    return availableMonths.slice(0, endIdx + 1);
+  }, [availableMonths, selectedMonth]);
+
   useEffect(() => {
     if (availableMonths.length > 0 && !availableMonths.includes(selectedMonth)) {
       setSelectedMonth(availableMonths[0]);
@@ -105,13 +115,13 @@ const HomeContainer = () => {
     };
   }, [resultCurrency, fromCurrency]);
 
-  // 6. 자재 결품 및 안전재고 소진 분석 (MRP 연산)
+  // 6. 자재 결품 및 안전재고 소진 분석 (MRP 누적 연산)
   const shortageStats = useMemo(() => {
     if (!items || items.length === 0) {
       return { dangerCount: 0, warningCount: 0, normalCount: 0, list: [] };
     }
 
-    const mrpMap = calculateMRP(items, relations, orderData, selectedMonth);
+    const mrpMap = calculateMRP(items, relations, orderData, accumulatedMonths);
     const nonSetItems = Array.from(mrpMap.values()).filter((item) => item.type !== 'SET');
 
     const dangerList = nonSetItems.filter((i) => i.status === 'DANGER');
@@ -127,7 +137,7 @@ const HomeContainer = () => {
       normalCount,
       list: sortedList,
     };
-  }, [items, relations, orderData, selectedMonth]);
+  }, [items, relations, orderData, accumulatedMonths]);
 
   // 7. 당월 완제품 수출 출하 통계
   const exportStats = useMemo(() => {
@@ -193,11 +203,39 @@ const HomeContainer = () => {
     };
   }, [shipments]);
 
+  // 9. 네비게이션 핸들러 (Redux pageSlice 상태 및 라우터 동시 갱신)
+  const handleNavigate = useCallback(
+    (destination: string) => {
+      if (destination === '/item-management' || destination === '/view' || destination === 'View') {
+        dispatch(PageActions.changePage('View'));
+        navigate('/view');
+      } else if (
+        destination === '/ordersheet' ||
+        destination === '/export' ||
+        destination === '/Export' ||
+        destination === 'Export'
+      ) {
+        dispatch(PageActions.changePage('Export'));
+        navigate('/Export');
+      } else if (destination === '/tracking' || destination === '/Tracking' || destination === 'Tracking') {
+        dispatch(PageActions.changePage('Tracking'));
+        navigate('/Tracking');
+      } else if (destination === '/settings' || destination === 'Settings') {
+        dispatch(PageActions.changePage('Settings'));
+        navigate('/settings');
+      } else {
+        navigate(destination);
+      }
+    },
+    [dispatch, navigate]
+  );
+
   return (
     <HomeComponent
       fromCurrency={fromCurrency}
       resultCurrency={resultCurrency}
       selectedMonth={selectedMonth}
+      accumulatedMonths={accumulatedMonths}
       availableMonths={availableMonths}
       onSelectMonth={setSelectedMonth}
       fxRates={fxRates}
@@ -207,7 +245,7 @@ const HomeContainer = () => {
       onRefresh={handleRefresh}
       isRefreshing={isRefreshing}
       lastUpdatedTime={lastUpdatedTime}
-      onNavigate={navigate}
+      onNavigate={handleNavigate}
     />
   );
 };

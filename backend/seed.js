@@ -21,14 +21,23 @@ async function seed() {
   await sequelize.sync({ force: true });
   console.log("✅ 테이블 초기화(sync) 완료");
 
-  // 2. 데모 사용자 생성
+  // 2. 데모 사용자 및 권한별 계정 생성
   const hashedPassword = await bcrypt.hash("password123!", 12);
   const demoUser = await User.create({
     email: "demo@apex-scm.io",
     name: "데모 관리자",
     password: hashedPassword,
+    role: "ADMIN",
   });
-  console.log(`✅ 데모 계정 생성: ${demoUser.email} (비밀번호: password123!)`);
+  console.log(`✅ 관리자(ADMIN) 계정 생성: ${demoUser.email} (비밀번호: password123!)`);
+
+  const staffUser = await User.create({
+    email: "staff@apex-scm.io",
+    name: "일반 작업자",
+    password: hashedPassword,
+    role: "USER",
+  });
+  console.log(`✅ 일반(USER) 계정 생성: ${staffUser.email} (비밀번호: password123!)`);
 
   // 3. 제품 그룹(Good) 생성 (hooks: false로 자동 Item 생성 훅 우회)
   const [good1, good2, good3] = await Good.bulkCreate(

@@ -14,6 +14,7 @@ const Relation = require("./relation");
 const Pallet = require("./pallet");
 const Picker = require("./picker");
 const Shipment = require("./shipment");
+const StockHistory = require("./stock_history");
 
 const dbDatabase = process.env.DB_DATABASE || config.database;
 const dbUsername = process.env.DB_USERNAME || config.username;
@@ -31,6 +32,7 @@ const sequelize = new Sequelize(
 );
 
 db.sequelize = sequelize;
+db.Sequelize = Sequelize;
 db.User = User;
 db.Item = Item;
 db.Image = Image;
@@ -42,6 +44,7 @@ db.Relation = Relation;
 db.Pallet = Pallet;
 db.Picker = Picker;
 db.Shipment = Shipment;
+db.StockHistory = StockHistory;
 // db.OrderSheet = OrderSheet;
 User.init(sequelize);
 Item.init(sequelize);
@@ -54,10 +57,13 @@ Relation.init(sequelize);
 Pallet.init(sequelize);
 Picker.init(sequelize);
 Shipment.init(sequelize);
+StockHistory.init(sequelize);
 
+User.associate(db);
 Image.associate(db);
 Good.associate(db);
 GoodBackup.associate(db);
 Item.associate(db);
 Picker.associate(db);
+StockHistory.associate(db);
 module.exports = db;

@@ -25,11 +25,22 @@ const App = () => {
       <Routes>
         <Route path='/' element={<LoginForm />} />
         <Route path='/join' element={<JoinForm />} />
-        {auth && <><Route path='/home' element={<HomeForm />} />
-          <Route path='/Export' element={<ExportForm />} />
-          <Route path='/settings' element={<SettingForm />} />
-          <Route path='/view' element={<RViewForm />} />
-          <Route path='/Tracking' element={<TrackingForm />} /></>}
+        {auth && (
+          <>
+            <Route path='/home' element={<HomeForm />} />
+            <Route path='/Home' element={<HomeForm />} />
+            <Route path='/Export' element={<ExportForm />} />
+            <Route path='/export' element={<ExportForm />} />
+            <Route path='/ordersheet' element={<ExportForm />} />
+            <Route path='/settings' element={<SettingForm />} />
+            <Route path='/Settings' element={<SettingForm />} />
+            <Route path='/view' element={<RViewForm />} />
+            <Route path='/View' element={<RViewForm />} />
+            <Route path='/item-management' element={<RViewForm />} />
+            <Route path='/Tracking' element={<TrackingForm />} />
+            <Route path='/tracking' element={<TrackingForm />} />
+          </>
+        )}
         {/* <Route path='/search' element={<SearchForm />} /> */}
       </Routes>
     </>
