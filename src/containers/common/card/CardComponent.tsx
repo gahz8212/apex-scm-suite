@@ -104,6 +104,27 @@ const CardComponent: React.FC<Props> = ({
   const [poQty, setPoQty] = useState<number>(0);
   const [poLeadTime, setPoLeadTime] = useState<number>(1);
 
+  // A4 정규 인쇄 문서 상태 (RFQ / PO)
+  const [printDoc, setPrintDoc] = useState<{
+    type: 'RFQ' | 'PO';
+    title: string;
+    docNo: string;
+    date: string;
+    supplier: string;
+    item: {
+      id: number;
+      itemName: string;
+      descript?: string;
+      unit?: string;
+      category?: string;
+    };
+    qty: number;
+    unitPrice: number;
+    totalPrice: number;
+    leadTime: string;
+    notes?: string;
+  } | null>(null);
+
   // 입고(Inbound) 모달 상태
   const [inboundModalItem, setInboundModalItem] = useState<MRPItemResult | null>(null);
   const [inboundQty, setInboundQty] = useState<number>(100);
@@ -199,25 +220,71 @@ const CardComponent: React.FC<Props> = ({
     setPoLeadTime((prev) => Math.max(1, prev + delta));
   };
 
-  // RFQ 제출 핸들러 (견적서 출력 및 발송 ➔ 버튼이 '발주요청'으로 전환)
+  // RFQ 제출 핸들러 (견적서 출력 및 발송 ➔ 버튼이 '발주요청'으로 전환 및 A4 견적서 인쇄창 연동)
   const handleRfqSubmit = () => {
     if (!rfqModalItem) return;
     const vendor = selectedVendor || rfqModalItem.selected_supplier || rfqModalItem.supplyer;
     if (onUpdateRfqStatus) {
       onUpdateRfqStatus(rfqModalItem.id, 'RFQ_SENT', vendor, rfqQty);
     }
-    alert(`[${rfqModalItem.itemName}]\n${vendor} 대상 견적서(RFQ)가 성공적으로 출력 및 발송되었습니다.\n(견적요청 수량: ${rfqQty.toLocaleString()} EA)\n(카드 버튼이 '발주요청'으로 자동 전환됩니다.)`);
+    const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    const todayDate = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const supplierObj = rfqModalItem.suppliers?.find((s: any) => s.name === vendor);
+    const unitPrice = supplierObj?.price || rfqModalItem.im_price || 0;
+
+    setPrintDoc({
+      type: 'RFQ',
+      title: '견 적 요 청 서 (RFQ)',
+      docNo: `RFQ-${todayStr}-${String(rfqModalItem.id).padStart(3, '0')}`,
+      date: todayDate,
+      supplier: vendor,
+      item: {
+        id: rfqModalItem.id,
+        itemName: rfqModalItem.itemName,
+        descript: (rfqModalItem as any).descript || '',
+        unit: (rfqModalItem as any).unit || 'EA',
+        category: rfqModalItem.category,
+      },
+      qty: rfqQty,
+      unitPrice: unitPrice,
+      totalPrice: unitPrice * rfqQty,
+      leadTime: supplierObj?.lt || rfqModalItem.lead_time || '협의',
+      notes: '견적 유효기간은 발행일로부터 14일이며, 납기 및 최소발주수량(MOQ)을 명기하여 회신 바랍니다.',
+    });
     setRfqModalItem(null);
   };
 
-  // PO 발주 제출 핸들러 (발주서 출력 및 전송 ➔ 버튼이 '입고대기'로 전환)
+  // PO 발주 제출 핸들러 (발주서 출력 및 전송 ➔ 버튼이 '입고대기'로 전환 및 A4 발주서 인쇄창 연동)
   const handlePoSubmit = () => {
     if (!poModalItem) return;
     const vendor = poModalItem.selected_supplier || poModalItem.supplyer;
     if (onUpdateRfqStatus) {
       onUpdateRfqStatus(poModalItem.id, 'PO_SENT', vendor, poQty);
     }
-    alert(`[${poModalItem.itemName}]\n${vendor} 대상 정식 발주서(PO)가 성공적으로 출력 및 전송되었습니다.\n(발주 수량: ${poQty.toLocaleString()} EA / 리드타임: ${poLeadTime}주)\n(카드 버튼이 '입고대기'로 자동 전환됩니다.)`);
+    const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+    const todayDate = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const supplierObj = poModalItem.suppliers?.find((s: any) => s.name === vendor);
+    const unitPrice = supplierObj?.price || poModalItem.im_price || 0;
+
+    setPrintDoc({
+      type: 'PO',
+      title: '구 매 발 주 서 (PURCHASE ORDER)',
+      docNo: `PO-${todayStr}-${String(poModalItem.id).padStart(3, '0')}`,
+      date: todayDate,
+      supplier: vendor,
+      item: {
+        id: poModalItem.id,
+        itemName: poModalItem.itemName,
+        descript: (poModalItem as any).descript || '',
+        unit: (poModalItem as any).unit || 'EA',
+        category: poModalItem.category,
+      },
+      qty: poQty,
+      unitPrice: unitPrice,
+      totalPrice: unitPrice * poQty,
+      leadTime: `${poLeadTime}주`,
+      notes: '상기 품목을 지정 기일 내 납품하여 주시기 바라며, 규격 검수 합격품에 한하여 대금을 정산합니다.',
+    });
     setPoModalItem(null);
   };
 
@@ -1204,6 +1271,192 @@ const CardComponent: React.FC<Props> = ({
               >
                 입고 확정 및 재고 합산
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 7. 정규 A4 견적요청서 / 구매발주서 인쇄 모달 (A4 Print Document)       */}
+      {/* ==================================================================== */}
+      {printDoc && (
+        <div className="print-doc-overlay" onClick={() => setPrintDoc(null)}>
+          <div className="print-doc-container" onClick={(e) => e.stopPropagation()}>
+            {/* 화면 조작 툴바 (인쇄 시 숨김) */}
+            <div className="print-action-bar no-print">
+              <div className="doc-type-badge">
+                {printDoc.type === 'RFQ' ? '견적요청서 미리보기' : '정식 구매발주서 미리보기'}
+              </div>
+              <div className="btn-group">
+                <button
+                  type="button"
+                  className="btn-print-action primary"
+                  onClick={() => window.print()}
+                >
+                  인쇄 (PDF 저장)
+                </button>
+                <button
+                  type="button"
+                  className="btn-print-action secondary"
+                  onClick={() => setPrintDoc(null)}
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+
+            {/* A4 실제 인쇄 시트 영역 */}
+            <div className="a4-sheet">
+              <div className="a4-header">
+                <h1 className="a4-title">{printDoc.title}</h1>
+                <div className="doc-meta-right">
+                  <table className="meta-table">
+                    <tbody>
+                      <tr>
+                        <th>문서번호</th>
+                        <td>{printDoc.docNo}</td>
+                      </tr>
+                      <tr>
+                        <th>발행일자</th>
+                        <td>{printDoc.date}</td>
+                      </tr>
+                      <tr>
+                        <th>담당부서</th>
+                        <td>구매자재팀</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* 수신/발신 2단 테이블 */}
+              <div className="parties-grid">
+                <div className="party-box supplier">
+                  <div className="party-title">[ 공급처 (수신) ]</div>
+                  <table className="party-table">
+                    <tbody>
+                      <tr>
+                        <th>상 호</th>
+                        <td><b>{printDoc.supplier}</b></td>
+                      </tr>
+                      <tr>
+                        <th>담당자</th>
+                        <td>영업/영업관리팀 귀하</td>
+                      </tr>
+                      <tr>
+                        <th>납기조건</th>
+                        <td>{printDoc.leadTime} (발주일 기준)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="party-box buyer">
+                  <div className="party-title">[ 발주처 (발신) ]</div>
+                  <table className="party-table">
+                    <tbody>
+                      <tr>
+                        <th>상 호</th>
+                        <td><b>NEXUS ELECTRONICS</b></td>
+                      </tr>
+                      <tr>
+                        <th>등록번호</th>
+                        <td>123-45-67890</td>
+                      </tr>
+                      <tr>
+                        <th>사업장</th>
+                        <td>서울특별시 금천구 디지털로 9길 68</td>
+                      </tr>
+                      <tr>
+                        <th>대표이사</th>
+                        <td>
+                          <span>홍 길 동</span>
+                          <span className="seal-stamp">(인)</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="a4-intro">
+                {printDoc.type === 'RFQ'
+                  ? '귀사의 무궁한 발전을 기원하며, 아래와 같이 부품 견적을 정중히 요청하오니 검토 후 회신 바랍니다.'
+                  : '귀사의 무궁한 발전을 기원하며, 아래와 같이 정식 구매 발주하오니 납기 준수하여 납품 바랍니다.'}
+              </div>
+
+              {/* 품목 명세 테이블 */}
+              <table className="items-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '35px' }}>No</th>
+                    <th style={{ width: '85px' }}>품목코드</th>
+                    <th>품명</th>
+                    <th>규격 / 사양</th>
+                    <th style={{ width: '65px' }}>수량</th>
+                    <th style={{ width: '45px' }}>단위</th>
+                    <th style={{ width: '90px' }}>단가 (￦)</th>
+                    <th style={{ width: '110px' }}>금액 (￦)</th>
+                    <th style={{ width: '70px' }}>납기</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ textAlign: 'center' }}>1</td>
+                    <td style={{ textAlign: 'center' }}>ITEM-{printDoc.item.id}</td>
+                    <td><b>{printDoc.item.itemName}</b></td>
+                    <td>{printDoc.item.descript || '-'}</td>
+                    <td style={{ textAlign: 'right' }}><b>{printDoc.qty.toLocaleString()}</b></td>
+                    <td style={{ textAlign: 'center' }}>{printDoc.item.unit || 'EA'}</td>
+                    <td style={{ textAlign: 'right' }}>{printDoc.unitPrice > 0 ? printDoc.unitPrice.toLocaleString() : '-'}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <b>{printDoc.totalPrice > 0 ? printDoc.totalPrice.toLocaleString() : '-'}</b>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>{printDoc.leadTime}</td>
+                  </tr>
+                  {/* 빈 행 채우기 */}
+                  {[2, 3, 4, 5].map((n) => (
+                    <tr key={n} style={{ height: '30px' }}>
+                      <td style={{ textAlign: 'center', color: '#cbd5e1' }}>{n}</td>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="total-row">
+                    <th colSpan={4} style={{ textAlign: 'center' }}>합 계 (TOTAL)</th>
+                    <th style={{ textAlign: 'right' }}>{printDoc.qty.toLocaleString()}</th>
+                    <th></th>
+                    <th></th>
+                    <th style={{ textAlign: 'right', color: '#0f172a' }}>
+                      {printDoc.totalPrice > 0 ? `￦ ${printDoc.totalPrice.toLocaleString()}` : '-'}
+                    </th>
+                    <th></th>
+                  </tr>
+                </tfoot>
+              </table>
+
+              {/* 비고 및 특약 사항 */}
+              <div className="a4-notes">
+                <div className="notes-title">[ 특약 및 검수 조건 ]</div>
+                <ol className="notes-list">
+                  <li>규격서 및 기술 사양에 부합하는 정품에 한하여 당사 입고 검사 합격 후 납품으로 인정합니다.</li>
+                  <li>공급처 사정으로 인한 납기 지연 예상 시 즉시 당사 구매담당자에게 서면 통보하여야 합니다.</li>
+                  <li>대금 결제는 당사 정기 결제 규정에 따릅니다.</li>
+                </ol>
+              </div>
+
+              <div className="a4-footer">
+                <span>APEX SCM SUITE - B2B ENTERPRISE PROCUREMENT SYSTEM</span>
+                <span>NEXUS ELECTRONICS PURCHASING DEPT</span>
+              </div>
             </div>
           </div>
         </div>
