@@ -34,3 +34,678 @@
     }
   }
 }
+
+// ============================================================================
+// APEX SCM Suite - 엔터프라이즈 대시보드 종합 현황판 (Dashboard)
+// ============================================================================
+.dashboard-container {
+  width: 100%;
+  max-width: 1440px;
+  margin: calc(126px + 0.5rem) auto 3rem auto;
+  padding: 0 1.5rem;
+  box-sizing: border-box;
+
+  // 상단 관제 센터 헤더 & 제어 툴바
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.4rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .dashboard-badge {
+        display: inline-flex;
+        align-items: center;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        font-size: 0.72rem;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 4px;
+        width: fit-content;
+        letter-spacing: 0.5px;
+      }
+
+      .dashboard-title {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+        letter-spacing: -0.3px;
+      }
+
+      .dashboard-subtitle {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin: 0;
+      }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+
+      .month-selector-group {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: #f1f5f9;
+        padding: 4px;
+        border-radius: 6px;
+
+        .selector-label {
+          font-size: 0.76rem;
+          font-weight: 700;
+          color: #475569;
+          padding: 0 0.5rem;
+        }
+
+        .btn-month-tab {
+          border: none;
+          background: transparent;
+          padding: 0.35rem 0.75rem;
+          border-radius: 4px;
+          font-size: 0.82rem;
+          font-weight: 700;
+          color: #475569;
+          cursor: pointer;
+          transition: all 0.15s ease;
+
+          &:hover {
+            color: #0f172a;
+            background: rgba(255, 255, 255, 0.7);
+          }
+
+          &.active {
+            background: #ffffff;
+            color: #2563eb;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+          }
+        }
+      }
+
+      .btn-refresh {
+        padding: 0.48rem 0.95rem;
+        background: #ffffff;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #334155;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &:hover {
+          background: #f8fafc;
+          border-color: #2563eb;
+          color: #2563eb;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  // 섹션 1: 실시간 글로벌 외환 지표
+  .fx-section {
+    margin-bottom: 1.5rem;
+
+    .section-title-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+
+      .sec-title {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+      }
+
+      .sec-meta {
+        font-size: 0.78rem;
+        color: #64748b;
+      }
+    }
+
+    .fx-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+
+      @media (max-width: 1024px) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      @media (max-width: 600px) {
+        grid-template-columns: 1fr;
+      }
+
+      .fx-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        border-top: 3.5px solid #cbd5e1;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        &.usd { border-top-color: #2563eb; }
+        &.eur { border-top-color: #0f766e; }
+        &.jpy { border-top-color: #d97706; }
+        &.cny { border-top-color: #dc2626; }
+
+        .fx-card-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.45rem;
+
+          .currency-code {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #0f172a;
+          }
+
+          .currency-name {
+            font-size: 0.74rem;
+            color: #64748b;
+            font-weight: 600;
+          }
+        }
+
+        .fx-rate-value {
+          font-size: 1.45rem;
+          font-weight: 800;
+          color: #0f172a;
+          letter-spacing: -0.5px;
+          margin-bottom: 0.35rem;
+
+          .krw-unit {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-right: 2px;
+          }
+        }
+
+        .fx-card-footer {
+          display: flex;
+          justify-content: space-between;
+          font-size: 0.72rem;
+          color: #94a3b8;
+          border-top: 1px solid #f1f5f9;
+          padding-top: 0.4rem;
+        }
+      }
+    }
+  }
+
+  // 섹션 2 & 3: 2단 운영 현황 위젯 그리드 (자재 결품 vs 수출 출하)
+  .dual-widgets-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+
+    @media (max-width: 1100px) {
+      grid-template-columns: 1fr;
+    }
+
+    .widget-panel {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.9rem 1.25rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+
+        .panel-title-wrap {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          flex-wrap: wrap;
+
+          .panel-title {
+            font-size: 0.96rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0;
+          }
+
+          .badge-danger {
+            background: #fee2e2;
+            color: #dc2626;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+          }
+
+          .badge-warning {
+            background: #fef3c7;
+            color: #d97706;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+          }
+
+          .badge-normal {
+            background: #dcfce7;
+            color: #15803d;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+          }
+        }
+
+        .btn-link-action {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: #2563eb;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 3px 6px;
+          border-radius: 4px;
+          transition: background 0.15s;
+
+          &:hover {
+            background: #eff6ff;
+            text-decoration: underline;
+          }
+        }
+      }
+
+      .panel-body {
+        padding: 1rem 1.25rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+
+        // 결품 테이블
+        .shortage-table-wrap {
+          overflow-x: auto;
+          margin-bottom: 0.75rem;
+
+          .shortage-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+
+            th, td {
+              padding: 0.55rem 0.65rem;
+              border-bottom: 1px solid #f1f5f9;
+              text-align: left;
+            }
+
+            th {
+              background: #f8fafc;
+              color: #475569;
+              font-weight: 700;
+              font-size: 0.75rem;
+              white-space: nowrap;
+            }
+
+            tr:hover td {
+              background: #fbfcfe;
+            }
+
+            .badge-status {
+              display: inline-block;
+              font-size: 0.7rem;
+              font-weight: 800;
+              padding: 2px 6px;
+              border-radius: 3px;
+              text-align: center;
+              white-space: nowrap;
+
+              &.DANGER {
+                background: #fee2e2;
+                color: #dc2626;
+                border: 1px solid #fca5a5;
+              }
+              &.WARNING {
+                background: #fef3c7;
+                color: #b45309;
+                border: 1px solid #fde68a;
+              }
+            }
+
+            .procure-badge {
+              display: inline-block;
+              font-size: 0.7rem;
+              font-weight: 700;
+              padding: 1px 5px;
+              border-radius: 3px;
+
+              &.rfq { background: #eff6ff; color: #1d4ed8; }
+              &.po { background: #ccfbf1; color: #0f766e; }
+              &.inbound { background: #fef3c7; color: #b45309; }
+              &.idle { background: #f1f5f9; color: #64748b; }
+            }
+
+            .shortage-qty {
+              font-weight: 800;
+              color: #dc2626;
+            }
+          }
+        }
+
+        .empty-shortage {
+          padding: 2.5rem 1rem;
+          text-align: center;
+          color: #15803d;
+          background: #f0fdf4;
+          border: 1px dashed #bbf7d0;
+          border-radius: 6px;
+          font-size: 0.88rem;
+          font-weight: 700;
+          margin: auto 0;
+        }
+
+        // 수출 출하 지표
+        .export-kpi-row {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.6rem;
+          margin-bottom: 1rem;
+
+          .kpi-cell {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 0.65rem 0.8rem;
+            text-align: center;
+
+            .kpi-label {
+              font-size: 0.72rem;
+              color: #64748b;
+              font-weight: 600;
+              margin-bottom: 2px;
+            }
+
+            .kpi-val {
+              font-size: 1.1rem;
+              font-weight: 800;
+              color: #0f172a;
+              white-space: nowrap;
+
+              &.highlight {
+                color: #2563eb;
+              }
+            }
+          }
+        }
+
+        .export-table-wrap {
+          overflow-x: auto;
+
+          .export-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+
+            th, td {
+              padding: 0.5rem 0.65rem;
+              border-bottom: 1px solid #f1f5f9;
+            }
+
+            th {
+              background: #f8fafc;
+              color: #475569;
+              font-weight: 700;
+              font-size: 0.75rem;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 섹션 4: 해상 운항 선박 및 선적 물류 실시간 관제
+  .vessel-section {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+
+    .vessel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      padding: 0.9rem 1.4rem;
+      border-bottom: 1px solid #e2e8f0;
+      background: #f8fafc;
+
+      .vessel-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+
+        .vessel-title {
+          font-size: 1rem;
+          font-weight: 800;
+          color: #0f172a;
+          margin: 0;
+        }
+
+        .status-pill {
+          font-size: 0.74rem;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 4px;
+
+          &.transit { background: #dbeafe; color: #1d4ed8; }
+          &.loaded { background: #ccfbf1; color: #0f766e; }
+          &.pending { background: #fef3c7; color: #b45309; }
+          &.delivered { background: #f1f5f9; color: #475569; }
+        }
+      }
+
+      .btn-link-action {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #2563eb;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+
+        &:hover {
+          background: #eff6ff;
+          text-decoration: underline;
+        }
+      }
+    }
+
+    .vessel-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      padding: 1.25rem;
+
+      @media (max-width: 1100px) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      @media (max-width: 680px) {
+        grid-template-columns: 1fr;
+      }
+
+      .vessel-card {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem 1.15rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 0.75rem;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+        &:hover {
+          border-color: #93c5fd;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+        }
+
+        .vessel-card-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+
+          .export-no-badge {
+            font-size: 0.78rem;
+            font-weight: 800;
+            color: #0f172a;
+            background: #f1f5f9;
+            padding: 2px 7px;
+            border-radius: 4px;
+            letter-spacing: 0.3px;
+          }
+
+          .step-badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+
+            &.IN_TRANSIT { background: #dbeafe; color: #1e40af; }
+            &.LOADED { background: #ccfbf1; color: #0f766e; }
+            &.TRUCKING_GATE_IN { background: #fef3c7; color: #b45309; }
+            &.PENDING_DOCS { background: #fee2e2; color: #b91c1c; }
+            &.DELIVERED { background: #f1f5f9; color: #475569; }
+          }
+        }
+
+        .vessel-identity {
+          .v-name {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 2px;
+          }
+
+          .v-voyage {
+            font-size: 0.76rem;
+            color: #64748b;
+            font-weight: 600;
+          }
+        }
+
+        .vessel-route-box {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+          padding: 0.55rem 0.75rem;
+
+          .route-ports {
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.35rem;
+
+            .arrow {
+              color: #2563eb;
+              font-weight: 800;
+            }
+          }
+
+          .route-dates {
+            font-size: 0.72rem;
+            color: #64748b;
+            display: flex;
+            justify-content: space-between;
+          }
+        }
+
+        .vessel-steps-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 2px;
+          font-size: 0.68rem;
+          font-weight: 700;
+          color: #94a3b8;
+          padding: 0.4rem 0;
+          border-top: 1px solid #f1f5f9;
+
+          .step-dot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            text-align: center;
+
+            &.active {
+              color: #2563eb;
+            }
+
+            &.done {
+              color: #0f766e;
+            }
+          }
+
+          .step-sep {
+            color: #cbd5e1;
+            font-size: 0.6rem;
+          }
+        }
+
+        .vessel-cargo-summary {
+          font-size: 0.72rem;
+          color: #64748b;
+          background: #fafafa;
+          padding: 0.35rem 0.55rem;
+          border-radius: 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+    }
+  }
+}
+
