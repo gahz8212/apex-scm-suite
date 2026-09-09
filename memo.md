@@ -450,6 +450,32 @@ flowchart LR
   - [x] **10건 동시 요청 자동화 스트레스 테스트 검증 (`scripts/test_concurrency.js`)**:
     - 0.001초 차이로 10개 병렬 요청 스트레스 테스트 결과 **100% PASS** (1건 성공, 9건 409 차단, 중복 차감 0건)
 
+- [x] **22. 엔터프라이즈 CI/CD 자동 배포 파이프라인 & 컨테이너화 구축 (2026-09-10 완료)**
+  - [x] **단일 서버(EC2/VPS) + Docker Compose 프로덕션 아키텍처 확정**:
+    - Nginx(프론트엔드 서빙 & API 리버스 프록시) + Express(백엔드) + MySQL 8.0 올인원 컨테이너화
+    - 단일 도메인 리버스 프록시 구조로 CORS 문제 및 Express 세션(`express-session`) 쿠키 호환성 100% 보장
+  - [x] **프론트엔드 컨테이너화 (`Dockerfile.frontend`, `nginx.conf`)**:
+    - 1단계: Node 18 환경에서 `npm run build` 정적 번들 빌드 (`CI=false` 경고 실패 방지)
+    - 2단계: 경량 `nginx:alpine`으로 서빙 및 SPA 라우팅(`try_files $uri $uri/ /index.html`) 지원
+    - Gzip 압축, 정적 캐싱(`/static/`), 대용량 파일 업로드 허용(`client_max_body_size 50M`)
+    - 백엔드 라우트(`/auth`, `/item`, `/order`, `/schedule`, `/tracking`, `/health`, `/img`, `/api`) 투명 역방향 프록시 및 세션 쿠키 전달 보장
+  - [x] **백엔드 컨테이너화 (`backend/Dockerfile`)**:
+    - `node:18-slim` 기반 경량화 및 `bcrypt` 네이티브 C++ 바인딩 안정성 확보
+    - 프로덕션 의존성 격리 설치(`npm ci --omit=dev`) 및 `uploads/` 볼륨 마운트 연동
+  - [x] **운영용 오케스트레이션 구성 (`docker-compose.prod.yml`, `.env.production.example`)**:
+    - `mysql`: UTF-8mb4 인코딩, 네이티브 비밀번호 플러그인, 헬스체크 핑 연동
+    - `backend`: MySQL 헬스체크 통과 후 기동(`depends_on: condition: service_healthy`), 업로드 영구 볼륨(`apex_uploads_data`)
+    - `frontend`: 80 포트 외부 노출 및 백엔드 내부 브릿지 네트워크 연동
+  - [x] **GitHub Actions CI/CD 워크플로우 완성 (`.github/workflows/deploy.yml`)**:
+    - **CI (Pull Request & Push)**: 프론트엔드 `npx tsc --noEmit` 타입 검사, 프로덕션 빌드, 백엔드 의존성 및 문법 검사 자동화
+    - **CD (Main 브랜치 Push 시 자동 실행)**:
+      1. GitHub Container Registry(GHCR) 자동 로그인
+      2. 프론트엔드/백엔드 Docker 이미지 빌드 및 GHCR 자동 푸시 (캐시 최적화)
+      3. `appleboy/scp-action`으로 서버에 `docker-compose.prod.yml` 동기화
+      4. `appleboy/ssh-action`으로 서버 원격 접속 ➔ 최신 이미지 `pull` ➔ `docker compose up -d` 무중단 갱신 ➔ 불필요 구버전 이미지 정리(`prune`)
+  - [x] **Git 커밋 및 원격 저장소 푸시 완료 (`commit: 377c5c4`)**:
+    - GitHub Actions 자동 배포 파이프라인 트리거 및 정상 연동 완료
+
 ---
 
 ## 💡 최종 완료 후 전환 방법
