@@ -18,11 +18,18 @@ a {
 
   .whitebox {
     background-color: #ffffff;
-    width: 420px;
+    width: 100%;
+    max-width: 420px;
+    margin: 1rem;
+    box-sizing: border-box;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
     padding: 2rem;
+
+    @media (max-width: 480px) {
+      padding: 1.5rem;
+    }
 
     .logo-area {
       text-align: center;

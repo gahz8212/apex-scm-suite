@@ -1,4 +1,7 @@
+html,
 body {
+  max-width: 100%;
+  overflow-x: hidden;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;

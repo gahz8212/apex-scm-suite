@@ -132,4 +132,28 @@
       }
     }
   }
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+
+    .left {
+      position: static;
+      width: 100%;
+      height: auto;
+      max-height: 360px;
+      border-right: none;
+      border-bottom: 2px solid #e2e8f0;
+
+      .items {
+        margin-left: 1rem;
+      }
+    }
+
+    .right {
+      margin-left: 0;
+      width: 100%;
+      min-height: auto;
+      padding: 1rem;
+    }
+  }
 }

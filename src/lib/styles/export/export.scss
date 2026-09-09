@@ -98,6 +98,11 @@
     position: relative;
     z-index: 1;
 
+    @media (max-width: 1200px) {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
     // ------------------------------------------------------------------------
     // 좌측: 수주 오더 시트 패널 (Order Sheet Card)
     // ------------------------------------------------------------------------
@@ -185,9 +190,12 @@
 
       .table {
         width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
 
         .thead {
           width: 100%;
+          min-width: 920px;
           background: #f8fafc;
           border-bottom: 1px solid #e2e8f0;
 
@@ -226,6 +234,7 @@
 
         .tbody {
           overflow-y: auto;
+          min-width: 920px;
           height: calc(100vh - 330px);
           min-height: 520px;
           scrollbar-gutter: stable;
@@ -324,6 +333,10 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
       padding: 0;
       overflow: hidden;
+
+      @media (max-width: 1200px) {
+        width: 100%;
+      }
 
       .card-header {
         display: flex;
@@ -488,8 +501,14 @@
       .sumTable {
         position: relative;
         width: 500px;
+        max-width: 100%;
         min-height: 560px;
         margin: 0.75rem auto 1rem auto;
+
+        @media (max-width: 540px) {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
 
         .arrow {
           position: absolute;
