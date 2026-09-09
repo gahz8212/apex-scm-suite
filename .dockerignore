@@ -1,0 +1,8 @@
+node_modules
+build
+.git
+.github
+*.log
+.vscode
+.idea
+backend

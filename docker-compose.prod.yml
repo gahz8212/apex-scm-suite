@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # 1. MySQL 데이터베이스
+  mysql:
+    image: mysql:8.0
+    container_name: apex_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_DATABASE:-auth-toolkit}
+    volumes:
+      - apex_mysql_data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - apex_net
+
+  # 2. Node.js Express 백엔드
+  backend:
+    image: ${BACKEND_IMAGE}
+    container_name: apex_backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      DB_HOST: mysql
+      DB_DATABASE: ${DB_DATABASE:-auth-toolkit}
+      DB_USERNAME: ${DB_USERNAME:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-rootpassword}
+      MSC_COOKIE: ${MSC_COOKIE}
+    volumes:
+      - apex_uploads_data:/app/uploads
+    networks:
+      - apex_net
+
+  # 3. Nginx + React 프론트엔드 (리버스 프록시 겸용)
+  frontend:
+    image: ${FRONTEND_IMAGE}
+    container_name: apex_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    networks:
+      - apex_net
+
+volumes:
+  apex_mysql_data:
+  apex_uploads_data:
+
+networks:
+  apex_net:
+    driver: bridge
