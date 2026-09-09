@@ -8,7 +8,6 @@ import ExcelJS from 'exceljs';
 const ExportContainer = () => {
     const orderInput: React.LegacyRef<HTMLInputElement> | undefined = useRef(null)
     const partsInput: React.LegacyRef<HTMLInputElement> | undefined = useRef(null)
-    const itemsInput: React.LegacyRef<HTMLInputElement> | undefined = useRef(null)
     const dispatch = useDispatch()
     const { orderData, months, palletData } = useSelector(OrderData)
     const { pickedData } = useSelector(itemData)
@@ -92,37 +91,6 @@ const ExportContainer = () => {
             dispatch(OrderAction.getData(filteredOrder));
             dispatch(OrderAction.inputOrder([filteredOrder, monthResult]))
             if (orderInput.current) orderInput.current.value = ''
-        }
-    }
-    const onChangeItem = async (e: any) => {
-        const selectedFile = e.target.files[0]
-        const fileType = [
-            'application/vnd.ms-excel',
-            'text/csv',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        ];
-        if (selectedFile && fileType.includes(selectedFile.type)) {
-            const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.load(selectedFile)
-            const worksheet = workbook.worksheets[0];
-            const worksheetData: any[] = []
-            worksheet?.eachRow({ includeEmpty: true }, (row) => {
-                worksheetData.push(row.values)
-            })
-            const headers = worksheetData[0];
-
-            const contents = worksheetData.slice(1);
-            let ItemList: any[] = [];
-            for (let content = 0; content < contents.length; content++) {
-                const obj: { [key: string]: any } = {}
-                ItemList.push(obj)
-                for (let header = 1; header < headers.length; header++) {
-                    obj[headers[header]] = contents[content][header]
-                }
-            }
-
-            dispatch(OrderAction.inputGood(ItemList))
-            if (itemsInput.current) itemsInput.current.value = ''
         }
     }
     const openInvoiceForm = () => {
@@ -234,11 +202,9 @@ const ExportContainer = () => {
             setModel={setModel}
             onChangeParts={onChangeParts}
             onChangeOrder={onChangeOrder}
-            onChangeItem={onChangeItem}
             onChangePicked={onChangePicked}
             orderInput={orderInput}
             partsInput={partsInput}
-            itemsInput={itemsInput}
             months={months}
             orderData={orderData}
             invoiceForm={invoice}

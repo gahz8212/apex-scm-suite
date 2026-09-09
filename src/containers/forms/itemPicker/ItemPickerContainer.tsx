@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import ItemPickerComponent from './ItemPickerComponent';
 import { useSelector, useDispatch } from 'react-redux';
-import { itemData, itemActions } from '../../../store/slices/itemSlice'
+import { itemData, itemActions } from '../../../store/slices/itemSlice';
+import { formActions } from '../../../store/slices/formSlice';
 const ItemPickerContainer = () => {
     const { pickedData } = useSelector(itemData)
     const dispatch = useDispatch();
@@ -21,6 +22,9 @@ const ItemPickerContainer = () => {
         dispatch(itemActions.inputPicked(pickedData))
         // dispatch(itemActions.getPicked())
     }
+    const closePicker = () => {
+        dispatch(formActions.toggle_form({ form: 'picker', value: false }));
+    }
     const onChange = (e: any) => {
         const { name, value, id } = e.target
         // console.log('name, value, id', name, value, id)
@@ -38,6 +42,7 @@ const ItemPickerContainer = () => {
                 addPicked={addPicked}
                 initPicked={initPicked}
                 onChange={onChange}
+                onClose={closePicker}
             />
         </div>
     );

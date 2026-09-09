@@ -1,9 +1,118 @@
 .isetting-wraper {
   width: 94%;
   max-width: 1400px;
-  margin: 126px auto 2rem auto;
+  margin: 56px auto 2rem auto;
   padding: 0.5rem 1.5rem;
   box-sizing: border-box;
+
+  .isetting-header-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.4rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+    .banner-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+
+      .banner-badge {
+        display: inline-flex;
+        align-items: center;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        font-size: 0.72rem;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 4px;
+        width: fit-content;
+        letter-spacing: 0.5px;
+      }
+
+      .banner-title {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+        letter-spacing: -0.3px;
+      }
+
+      .banner-subtitle {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin: 0;
+      }
+    }
+
+    .banner-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+
+      .btn-item-excel {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #f0fdf4;
+        color: #15803d;
+        border: 1.5px solid #86efac;
+        padding: 0.45rem 0.9rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        img {
+          height: 16px;
+          object-fit: contain;
+        }
+
+        .icon {
+          font-size: 1.15rem;
+        }
+
+        &:hover {
+          background: #dcfce7;
+          border-color: #4ade80;
+          transform: translateY(-1px);
+        }
+      }
+
+      .btn-item-create {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #2563eb;
+        color: #ffffff;
+        border: 1px solid #1d4ed8;
+        padding: 0.45rem 0.9rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        .icon {
+          font-size: 1.15rem;
+        }
+
+        &:hover {
+          background: #1d4ed8;
+          transform: translateY(-1px);
+        }
+      }
+    }
+  }
 
   .material-symbols-outlined.write {
     position: fixed;
@@ -41,7 +150,7 @@
 .dashboard-container {
   width: 100%;
   max-width: 1440px;
-  margin: calc(126px + 0.5rem) auto 3rem auto;
+  margin: calc(56px + 0.5rem) auto 3rem auto;
   padding: 0 1.5rem;
   box-sizing: border-box;
 

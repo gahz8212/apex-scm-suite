@@ -17,7 +17,11 @@ export interface PackingItem {
 export const calculatePackingData = (orderData: any[] | null | undefined, selectedMonth: string): PackingItem[] => {
     if (!orderData || !selectedMonth) return [];
     const filteredPackingData: PackingItem[] = orderData
-        .filter((data) => data[selectedMonth] !== undefined || data.quantity !== undefined)
+        .filter((data) => {
+            const qty = Number(data[selectedMonth] !== undefined ? data[selectedMonth] : data.quantity);
+            const ct = Number(data.CT_qty);
+            return (!isNaN(qty) && qty > 0) || (!isNaN(ct) && ct > 0);
+        })
         .map(data => ({
             itemName: data.itemName,
             groupName: data.groupName,

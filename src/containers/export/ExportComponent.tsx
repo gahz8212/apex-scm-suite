@@ -10,17 +10,18 @@ import ScheduleSearchModal from '../modals/ScheduleSearchModal';
 import { ScheduleItem } from '../../lib/api/schedule';
 import { syncExportShipment, confirmDispatch, cancelDispatch } from '../../lib/api/tracking';
 import { itemActions } from '../../store/slices/itemSlice';
+
+export const EXPORT_CBM_OPTIONS = ['0.1', '0.15', '0.3', '0.5', '1', '1.2'];
+
 type Props = {
     model: string
     setModel: React.Dispatch<React.SetStateAction<string>>
     onChangeParts: (e: any) => void;
     onChangeOrder: (e: any) => void;
-    onChangeItem: (e: any) => void;
     onChangePicked: (e: any) => void;
 
     orderInput: React.LegacyRef<HTMLInputElement> | undefined;
     partsInput: React.LegacyRef<HTMLInputElement> | undefined;
-    itemsInput: React.LegacyRef<HTMLInputElement> | undefined;
     orderData: any[] | null;
     months: string[] | null;
 
@@ -76,10 +77,8 @@ const ExportComponent: React.FC<Props> = ({
     setModel,
     onChangeParts,
     onChangeOrder,
-    onChangeItem,
     orderInput,
     partsInput,
-    itemsInput,
     orderData,
     months,
     invoiceForm,
@@ -170,7 +169,7 @@ const ExportComponent: React.FC<Props> = ({
                 quantity: p.quantity !== undefined && p.quantity !== null && p.quantity !== '' ? p.quantity : 1,
                 CT_qty: p.CT_qty !== undefined && p.CT_qty !== null && p.CT_qty !== '' ? p.CT_qty : 1,
                 weight: p.weight !== undefined && p.weight !== null && p.weight !== '' ? p.weight : 0,
-                cbm: p.cbm && p.cbm !== '선택' ? p.cbm : '0.044',
+                cbm: p.cbm && EXPORT_CBM_OPTIONS.includes(String(p.cbm)) ? String(p.cbm) : '선택',
             }));
     };
 
@@ -221,23 +220,26 @@ const ExportComponent: React.FC<Props> = ({
             };
         });
     };
-    const invoicePos = useDrag(params => {
+    const invoicePos = useDrag(({ movement: [mx, my], memo = [invoiceForm.position.x, invoiceForm.position.y] }) => {
         bringToFront('invoice');
-        const nextX = Math.max(10, Math.min(window.innerWidth - 550, params.offset[0] + 60));
-        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+        const nextX = Math.max(10, Math.min(window.innerWidth - 530, memo[0] + mx));
+        const nextY = Math.max(50, Math.min(window.innerHeight - 100, memo[1] + my));
         changePosition('invoice', { x: nextX, y: nextY });
+        return memo;
     });
-    const packingPos = useDrag(params => {
+    const packingPos = useDrag(({ movement: [mx, my], memo = [packingForm.position.x, packingForm.position.y] }) => {
         bringToFront('packing');
-        const nextX = Math.max(10, Math.min(window.innerWidth - 550, params.offset[0] + 500));
-        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+        const nextX = Math.max(10, Math.min(window.innerWidth - 530, memo[0] + mx));
+        const nextY = Math.max(50, Math.min(window.innerHeight - 100, memo[1] + my));
         changePosition('packing', { x: nextX, y: nextY });
+        return memo;
     });
-    const palletPos = useDrag(params => {
+    const palletPos = useDrag(({ movement: [mx, my], memo = [palletForm.position.x, palletForm.position.y] }) => {
         bringToFront('pallet');
-        const nextX = Math.max(10, Math.min(window.innerWidth - 680, params.offset[0] + 720));
-        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+        const nextX = Math.max(10, Math.min(window.innerWidth - 660, memo[0] + mx));
+        const nextY = Math.max(50, Math.min(window.innerHeight - 100, memo[1] + my));
         changePosition('pallet', { x: nextX, y: nextY });
+        return memo;
     });
     // const addItemPos = useDrag(params => {
     //     const nextX = Math.max(10, Math.min(window.innerWidth - 400, params.offset[0] + 100));
@@ -388,6 +390,12 @@ const ExportComponent: React.FC<Props> = ({
 
         const checkedProductItems = productPackingData
             .filter(prod => (checkedProducts[prod.itemName] !== undefined ? checkedProducts[prod.itemName] : true))
+            .filter(prod => {
+                const override = productOverrides[prod.itemName];
+                const currentQty = override?.quantity !== undefined ? (override.quantity !== '' ? Number(override.quantity) : 0) : Number(prod.quantity);
+                const currentCT = override?.CT_qty !== undefined ? (override.CT_qty !== '' ? Number(override.CT_qty) : 0) : Number(prod.CT_qty || 0);
+                return currentQty > 0 || currentCT > 0;
+            })
             .map(prod => {
                 const override = productOverrides[prod.itemName];
                 const currentQty = override?.quantity !== undefined ? (override.quantity !== '' ? Number(override.quantity) : 0) : Number(prod.quantity);
@@ -414,6 +422,11 @@ const ExportComponent: React.FC<Props> = ({
 
         const checkedSubMaterialItems = (activeSubMaterials || [])
             .filter(picked => picked.check)
+            .filter(picked => {
+                const qty = Number(picked.quantity);
+                const ct = Number(picked.CT_qty);
+                return (!isNaN(qty) && qty > 0) || (!isNaN(ct) && ct > 0);
+            })
             .map(picked => {
                 const qty = Number(picked.quantity) || 0;
                 const ct = Number(picked.CT_qty) || 0;
@@ -541,21 +554,30 @@ const ExportComponent: React.FC<Props> = ({
     //     dispatch(OrderAction.getData(copyList))
     // }
 
-    orderdata = orderData?.map((data, tr) =>
-        <div className='tr'>
-            <div className='td'>{data.itemName}</div>
-            {months?.map((month, td) =>
-                <div className='td'
-                // draggable
-                // onDragStart={() => { onDragStart(tr, td) }}
-                // onDragEnter={() => { onDragEnter(tr, td) }}
-                // onDragEnd={onDrop}
+    const filteredOrderData = useMemo(() => {
+        if (!orderData) return [];
+        if (!months || months.length === 0) return orderData;
+        return orderData.filter(data => {
+            return months.some(month => {
+                const val = Number(data[month]);
+                return !isNaN(val) && val > 0;
+            });
+        });
+    }, [orderData, months]);
 
-                >{data[month] > 0 && data[month].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                    {/* <input type="number" name={`${month}`} value={data[month]} onChange={(e) => { onChange(e, tr) }} /> */}
-                </div>)}
+    orderdata = filteredOrderData?.map((data, tr) =>
+        <div className='tr' key={data.id || data.itemName || tr}>
+            <div className='td'>{data.itemName}</div>
+            {months?.map((month, td) => {
+                const val = Number(data[month]);
+                return (
+                    <div className='td' key={td}>
+                        {!isNaN(val) && val > 0 ? val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ''}
+                    </div>
+                );
+            })}
         </div>
-    )
+    );
     // }
     return (
         <div className='export-wrapper'>
@@ -568,7 +590,8 @@ const ExportComponent: React.FC<Props> = ({
                     zIndex: formZIndex.invoice + 1,
                     textAlign: 'center',
                     width: '520px',
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
+                    cursor: 'grab'
                 }}>
                     <div style={{ width: '520px', padding: '1rem', userSelect: 'none' }}></div>
                 </div>
@@ -595,7 +618,8 @@ const ExportComponent: React.FC<Props> = ({
                     left: packingForm.position.x,
                     zIndex: formZIndex.packing + 1,
                     textAlign: 'center',
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
+                    cursor: 'grab'
                 }}>
                     <div style={{ width: '520px', padding: '1rem', userSelect: 'none' }}></div>
                 </div>
@@ -615,7 +639,8 @@ const ExportComponent: React.FC<Props> = ({
                     left: palletForm.position.x,
                     zIndex: formZIndex.pallet + 1,
                     textAlign: 'center',
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
+                    cursor: 'grab'
 
                 }}>
                     <div style={{
@@ -643,51 +668,164 @@ const ExportComponent: React.FC<Props> = ({
                 </div>
             </div>} */}
 
+            {/* 상단 수출 물류 관리 헤더 배너 */}
+            <div className="export-header-banner">
+                <div className="banner-left">
+                    <span className="banner-badge">EXPORT &amp; LOGISTICS</span>
+                    <h2 className="banner-title">수출 물류 관리</h2>
+                    <p className="banner-subtitle">
+                        수주 오더 시트 기반 월별 출고 계획, 선적 명세 및 인보이스/패킹리스트 통합 관리
+                    </p>
+                </div>
+                <div className="banner-right">
+                    <div className="info-chip">
+                        <span className="chip-label">기준 선적월:</span>
+                        <span className="chip-val">{activeMonth || '-'}</span>
+                    </div>
+                    {savedInfo?.dispatchStatus && (
+                        <span className={`dispatch-status-tag ${savedInfo.dispatchStatus}`}>
+                            {savedInfo.dispatchStatus === 'CONFIRMED'
+                                ? '✅ 출고 확정 완료'
+                                : savedInfo.dispatchStatus === 'CANCELED'
+                                ? '🚫 출고 취소'
+                                : '📝 임시 저장'}
+                        </span>
+                    )}
+                </div>
+            </div>
+
             <div className="export-container">
                 <div className="orderSheet">
+                    <div className="card-header">
+                        <div className="header-title">
+                            <span className="material-symbols-outlined icon">table_view</span>
+                            <h3>수주 오더 시트 (Order Sheet)</h3>
+                            {filteredOrderData && filteredOrderData.length > 0 && (
+                                <span className="badge-count">총 {filteredOrderData.length}개 품목</span>
+                            )}
+                        </div>
+                        {isManagerOrAdmin && (
+                            <div className="header-actions">
+                                <label htmlFor="orders" className="btn-order-excel" title="수주 오더 시트 엑셀 업로드">
+                                    <span className="material-symbols-outlined icon">upload_file</span>
+                                    <span>Order 입력</span>
+                                    <img src='/images/excel_btn.png' alt='excel' />
+                                </label>
+                                <input
+                                    type="file"
+                                    name="orders"
+                                    id="orders"
+                                    onChange={onChangeOrder}
+                                    ref={orderInput}
+                                    style={{ display: 'none' }}
+                                />
+                            </div>
+                        )}
+                    </div>
                     <div className='table'>
                         <div className='thead'>
                             <div className='tr'>
                                 <div className='th model'>Item</div>
                                 {months?.map((month, idx) => (
-                                    <div className='th' key={idx}>{month}</div>
+                                    <div className={`th ${activeMonth === month ? 'active' : ''}`} key={idx}>{month}</div>
                                 ))}
                             </div>
-
                         </div>
                         <div className='tbody'>
-                            {React.Children.toArray(orderdata)}
+                            {filteredOrderData && filteredOrderData.length > 0 ? (
+                                React.Children.toArray(orderdata)
+                            ) : (
+                                <div className="empty-ordersheet">
+                                    <span className="material-symbols-outlined empty-icon">assignment_late</span>
+                                    <p>등록된 수주 오더 데이터가 없습니다.</p>
+                                    <span>우측 상단의 [Order 입력]을 통해 엑셀 파일을 업로드해 주세요.</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
                 <div className="summary">
-                    {isManagerOrAdmin && (
-                        <div className='buttons'>
-                            <label htmlFor="orders">Order 입력 <img src='/images/excel_btn.png' alt='excel'></img></label>
-                            <input type="file" name="orders" id="orders" onChange={onChangeOrder} ref={orderInput} />
-                            <label htmlFor="parts">아이템 입력 <img src='/images/excel_btn.png' alt='excel'></img></label>
-                            <input type="file" name="parts" id="parts" onChange={onChangeItem} ref={itemsInput} />
+                    <div className="card-header">
+                        <div className="header-title">
+                            <span className="material-symbols-outlined icon">local_shipping</span>
+                            <h3>월별 선적 &amp; 출고 명세</h3>
                         </div>
-                    )}
+                        <div className="header-actions">
+                            {orderData && (
+                                <>
+                                    <button
+                                        type="button"
+                                        className="btn-doc-action btn-invoice"
+                                        onClick={() => {
+                                            bringToFront('invoice');
+                                            openInvoiceForm();
+                                        }}
+                                        title="인보이스(Commercial Invoice) 양식 열기"
+                                    >
+                                        <span className="material-symbols-outlined icon">receipt_long</span>
+                                        <span>인보이스 발행</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn-doc-action btn-packing"
+                                        onClick={() => {
+                                            bringToFront('pallet');
+                                            bringToFront('packing');
+                                            openPackingForm();
+                                        }}
+                                        title="패킹리스트(Packing List) 및 팔레트 명세 양식 열기"
+                                    >
+                                        <span className="material-symbols-outlined icon">inventory_2</span>
+                                        <span>패킹리스트 발행</span>
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
 
                     <div className="selector">
-                        {months?.map((month, index) =>
-                            <div key={index}>
-                                <input type="radio" name="month" id={month} value={month}
-                                    defaultChecked={month === months[0]}
-                                    onChange={() => setSelectedMonth(month)} />
-                                <label htmlFor={month}>{month}</label>
-                            </div>)}
+                        <span className="selector-title">선적월 선택:</span>
+                        <div className="month-pills">
+                            {months?.map((month, index) =>
+                                <button
+                                    key={index}
+                                    type="button"
+                                    className={`month-pill ${month === activeMonth ? 'active' : ''}`}
+                                    onClick={() => setSelectedMonth(month)}
+                                >
+                                    {month}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="view-mode-tabs">
+                        <button
+                            type="button"
+                            className={`mode-tab ${model === 'parts' ? 'active' : ''}`}
+                            onClick={() => setModel('parts')}
+                        >
+                            <span className="material-symbols-outlined">directions_boat</span>
+                            <span>제품 및 출고 정보</span>
+                        </button>
+                        <button
+                            type="button"
+                            className={`mode-tab ${model === 'model' ? 'active' : ''}`}
+                            onClick={() => setModel('model')}
+                        >
+                            <span className="material-symbols-outlined">build</span>
+                            <span>부자재 명세 ({activeSubMaterials?.filter(p => p.check).length || 0})</span>
+                        </button>
                     </div>
 
                     <div className={`sumTable ${model}`}>
                         <div className="arrow">
-                            {<span className="material-symbols-outlined back" onClick={() => {
+                            {<span className="material-symbols-outlined back" title="부자재 명세 보기" onClick={() => {
                                 setModel('model')
                             }}>
                                 arrow_back_ios
                             </span>}
-                            {<span className="material-symbols-outlined forward" onClick={() => {
+                            {<span className="material-symbols-outlined forward" title="제품 및 출고 정보 보기" onClick={() => {
                                 setModel('parts')
                             }}>
                                 arrow_forward_ios
@@ -707,7 +845,14 @@ const ExportComponent: React.FC<Props> = ({
                                         <div className='title col-cbm'>cbm</div>
                                     </div>
                                     <div className="articles">
-                                        {activeSubMaterials?.filter(p => p.check)?.map((picked, index) => (
+                                        {activeSubMaterials
+                                            ?.filter(p => p.check)
+                                            ?.filter(picked => {
+                                                const qty = Number(picked.quantity);
+                                                const ct = Number(picked.CT_qty);
+                                                return (!isNaN(qty) && qty > 0) || (!isNaN(ct) && ct > 0);
+                                            })
+                                            ?.map((picked, index) => (
                                             <div className="items sub-material-row" key={picked.ItemId || picked.id || index}>
                                                 <div className='item col-check'>
                                                     <input type="checkbox" name="check" id={String(picked.ItemId || picked.id)} checked={picked.check}
@@ -783,12 +928,9 @@ const ExportComponent: React.FC<Props> = ({
                                                         onChange={handleSubMaterialChange}
                                                     >
                                                         <option value="선택">선택</option>
-                                                        <option value="0.044">iDT</option>
-                                                        <option value="0.04">CC360</option>
-                                                        <option value="0.044">SPT</option>
-                                                        {picked.cbm && !['0.044', '0.04', 0.044, 0.04, '선택'].includes(picked.cbm) && (
-                                                            <option value={String(picked.cbm)}>{picked.cbm}</option>
-                                                        )}
+                                                        {EXPORT_CBM_OPTIONS.map((opt) => (
+                                                            <option key={opt} value={opt}>{opt}</option>
+                                                        ))}
                                                     </select>
                                                 </div>
                                             </div>
@@ -863,7 +1005,18 @@ const ExportComponent: React.FC<Props> = ({
                                     </div>
                                     <div className="articles">
                                         {/* 1. 제품 목록 (좌측 월 데이터 발주 품목) */}
-                                        {productPackingData?.map((prod, pIdx) => {
+                                        {productPackingData
+                                            ?.filter(prod => {
+                                                const override = productOverrides[prod.itemName];
+                                                const currentQty = override?.quantity !== undefined
+                                                    ? (override.quantity !== '' ? Number(override.quantity) : 0)
+                                                    : Number(prod.quantity || 0);
+                                                const currentCT = override?.CT_qty !== undefined
+                                                    ? (override.CT_qty !== '' ? Number(override.CT_qty) : 0)
+                                                    : Number(prod.CT_qty || 0);
+                                                return currentQty > 0 || currentCT > 0;
+                                            })
+                                            ?.map((prod, pIdx) => {
                                             const isChecked = isProductChecked(prod.itemName);
                                             const override = productOverrides[prod.itemName];
 
@@ -941,12 +1094,9 @@ const ExportComponent: React.FC<Props> = ({
                                                             onChange={(e) => handleProductCbmChange(prod.itemName, e.target.value)}
                                                         >
                                                             <option value="선택">선택</option>
-                                                            <option value="0.044">iDT</option>
-                                                            <option value="0.04">CC360</option>
-                                                            <option value="0.044">SPT</option>
-                                                            {prod.cbm && !['0.044', '0.04', 0.044, 0.04, '선택'].includes(prod.cbm) && (
-                                                                <option value={String(prod.cbm)}>{prod.cbm}</option>
-                                                            )}
+                                                            {EXPORT_CBM_OPTIONS.map((opt) => (
+                                                                <option key={opt} value={opt}>{opt}</option>
+                                                            ))}
                                                         </select>
                                                     </div>
                                                 </div>
@@ -954,7 +1104,14 @@ const ExportComponent: React.FC<Props> = ({
                                         })}
 
                                         {/* 2. 부자재 목록 (Item Master에서 선택한 부자재) */}
-                                        {activeSubMaterials?.filter(p => p.check)?.map((picked, index) => (
+                                        {activeSubMaterials
+                                            ?.filter(p => p.check)
+                                            ?.filter(picked => {
+                                                const qty = Number(picked.quantity);
+                                                const ct = Number(picked.CT_qty);
+                                                return (!isNaN(qty) && qty > 0) || (!isNaN(ct) && ct > 0);
+                                            })
+                                            ?.map((picked, index) => (
                                             <div className="items sub-material-row" key={picked.ItemId || picked.id || index}>
                                                 <div className='item col-check'>
                                                     <input
@@ -1035,12 +1192,9 @@ const ExportComponent: React.FC<Props> = ({
                                                         onChange={handleSubMaterialChange}
                                                     >
                                                         <option value="선택">선택</option>
-                                                        <option value="0.044">iDT</option>
-                                                        <option value="0.04">CC360</option>
-                                                        <option value="0.044">SPT</option>
-                                                        {picked.cbm && !['0.044', '0.04', 0.044, 0.04, '선택'].includes(picked.cbm) && (
-                                                            <option value={String(picked.cbm)}>{picked.cbm}</option>
-                                                        )}
+                                                        {EXPORT_CBM_OPTIONS.map((opt) => (
+                                                            <option key={opt} value={opt}>{opt}</option>
+                                                        ))}
                                                     </select>
                                                 </div>
                                             </div>
@@ -1085,7 +1239,9 @@ const ExportComponent: React.FC<Props> = ({
                                             }
 
                                             // 부자재 오더시트 반영
-                                            const checkedPicked = activeSubMaterials?.filter(data => data.check) || [];
+                                            const checkedPicked = activeSubMaterials?.filter(data =>
+                                                data.check && ((Number(data.quantity) || 0) > 0 || (Number(data.CT_qty) || 0) > 0)
+                                            ) || [];
                                             const result = checkedPicked.map(data => ({
                                                 id: data.id,
                                                 ItemId: data.ItemId,
@@ -1346,21 +1502,6 @@ const ExportComponent: React.FC<Props> = ({
                         </div>
                             </div>
                         </div>
-                    </div>
-                    <div className='forms'>
-                        {(orderData) && <span className="material-symbols-outlined invoice" onClick={() => {
-                            bringToFront('invoice');
-                            openInvoiceForm();
-                        }}>
-                            list_alt_add
-                        </span>}
-                        {(orderData) && <span className="material-symbols-outlined packing" onClick={() => {
-                            bringToFront('pallet');
-                            bringToFront('packing');
-                            openPackingForm();
-                        }}>
-                            list_alt_add
-                        </span>}
                     </div>
                 </div>
             </div>

@@ -255,7 +255,7 @@ export default TrackingComponent;
 const PageWrapper = styled.div`
   width: 92%;
   max-width: 1400px;
-  margin: calc(126px + 0.75rem) auto 4rem auto;
+  margin: calc(56px + 0.5rem) auto 4rem auto;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;

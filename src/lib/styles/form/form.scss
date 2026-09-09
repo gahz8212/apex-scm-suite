@@ -1,635 +1,947 @@
+// ==========================================================================
+// Unified Form Styling (InputForm & EditForm)
+// ==========================================================================
+
 .form-type {
   user-select: none;
   position: relative;
-  width: 320px;
-  font-size: 0.9rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  width: 380px;
+  font-size: 0.875rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.15), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
   background-color: #ffffff;
   overflow: hidden;
+  box-sizing: border-box;
 
+  * {
+    box-sizing: border-box;
+  }
+
+  // ------------------------------------------------------------------------
+  // Header
+  // ------------------------------------------------------------------------
   .title {
     color: #ffffff;
     font-weight: 700;
     font-size: 0.95rem;
     letter-spacing: 0.5px;
-    height: 40px;
+    height: 44px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    background-color: #1e293b;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: #1e293b;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
     &.SET {
-      background-color: #1e40af;
+      background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
     }
     &.ASSY {
-      background-color: #0f766e;
+      background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
     }
     &.PARTS {
-      background-color: #475569;
+      background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    }
+
+    .title-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .mode-badge {
+        font-size: 0.95rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+      }
+
+      .type-badge {
+        font-size: 0.72rem;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 8px;
+        border-radius: 9999px;
+        letter-spacing: 0.3px;
+      }
+    }
+
+    .title-close-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.85);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border-radius: 4px;
+      font-size: 1.1rem;
+      line-height: 1;
+      transition: background 0.15s, color 0.15s;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+      }
     }
   }
+
+  // ------------------------------------------------------------------------
+  // Form Body
+  // ------------------------------------------------------------------------
   .input-form,
   .edit-form {
+    display: flex;
+    flex-direction: column;
+
     .form-category {
-      &.회로 {
-        background-color: #dbeafe;
-        color: #1e40af;
-      }
-      &.전장 {
-        background-color: #e0e7ff;
-        color: #3730a3;
-      }
-      &.기구 {
-        background-color: #f1f5f9;
-        color: #334155;
-      }
-      &.포장 {
-        background-color: #ecfdf5;
-        color: #065f46;
-      }
-      &.기타 {
-        background-color: #f8fafc;
-        color: #64748b;
-      }
+      padding: 16px;
+      max-height: calc(85vh - 60px);
+      overflow-y: auto;
+      background-color: #ffffff;
+      transition: background-color 0.2s ease;
+
+      // Soft category-based background accent
+      &.회로,
       &.EDT {
-        background-color: #dbeafe;
-        color: #1e40af;
+        border-top: 3px solid #3b82f6;
       }
+      &.전장,
       &.NOBARK {
-        background-color: #e0e7ff;
-        color: #3730a3;
+        border-top: 3px solid #6366f1;
       }
+      &.기구,
       &.LAUNCHER {
-        background-color: #f1f5f9;
-        color: #334155;
+        border-top: 3px solid #64748b;
       }
+      &.포장,
       &.RDT {
-        background-color: #ecfdf5;
-        color: #065f46;
+        border-top: 3px solid #10b981;
       }
       &.기타 {
-        background-color: #f8fafc;
-        color: #64748b;
+        border-top: 3px solid #94a3b8;
       }
-      .selection {
-        // margin-top: 30px;
+
+      // Scrollbar customization
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      &::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+    }
+
+    // ----------------------------------------------------------------------
+    // 1. Type Segmented Control (제품 / 결합 / 부품)
+    // ----------------------------------------------------------------------
+    .type-segment-control {
+      display: flex;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 3px;
+      gap: 4px;
+      margin-bottom: 12px;
+      border: 1px solid #e2e8f0;
+
+      .segment-item {
+        flex: 1;
+        display: flex;
 
         input[type="radio"] {
-          width: 20px;
+          display: none;
         }
-        .main {
-          label {
-            width: 30px;
-          }
-        }
-        textarea {
-          width: 80%;
-          height: 100px;
-          resize: none;
-        }
-        .sub {
-          margin-top: 0.4rem;
-          // border: 1px solid white;
-          &.SET {
-            .categories {
-              margin-bottom: 0.5rem;
-              label {
-                width: 30px;
 
-                &:nth-of-type(2) {
-                  width: 70px;
-                }
-                &:nth-of-type(4) {
-                  width: 80px;
-                }
-              }
-            }
-            .input_text {
-              margin: 1rem auto;
-              margin-left: 20px;
-              input[type="text"]:nth-of-type(1) {
-                margin-top: 0.2rem;
-              }
-              input[type="text"]:nth-of-type(2) {
-                margin-top: 0.2rem;
-                margin-bottom: 0.2rem;
-              }
-              select {
-                margin: 0 auto;
-                width: 120px;
-                text-align: center;
-              }
-              .insert_type {
-                button {
-                  font-weight: 700;
-                }
-              }
-            }
+        label {
+          width: 100%;
+          text-align: center;
+          padding: 6px 0;
+          font-size: 0.8rem;
+          font-weight: 600;
+          border-radius: 6px;
+          cursor: pointer;
+          color: #64748b;
+          transition: all 0.15s ease;
 
-            .currency {
-              display: flex;
-              justify-content: space-around;
-              align-items: center;
-
-              .ex_price {
-                label {
-                  margin-left: 0.5rem;
-                  margin-right: 0.1rem;
-                  &:nth-of-type(1) {
-                    width: 1140px;
-                  }
-                }
-                input[type="text"] {
-                  width: 40px;
-                }
-              }
-              .sets {
-                width: 100px;
-
-                .input {
-                  width: 90px;
-                  margin: 0 auto;
-                  line-height: 2;
-                  label {
-                    &:nth-of-type(1) {
-                      margin-left: 2px;
-                    }
-                    &:nth-of-type(2) {
-                      margin-left: 8px;
-                    }
-                  }
-                  input[type="radio"] {
-                    margin: 0;
-                    vertical-align: middle;
-                  }
-                }
-              }
-            }
-            .item_basket {
-              padding: 10px;
-              width: 250px;
-              min-height: 20px;
-              max-height: 150px;
-              border: 5px dashed darkturquoise;
-              border-radius: 8px;
-              background: white;
-              margin-left: 0.5rem;
-              margin-bottom: 1rem;
-              overflow-y: auto;
-              .countControl {
-                .itemName {
-                  margin-left: 1rem;
-                  position: relative;
-                  &.ASSY {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      border: 1px solid red;
-                    }
-                  }
-                  &.PARTS {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      border: 1px dotted black;
-                    }
-                  }
-                  &.회로 {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      background-color: cornflowerblue;
-                    }
-                  }
-                  &.전장 {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      background-color: lightpink;
-                    }
-                  }
-                  &.기구 {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      background-color: khaki;
-                    }
-                  }
-                  &.포장 {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      background-color: #10b981;
-                    }
-                  }
-                  &.기타 {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      background-color: lightgray;
-                    }
-                  }
-                }
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                border-bottom: 1px solid black;
-                margin-bottom: 0.3rem;
-                padding-top: 0.2rem;
-                padding-bottom: 0.2rem;
-                .material-symbols {
-                  user-select: none;
-                  cursor: pointer;
-                  display: flex;
-                  align-items: center;
-                  span {
-                    &:nth-of-type(2) {
-                      font-weight: 700;
-                      color: red;
-                      width: 18px;
-                      text-align: center;
-                    }
-                  }
-                  .material-symbols-outlined.add,
-                  .material-symbols-outlined.remove {
-                    &:hover {
-                      color: red;
-                    }
-                  }
-                }
-              }
-            }
-            .packingInfo {
-              display: flex;
-              align-items: center;
-              justify-content: space-evenly;
-              label {
-                &:nth-of-type(1) {
-                  width: 45px;
-                }
-              }
-              input[type="text"] {
-                width: 40px;
-              }
-            }
-
-            .uses {
-              margin: 0.3rem auto;
-              margin-bottom: 0;
-              width: 260px;
-              select#supplyer {
-                width: 120px;
-              }
-              input[type="radio"] {
-                width: 20px;
-                margin: 0 5px;
-                vertical-align: middle;
-              }
-              label {
-                width: 40px;
-                &:nth-of-type(2) {
-                  width: 70px;
-                }
-              }
-            }
-          }
-          &.ASSY {
-            .categories {
-              margin-bottom: 0.5rem;
-              label {
-                width: 70px;
-              }
-            }
-            .input_text {
-              margin: 1rem auto;
-              margin-left: 20px;
-              input[type="text"]:nth-of-type(1) {
-                margin-top: 0.2rem;
-              }
-              textarea {
-                height: 30px;
-              }
-            }
-            .lowerList {
-              text-align: right;
-              margin-right: 1rem;
-              margin-bottom: 0.5rem;
-            }
-            .item_basket {
-              padding: 10px;
-              width: 250px;
-              min-height: 20px;
-              max-height: 150px;
-              border: 5px dashed darkturquoise;
-              border-radius: 8px;
-              background: white;
-              margin-left: 0.5rem;
-              margin-bottom: 1rem;
-              overflow-y: auto;
-              .countControl {
-                .itemName {
-                  margin-left: 1rem;
-                  position: relative;
-                  &.ASSY {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      border: 1px solid red;
-                    }
-                  }
-                  &.PARTS {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      border: 1px dotted black;
-                    }
-                  }
-                  &.회로 {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      background-color: cornflowerblue;
-                    }
-                  }
-                  &.전장 {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      background-color: lightpink;
-                    }
-                  }
-                  &.기구 {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      background-color: khaki;
-                    }
-                  }
-                  &.포장 {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      background-color: #10b981;
-                    }
-                  }
-                  &.기타 {
-                    &::before {
-                      content: "";
-                      position: absolute;
-                      width: 15px;
-                      height: 15px;
-                      border-radius: 50%;
-                      left: -18px;
-                      background-color: lightgray;
-                    }
-                  }
-                }
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                border-bottom: 1px solid black;
-                margin-bottom: 0.3rem;
-                padding-top: 0.2rem;
-                padding-bottom: 0.2rem;
-                .material-symbols {
-                  user-select: none;
-                  cursor: pointer;
-                  display: flex;
-                  align-items: center;
-                  span {
-                    &:nth-of-type(2) {
-                      font-weight: 700;
-                      color: red;
-                      width: 18px;
-                      text-align: center;
-                    }
-                  }
-                  .material-symbols-outlined.add,
-                  .material-symbols-outlined.remove {
-                    &:hover {
-                      color: red;
-                    }
-                  }
-                }
-              }
-            }
-            .currency {
-              display: flex;
-              justify-content: space-evenly;
-              .im_price,
-              .ex_price {
-                label {
-                  vertical-align: middle;
-                  &:nth-of-type(1) {
-                    margin-right: 0.5rem;
-                    // background-color: yellow;
-                  }
-                  &:nth-of-type(2) {
-                    width: 100px;
-                    margin-right: 0.2rem;
-                    // background-color: yellow;
-                  }
-                }
-                input[type="text"] {
-                  width: 40px;
-                }
-              }
-            }
-          }
-          &.PARTS {
-            .categories {
-              margin-bottom: 0.5rem;
-            }
-            .input_text {
-              margin: 1rem auto;
-              margin-left: 20px;
-            }
-            .currency {
-              width: 90%;
-              margin: 0 auto;
-              label {
-                &:nth-of-type(1) {
-                  margin-right: 10px;
-                }
-                &:nth-last-of-type(1) {
-                  margin-right: 10px;
-                }
-              }
-              input[type="text"] {
-                width: 40px;
-              }
-              .uses_price_combine {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                .ex_price {
-                  width: 55%;
-                }
-                .uses {
-                  width: 45%;
-                  label {
-                    vertical-align: middle;
-                    margin: 0;
-                    // background-color: yellow;
-                  }
-                  input[type="radio"] {
-                    vertical-align: middle;
-                    margin: 0;
-                  }
-                }
-              }
-            }
-          }
-          .supplyer {
-            label {
-              margin-right: 0.5rem;
-            }
-            text-align: right;
-            margin-top: 1rem;
-            margin-right: 0.5rem;
+          &:hover {
+            color: #1e293b;
           }
         }
-      }
-    }
-    .file {
-      input[type="file"] {
-        display: none;
-      }
-      width: 90%;
-      label {
-        text-align: center;
-        margin-top: 0.5rem;
-        cursor: pointer;
-        background-color: #f1f5f9;
-        border: 1px solid #cbd5e1;
-        padding: 0.4rem 0.6rem;
-        color: #334155;
-        font-weight: 600;
-        font-size: 0.85rem;
-        width: 80px;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-        &:hover {
-          background-color: #e2e8f0;
+
+        input[type="radio"]:checked + label {
+          background: #ffffff;
           color: #0f172a;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
       }
-      margin: 1rem;
     }
 
-    .input-submit,
-    .input-submit_edit {
-      input[type="file"] {
-        display: none;
-      }
-      text-align: right;
-      padding: 0.5rem 1rem;
+    // ----------------------------------------------------------------------
+    // 2. Category Chips (EDT, NOBARK, RDT, etc. or 회로, 전장, 기구, etc.)
+    // ----------------------------------------------------------------------
+    .category-chips {
       display: flex;
-      justify-content: flex-end;
-      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+
+      .chip-item {
+        display: inline-flex;
+
+        input[type="radio"] {
+          display: none;
+        }
+
+        label {
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 0.76rem;
+          font-weight: 500;
+          cursor: pointer;
+          border: 1px solid #e2e8f0;
+          background: #f8fafc;
+          color: #475569;
+          transition: all 0.15s ease;
+
+          &:hover {
+            border-color: #cbd5e1;
+            background: #ffffff;
+          }
+        }
+
+        input[type="radio"]:checked + label {
+          font-weight: 700;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+          &.chip-EDT,
+          &.chip-회로 {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            color: #1d4ed8;
+          }
+          &.chip-NOBARK,
+          &.chip-전장 {
+            background: #eef2ff;
+            border-color: #6366f1;
+            color: #4338ca;
+          }
+          &.chip-LAUNCHER,
+          &.chip-기구 {
+            background: #f1f5f9;
+            border-color: #64748b;
+            color: #0f172a;
+          }
+          &.chip-RDT,
+          &.chip-포장 {
+            background: #ecfdf5;
+            border-color: #10b981;
+            color: #047857;
+          }
+          &.chip-기타 {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            color: #334155;
+          }
+        }
+      }
+    }
+
+    // ----------------------------------------------------------------------
+    // 3. Standard Form Controls & Groups
+    // ----------------------------------------------------------------------
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 10px;
 
       label {
-        margin-right: 0.5rem;
-        height: 22px;
-      }
-      button {
-        border: none;
-        outline: none;
-        cursor: pointer;
-        background-color: #2563eb;
-        padding: 0.45rem 1rem;
-        color: white;
+        font-size: 0.78rem;
         font-weight: 600;
-        font-size: 0.85rem;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-        & + button {
-          margin-left: 0.5rem;
-        }
-        &:hover {
-          background-color: #1d4ed8;
-        }
-      }
-      [type="button"] {
-        background-color: #f1f5f9;
-        border: 1px solid #cbd5e1;
         color: #475569;
-        &:hover {
-          background-color: #e2e8f0;
-          color: #0f172a;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .label-hint {
+          font-size: 0.7rem;
+          font-weight: 400;
+          color: #94a3b8;
+        }
+      }
+
+      input[type="text"],
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 7px 10px;
+        font-size: 0.84rem;
+        color: #0f172a;
+        background: #ffffff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+
+        &::placeholder {
+          color: #94a3b8;
+        }
+
+        &:focus {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+        }
+
+        &[readonly] {
+          background-color: #f8fafc;
+          color: #1e40af;
+          font-weight: 600;
+          border-color: #e2e8f0;
+          cursor: default;
+        }
+      }
+
+      select {
+        cursor: pointer;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 50px;
+        line-height: 1.4;
+        font-family: inherit;
+      }
+
+      .inline-add {
+        display: flex;
+        gap: 6px;
+        margin-top: 4px;
+
+        input {
+          flex: 1;
+        }
+
+        button {
+          background: #3b82f6;
+          color: #ffffff;
+          border: none;
+          border-radius: 6px;
+          padding: 0 12px;
+          cursor: pointer;
+          font-weight: 700;
+          font-size: 1rem;
+          line-height: 1;
+          transition: background 0.15s;
+
+          &:hover {
+            background: #2563eb;
+          }
         }
       }
     }
-    .imageList {
+
+    // Form row (side-by-side fields)
+    .form-row {
       display: flex;
-      justify-content: center;
-      align-items: center;
-      transition: 1s;
-      &.open {
-        height: 50px;
+      gap: 10px;
+      margin-bottom: 10px;
+
+      .form-group {
+        flex: 1;
+        margin-bottom: 0;
       }
-      .image {
-        // margin: 0.1rem;
-        transition: 0.5s;
-        &:hover {
-          transform: scale(1.5);
+    }
+
+    // Input with prefix / suffix addon
+    .input-addon {
+      display: flex;
+      align-items: center;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #ffffff;
+      overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s;
+
+      &:focus-within {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+      }
+
+      .addon-prefix,
+      .addon-suffix {
+        padding: 0 8px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.8rem;
+        font-weight: 600;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+      }
+
+      .addon-prefix {
+        border-right: 1px solid #cbd5e1;
+      }
+
+      .addon-suffix {
+        border-left: 1px solid #cbd5e1;
+      }
+
+      input[type="text"] {
+        border: none;
+        border-radius: 0;
+        padding: 6px 8px;
+        box-shadow: none !important;
+      }
+    }
+
+    // ----------------------------------------------------------------------
+    // 4. BOM Item Basket Area
+    // ----------------------------------------------------------------------
+    .bom-basket-section {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+
+      .basket-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+
+        .basket-title {
+          font-size: 0.78rem;
+          font-weight: 700;
+          color: #334155;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          .count-badge {
+            background: #e2e8f0;
+            color: #0f172a;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 9999px;
+          }
         }
-        & + & {
-          margin-right: 0.5rem;
+
+        .basket-toggle-btn {
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          color: #475569;
+          font-size: 0.72rem;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.15s;
+
+          &:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+          }
+        }
+      }
+
+      .item_basket {
+        padding: 6px;
+        min-height: 48px;
+        max-height: 140px;
+        border: 1.5px dashed #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+        overflow-y: auto;
+
+        .empty-hint {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 38px;
+          font-size: 0.75rem;
+          color: #94a3b8;
+        }
+
+        .countControl {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 4px 6px;
+          border-bottom: 1px solid #f1f5f9;
+          font-size: 0.8rem;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .itemName {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #1e293b;
+            font-weight: 500;
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            .type-dot {
+              width: 8px;
+              height: 8px;
+              border-radius: 50%;
+              flex-shrink: 0;
+
+              &.ASSY {
+                background-color: #0f766e;
+              }
+              &.PARTS {
+                background-color: #64748b;
+              }
+              &.회로,
+              &.EDT {
+                background-color: #3b82f6;
+              }
+              &.전장,
+              &.NOBARK {
+                background-color: #6366f1;
+              }
+              &.기구,
+              &.LAUNCHER {
+                background-color: #64748b;
+              }
+              &.포장,
+              &.RDT {
+                background-color: #10b981;
+              }
+              &.기타 {
+                background-color: #9ca3af;
+              }
+            }
+          }
+
+          .material-symbols {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+
+            span:nth-of-type(2) {
+              font-weight: 700;
+              color: #2563eb;
+              min-width: 18px;
+              text-align: center;
+              font-size: 0.82rem;
+            }
+
+            .material-symbols-outlined {
+              font-size: 18px;
+              cursor: pointer;
+              color: #94a3b8;
+              transition: color 0.15s, transform 0.1s;
+
+              &:hover {
+                color: #2563eb;
+                transform: scale(1.1);
+              }
+
+              &.remove:hover {
+                color: #ef4444;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // ----------------------------------------------------------------------
+    // 5. Pricing & Currency Section
+    // ----------------------------------------------------------------------
+    .pricing-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+
+      .pricing-header {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .currency-toggle {
+        display: flex;
+        background: #e2e8f0;
+        border-radius: 4px;
+        padding: 2px;
+        gap: 2px;
+
+        .curr-option {
+          input[type="radio"] {
+            display: none;
+          }
+          label {
+            display: block;
+            padding: 1px 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            border-radius: 3px;
+            cursor: pointer;
+            color: #64748b;
+          }
+          input[type="radio"]:checked + label {
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          }
+        }
+      }
+
+      .pricing-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+
+        &.three-cols {
+          grid-template-columns: repeat(3, 1fr);
+        }
+
+        .form-group {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+    // ----------------------------------------------------------------------
+    // 6. Logistics & Packing Unit (SET)
+    // ----------------------------------------------------------------------
+    .logistics-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+
+      .logistics-header {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .unit-selector {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .unit-label {
+          font-size: 0.75rem;
+          color: #64748b;
+          font-weight: 600;
+        }
+
+        .unit-toggle {
+          display: flex;
+          background: #e2e8f0;
+          border-radius: 4px;
+          padding: 2px;
+          gap: 2px;
+
+          input[type="radio"] {
+            display: none;
+          }
+          label {
+            padding: 1px 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 3px;
+            cursor: pointer;
+            color: #64748b;
+          }
+          input[type="radio"]:checked + label {
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          }
+        }
+      }
+
+      .logistics-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+
+        .form-group {
+          margin-bottom: 0;
+        }
+      }
+    }
+
+    // ----------------------------------------------------------------------
+    // 7. Supplier & Usage Section
+    // ----------------------------------------------------------------------
+    .supplier-status-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+
+      .supplier-col {
+        flex: 1.2;
+      }
+
+      .status-col {
+        flex: 0.8;
+
+        .status-toggle {
+          display: flex;
+          background: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          padding: 3px;
+          gap: 4px;
+          height: 34px;
+          align-items: center;
+
+          .status-option {
+            flex: 1;
+            display: flex;
+            height: 100%;
+
+            input[type="radio"] {
+              display: none;
+            }
+
+            label {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 0.76rem;
+              font-weight: 600;
+              border-radius: 4px;
+              cursor: pointer;
+              color: #64748b;
+              transition: all 0.15s ease;
+            }
+
+            input[type="radio"]:checked + label {
+              &.use-active {
+                background: #ecfdf5;
+                color: #059669;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+              }
+              &.use-inactive {
+                background: #fef2f2;
+                color: #dc2626;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // ----------------------------------------------------------------------
+    // 8. Image Upload & Thumbnails
+    // ----------------------------------------------------------------------
+    .image-section {
+      margin-bottom: 12px;
+
+      .upload-trigger {
+        input[type="file"] {
+          display: none;
+        }
+
+        label {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          background: #f8fafc;
+          border: 1px dashed #cbd5e1;
+          border-radius: 6px;
+          padding: 8px 12px;
+          color: #475569;
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+
+          &:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            color: #0f172a;
+          }
+        }
+      }
+
+      .image-gallery {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+
+        .image-card {
+          position: relative;
+          width: 60px;
+          height: 60px;
+          border-radius: 6px;
+          border: 1px solid #e2e8f0;
+          overflow: hidden;
+          background: #f8fafc;
+
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+          }
+
+          .delete-overlay {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.7);
+            color: #ffffff;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.15s, background 0.15s;
+
+            &:hover {
+              opacity: 1;
+              background: #ef4444;
+            }
+          }
+        }
+      }
+    }
+
+    // ----------------------------------------------------------------------
+    // 9. Footer Action Buttons
+    // ----------------------------------------------------------------------
+    .form-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 12px;
+      border-top: 1px solid #e2e8f0;
+      margin-top: 4px;
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .left-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .excel-btn-label {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          cursor: pointer;
+          margin: 0;
+
+          img {
+            height: 28px;
+            display: block;
+          }
+        }
+
+        .excel-submit-btn {
+          background: #ecfdf5;
+          color: #047857;
+          border: 1px solid #a7f3d0;
+          font-size: 0.8rem;
+          font-weight: 600;
+          padding: 6px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: background 0.15s;
+
+          &:hover {
+            background: #d1fae5;
+          }
+        }
+
+        .delete-btn {
+          background: #fef2f2;
+          color: #dc2626;
+          border: 1px solid #fecaca;
+          font-size: 0.8rem;
+          font-weight: 600;
+          padding: 6px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: background 0.15s;
+
+          &:hover {
+            background: #fee2e2;
+          }
+        }
+      }
+
+      .right-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .cancel-btn {
+          background: #f1f5f9;
+          color: #475569;
+          border: 1px solid #cbd5e1;
+          font-size: 0.82rem;
+          font-weight: 600;
+          padding: 6px 14px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: background 0.15s, color 0.15s;
+
+          &:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+          }
+        }
+
+        .submit-btn {
+          background: #2563eb;
+          color: #ffffff;
+          border: none;
+          font-size: 0.82rem;
+          font-weight: 600;
+          padding: 6px 16px;
+          border-radius: 6px;
+          cursor: pointer;
+          box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+          transition: background 0.15s;
+
+          &:hover {
+            background: #1d4ed8;
+          }
         }
       }
     }

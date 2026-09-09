@@ -72,10 +72,11 @@ const RsettingComponent: React.FC<Props> = ({ input,
     , selectItem, onDrop, dragItem, dragItems, addCount, removeCount, drag_on, dragedItem, viewRelation, relate_view,
     addRelateGood, relations, changeView, viewMode, setOpenBasket, totalPrice, insertRelation_view, setSelectedItemId, setViewMode, inputDragItems_edit }) => {
 
-    const editPos = useDrag(params => {
-        const nextX = Math.max(10, Math.min(window.innerWidth - 340, params.offset[0] + 180));
-        const nextY = Math.max(70, Math.min(window.innerHeight - 200, params.offset[1] + 120));
+    const editPos = useDrag(({ movement: [mx, my], memo = [edit.position.x, edit.position.y] }) => {
+        const nextX = Math.max(10, Math.min(window.innerWidth - 400, memo[0] + mx));
+        const nextY = Math.max(50, Math.min(window.innerHeight - 100, memo[1] + my));
         changePosition('edit', { x: nextX, y: nextY });
+        return memo;
     });
 
 
@@ -103,8 +104,8 @@ const RsettingComponent: React.FC<Props> = ({ input,
             {
                 edit.visible && (
                     <div style={{ position: 'fixed', top: edit.position.y, left: edit.position.x, zIndex: 1000 }}>
-                        <div {...editPos()} style={{ color: 'white', position: 'absolute', top: 0, left: 0, zIndex: 1001, textAlign: 'center', width: '320px', cursor: 'grab' }}>
-                            <div style={{ width: '320px', height: '40px', userSelect: 'none' }}></div>
+                        <div {...editPos()} style={{ color: 'white', position: 'absolute', top: 0, left: 0, zIndex: 1001, textAlign: 'center', width: '340px', cursor: 'grab' }}>
+                            <div style={{ width: '340px', height: '44px', userSelect: 'none' }}></div>
                         </div>
                         <EditFormContainer />
                     </div>
