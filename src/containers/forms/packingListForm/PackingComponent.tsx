@@ -1,12 +1,12 @@
 import React from 'react';
 type Props = {
-
     selectedMonth: string;
     packingData: any[] | undefined;
-    totalResult: { [x: string]: { carton: number; weight: number; cbm: number; price: number; }; }[]
-    CartonExcelContainer: () => JSX.Element
+    totalResult: { [x: string]: { carton: number; weight: number; cbm: number; price: number; }; }[];
+    CartonExcelContainer: () => JSX.Element;
+    onClose?: () => void;
 }
-const PackingComponent: React.FC<Props> = ({ selectedMonth, packingData, totalResult, CartonExcelContainer }) => {
+const PackingComponent: React.FC<Props> = ({ selectedMonth, packingData, totalResult, CartonExcelContainer, onClose }) => {
     // console.log('packingData', packingData)
     let newData: { [key: string]: number | string }[] = []
     if (packingData && selectedMonth) {
@@ -101,7 +101,14 @@ const PackingComponent: React.FC<Props> = ({ selectedMonth, packingData, totalRe
     }));
     return (
         <div className='packing-container'>
-            <div className="title">PACKING</div>
+            <div className="title">
+                <span className="title-text">PACKING LIST ({selectedMonth})</span>
+                {onClose && (
+                    <button type="button" className="close-btn" onClick={onClose} title="닫기">
+                        &times;
+                    </button>
+                )}
+            </div>
             <div className='table'>
                 <div className='thead'>
                     <div className='tr'>

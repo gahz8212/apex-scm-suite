@@ -4,9 +4,10 @@ type Props = {
     invoiceData: any[] | undefined;
     totalResult: { [x: string]: { carton: number; weight: number; set: number; ea: number; price: number; }; }[]
     selectedMonth: string;
-    InvoiceExcelContainer: () => JSX.Element
+    InvoiceExcelContainer: () => JSX.Element;
+    onClose?: () => void;
 }
-const InvoiceComponent: React.FC<Props> = ({ invoiceData, selectedMonth, totalResult, InvoiceExcelContainer }) => {
+const InvoiceComponent: React.FC<Props> = ({ invoiceData, selectedMonth, totalResult, InvoiceExcelContainer, onClose }) => {
     const datas = (
         invoiceData?.map(data => <div className='invoice-rows'>
             <div className='invoice-data'>{data.itemName}</div>
@@ -23,7 +24,14 @@ const InvoiceComponent: React.FC<Props> = ({ invoiceData, selectedMonth, totalRe
     </div>))
     return (
         <div className='invoice-container'>
-            <div className='title'>INVOICE</div>
+            <div className='title'>
+                <span className="title-text">COMMERCIAL INVOICE ({selectedMonth})</span>
+                {onClose && (
+                    <button type="button" className="close-btn" onClick={onClose} title="닫기">
+                        &times;
+                    </button>
+                )}
+            </div>
             <div className='table'>
                 <div className='thead'>
                     <div className='tr'>

@@ -1,79 +1,366 @@
+// ============================================================================
+// APEX SCM Suite - 팔레트 적재 모달 현대화 스타일시트 (pallet.scss)
+// ============================================================================
+
 .wrap-pallets {
-  border: 1px solid black;
-  border-radius: 10px;
-  background: white;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  width: 580px;
+  max-width: 96vw;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.15), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  box-sizing: border-box;
+
   .title {
     width: 100%;
-    color: black;
-    height: 30px;
-    background-color: lightgray;
+    height: 44px;
+    background: #1e293b;
+    color: #ffffff;
     display: flex;
     align-items: center;
-    justify-content: center;
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
+    justify-content: space-between;
+    padding: 0 1.25rem;
+    box-sizing: border-box;
+
+    .title-text {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.35rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 6px;
+      border-radius: 4px;
+      line-height: 1;
+      transition: all 0.15s ease;
+
+      &:hover {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.15);
+      }
+    }
   }
+
+  // 팔레트 2열 그리드 컨테이너 [1][2], [3][+]
   .wrap-pallet {
-    display: flex;
-    width: 530px;
-    background: gray;
-    padding: 0.5rem;
-    padding-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.85rem;
+    width: 100%;
+    background: #f8fafc;
+    padding: 1rem;
+    max-height: 520px;
     overflow-y: auto;
-    flex-wrap: wrap;
+    box-sizing: border-box;
+    scrollbar-gutter: stable;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 3px;
+    }
+
+    @media (max-width: 520px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // 하단 액션 버튼 바
+  .pallet-footer-actions {
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+
+    .btn-reset {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.15s ease;
+
+      .material-symbols-outlined {
+        font-size: 1.05rem;
+      }
+
+      &:hover {
+        background: #fee2e2;
+        border-color: #fca5a5;
+        color: #b91c1c;
+      }
+    }
+
+    .btn-save {
+      background: #2563eb;
+      border: 1px solid #1d4ed8;
+      color: #ffffff;
+      padding: 0.45rem 1.1rem;
+      border-radius: 6px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.2s ease;
+
+      .material-symbols-outlined {
+        font-size: 1.05rem;
+      }
+
+      &:hover {
+        background: #1d4ed8;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
+      }
+    }
   }
 }
+
+// 개별 팔레트 카드
 .outline-pallet {
   position: relative;
-  overflow-y: auto;
-  width: 240px;
-  height: 100px;
-  border: 5px dashed black;
-  margin: 0.5rem auto;
-  background: white;
-  text-align: center;
+  background: #ffffff;
+  border: 1.5px dashed #cbd5e1;
   border-radius: 10px;
+  min-height: 145px;
+  height: 145px;
+  padding: 0.6rem 0.75rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+  overflow: hidden;
+
+  &.drag-over {
+    border-color: #2563eb !important;
+    background-color: #eff6ff !important;
+    border-style: solid !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  }
+
+  // 카드 헤더: 팔레트 넘버 뱃지 & 총 카톤수
+  .pallet-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.45rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid #f1f5f9;
+    user-select: none;
+
+    .pallet-badge {
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: #1e40af;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 1px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    .pallet-ct-badge {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #0f766e;
+      background: #f0fdfa;
+      border: 1px solid #99f6e4;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+  }
+
+  // 팔레트 내부 품목 스크롤 영역
+  .pallet-items-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 2px;
+    scrollbar-gutter: stable;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background-color: #e2e8f0;
+      border-radius: 2px;
+    }
+  }
+
+  // 빈 팔레트 안내 플레이스홀더
+  .pallet-empty-placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    gap: 0.25rem;
+    user-select: none;
+    pointer-events: none;
+
+    .icon {
+      font-size: 1.4rem;
+      opacity: 0.7;
+    }
+
+    span {
+      font-size: 0.74rem;
+      font-weight: 600;
+    }
+  }
+
+  // [+] 신규 팔레트 생성 카드
+  &.add-pallet-card {
+    border: 2px dashed #94a3b8;
+    background: #ffffff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    user-select: none;
+    transition: all 0.2s ease;
+
+    .add-card-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+      color: #64748b;
+      transition: all 0.15s ease;
+
+      .plus-icon {
+        font-size: 1.8rem;
+        color: #2563eb;
+      }
+
+      .plus-label {
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+    }
+
+    &:hover {
+      border-color: #2563eb;
+      background-color: #eff6ff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.12);
+
+      .add-card-content {
+        color: #1d4ed8;
+      }
+    }
+  }
 }
+
+// 팔레트 안의 개별 품목 행
 .elem-pallet {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 15;
-  .modelName {
-    display: flex;
-    width: 85%;
-    margin-left: 0.4rem;
+  padding: 0.25rem 0.35rem;
+  border-bottom: 1px solid #f8fafc;
+  font-size: 0.78rem;
+  background: #f8fafc;
+  border-radius: 6px;
+  margin-bottom: 0.25rem;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #f1f5f9;
   }
+
+  .modelName {
+    flex: 1;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 0.35rem;
+  }
+
   .material-symbols {
     user-select: none;
-    width: 40%;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-  }
-  .CT_qty {
-    display: inline-block;
-    width: 25px;
-  }
-  .material-symbols-outlined {
-    font-size: 20px;
-    cursor: pointer;
-    transition: 0.5s;
-    &.add {
-      color: cornflowerblue;
-      &:hover {
-        color: blue;
-      }
+    gap: 3px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 1px 4px;
+
+    .CT_qty {
+      display: inline-block;
+      min-width: 20px;
+      text-align: center;
+      font-weight: 800;
+      font-size: 0.78rem;
+      color: #0f172a;
     }
-    &.remove {
-      color: hotpink;
+
+    .material-symbols-outlined {
+      font-size: 1rem;
+      cursor: pointer;
+      color: #64748b;
+      transition: all 0.15s ease;
+      line-height: 1;
+
       &:hover {
-        color: red;
+        color: #0f172a;
+        transform: scale(1.15);
       }
+
+      &.add {
+        color: #2563eb;
+        &:hover {
+          color: #1d4ed8;
+        }
+      }
+
+      &.remove {
+        color: #ef4444;
+        &:hover {
+          color: #b91c1c;
+        }
+      }
+
       &.repair {
-        margin-right: 2rem;
-        font-size: 1.4rem;
-        color: hotpink;
+        color: #ef4444;
+        font-size: 1.1rem;
+        cursor: pointer;
+        &:hover {
+          color: #b91c1c;
+          transform: scale(1.15);
+        }
       }
     }
   }

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import PalletComponent from './PalletComponent';
 import { useSelector, useDispatch } from 'react-redux'
 import { OrderData, OrderAction } from '../../../store/slices/orderSlice';
+import { formActions } from '../../../store/slices/formSlice';
 import { calculatePackingData } from '../../../lib/utils/calculatePackingData';
 type Props = {
     selectedMonth: string;
@@ -52,6 +53,9 @@ const PalletContainer: React.FC<Props> = ({ selectedMonth, exportData }) => {
     const resetPallet = () => {
         dispatch(OrderAction.resetPallet())
     }
+    const handleClose = () => {
+        dispatch(formActions.toggle_form({ form: 'pallet', value: false }));
+    };
     useEffect(() => {
 
         dispatch(OrderAction.getPalletData())
@@ -68,6 +72,7 @@ const PalletContainer: React.FC<Props> = ({ selectedMonth, exportData }) => {
                 onInputPallet={onInputPallet}
                 removeItem={removeItem}
                 resetPallet={resetPallet}
+                onClose={handleClose}
             />
         </div>
     );

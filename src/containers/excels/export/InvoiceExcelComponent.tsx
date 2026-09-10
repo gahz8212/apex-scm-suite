@@ -3,20 +3,27 @@ type Props = {
     makeInvoice: () => void;
 }
 const InvoiceExcelComponent: React.FC<Props> = ({ makeInvoice }) => {
-    const onChange = () => { }
+    const onChange = () => { };
     return (
-        <div>
-
-            <input type="checkbox" name="" id="invoice" checked={true} onChange={onChange} />
-            <label htmlFor="invoice">인보이스</label>
-            <input type="checkbox" name="" id="carton" onChange={onChange} />
-            <label htmlFor="carton">CT_packing</label>
-            <input type="checkbox" name="" id="pallet" onChange={onChange} />
-            <label htmlFor="pallet">PT_packing</label>
-            <div>
-                <button type='button' onClick={makeInvoice}>출력</button>
+        <div className="excel-actions-wrap">
+            <div className="doc-options">
+                <label className="doc-check-label" htmlFor="invoice">
+                    <input type="checkbox" id="invoice" checked={true} onChange={onChange} />
+                    <span>인보이스 (CI)</span>
+                </label>
+                <label className="doc-check-label" htmlFor="carton">
+                    <input type="checkbox" id="carton" onChange={onChange} />
+                    <span>CT Packing</span>
+                </label>
+                <label className="doc-check-label" htmlFor="pallet">
+                    <input type="checkbox" id="pallet" onChange={onChange} />
+                    <span>PT Packing</span>
+                </label>
             </div>
-
+            <button type='button' className="btn-excel-download" onClick={makeInvoice} title="엑셀 인보이스 다운로드">
+                <span className="material-symbols-outlined">download</span>
+                <span>엑셀 출력</span>
+            </button>
         </div>
     );
 };

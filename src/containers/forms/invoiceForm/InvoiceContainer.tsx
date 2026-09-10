@@ -1,8 +1,9 @@
 import React from 'react';
 import InvoiceComponent from './InvoiceComponent';
 import InvoiceExcelContainer from '../../excels/export/InvoiceExcelContainer';
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux';
 import { OrderData } from '../../../store/slices/orderSlice';
+import { formActions } from '../../../store/slices/formSlice';
 import { InvoiceShippingInfo } from '../../../lib/services/excel/invoiceService';
 type Props = {
     selectedMonth: string;
@@ -11,8 +12,13 @@ type Props = {
 };
 
 const InvoiceContainer: React.FC<Props> = ({ selectedMonth, exportData, shippingInfo }) => {
+    const dispatch = useDispatch();
     const { orderData } = useSelector(OrderData);
     const dataToUse = exportData !== undefined ? exportData : orderData;
+
+    const handleClose = () => {
+        dispatch(formActions.toggle_form({ form: 'invoice', value: false }));
+    };
 
     // body 에 들어가는 데이터 객체    
     const filteredInvoiceData = dataToUse?.filter((data: any) => {
@@ -49,6 +55,7 @@ const InvoiceContainer: React.FC<Props> = ({ selectedMonth, exportData, shipping
                 selectedMonth={selectedMonth}
                 totalResult={totalResult}
                 InvoiceExcelContainer={() => <InvoiceExcelContainer selectedMonth={selectedMonth} exportData={filteredInvoiceData} shippingInfo={shippingInfo} />}
+                onClose={handleClose}
             />
         </div>
     );

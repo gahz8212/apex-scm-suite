@@ -1,7 +1,8 @@
 import React from 'react';
 import PackingComponent from './PackingComponent';
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux';
 import { OrderData } from '../../../store/slices/orderSlice';
+import { formActions } from '../../../store/slices/formSlice';
 import CartonExcelContainer from '../../excels/export/CartonExcelContainer';
 import { calculatePackingData } from '../../../lib/utils/calculatePackingData';
 type Props = {
@@ -10,9 +11,15 @@ type Props = {
 };
 
 const PackingContainer: React.FC<Props> = ({ selectedMonth, exportData }) => {
+    const dispatch = useDispatch();
     const { orderData, palletData } = useSelector(OrderData);
     const dataToUse = exportData !== undefined ? exportData : orderData;
     const filteredPackingData = calculatePackingData(dataToUse, selectedMonth);
+
+    const handleClose = () => {
+        dispatch(formActions.toggle_form({ form: 'packing', value: false }));
+        dispatch(formActions.toggle_form({ form: 'pallet', value: false }));
+    };
 
     let totalResult: { [x: string]: { carton: number; weight: number; cbm: number; price: number; }; }[] = [];
     if (filteredPackingData) {
@@ -39,6 +46,7 @@ const PackingContainer: React.FC<Props> = ({ selectedMonth, exportData }) => {
                 selectedMonth={selectedMonth}
                 packingData={filteredPackingData}
                 totalResult={totalResult}
+                onClose={handleClose}
                 CartonExcelContainer={() => <CartonExcelContainer
                     packingData={filteredPackingData}
                     palletData={palletData}

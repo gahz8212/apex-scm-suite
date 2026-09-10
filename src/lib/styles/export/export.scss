@@ -98,9 +98,18 @@
     position: relative;
     z-index: 1;
 
-    @media (max-width: 1200px) {
+    @media (max-width: 1480px) {
       flex-direction: column;
       align-items: stretch;
+      gap: 2rem;
+
+      .orderSheet {
+        width: 100%;
+      }
+
+      .summary {
+        width: 100% !important;
+      }
     }
 
     // ------------------------------------------------------------------------
@@ -334,7 +343,7 @@
       padding: 0;
       overflow: hidden;
 
-      @media (max-width: 1200px) {
+      @media (max-width: 1480px) {
         width: 100%;
       }
 
