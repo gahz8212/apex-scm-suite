@@ -465,15 +465,15 @@ flowchart LR
   - [x] **운영용 오케스트레이션 구성 (`docker-compose.prod.yml`, `.env.production.example`)**:
     - `mysql`: UTF-8mb4 인코딩, 네이티브 비밀번호 플러그인, 헬스체크 핑 연동
     - `backend`: MySQL 헬스체크 통과 후 기동(`depends_on: condition: service_healthy`), 업로드 영구 볼륨(`apex_uploads_data`)
-    - `frontend`: 80 포트 외부 노출 및 백엔드 내부 브릿지 네트워크 연동
+    - `frontend`: 호스트 80번 포트 충돌 방지 및 안전한 외부 노출을 위해 기본 포트를 `8080`(`8080:80`)으로 설정, `nginx.conf` SPA `index.html` 캐시 방지(`no-cache`) 적용
   - [x] **GitHub Actions CI/CD 워크플로우 완성 (`.github/workflows/deploy.yml`)**:
     - **CI (Pull Request & Push)**: 프론트엔드 `npx tsc --noEmit` 타입 검사, 프로덕션 빌드, 백엔드 의존성 및 문법 검사 자동화
     - **CD (Main 브랜치 Push 시 자동 실행)**:
       1. GitHub Container Registry(GHCR) 자동 로그인
       2. 프론트엔드/백엔드 Docker 이미지 빌드 및 GHCR 자동 푸시 (캐시 최적화)
       3. `appleboy/scp-action`으로 서버에 `docker-compose.prod.yml` 동기화
-      4. `appleboy/ssh-action`으로 서버 원격 접속 ➔ 최신 이미지 `pull` ➔ `docker compose up -d` 무중단 갱신 ➔ 불필요 구버전 이미지 정리(`prune`)
-  - [x] **Git 커밋 및 원격 저장소 푸시 완료 (`commit: 377c5c4`)**:
+      4. `appleboy/ssh-action`으로 서버 원격 접속 ➔ `set -e` 방어 ➔ 최신 이미지 `pull` ➔ `HTTP_PORT=8080 docker compose up -d --force-recreate` 무중단 갱신 ➔ 불필요 구버전 이미지 정리(`prune`) ➔ `docker compose ps` 정상 상태 확인
+  - [x] **Git 커밋 및 원격 저장소 푸시 완료 (`commit: 377c5c4`, 포트 8080 업데이트)**:
     - GitHub Actions 자동 배포 파이프라인 트리거 및 정상 연동 완료
 
 ---
