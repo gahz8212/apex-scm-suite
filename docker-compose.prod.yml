@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # 1. MySQL 데이터베이스
   mysql:
@@ -26,7 +24,7 @@ services:
 
   # 2. Node.js Express 백엔드
   backend:
-    image: ${BACKEND_IMAGE}
+    image: ${BACKEND_IMAGE:-ghcr.io/gahz8212/apex-scm-suite/backend:latest}
     container_name: apex_backend
     restart: unless-stopped
     depends_on:
@@ -48,7 +46,7 @@ services:
 
   # 3. Nginx + React 프론트엔드 (리버스 프록시 겸용)
   frontend:
-    image: ${FRONTEND_IMAGE}
+    image: ${FRONTEND_IMAGE:-ghcr.io/gahz8212/apex-scm-suite/frontend:latest}
     container_name: apex_frontend
     restart: unless-stopped
     depends_on:
