@@ -478,9 +478,98 @@ flowchart LR
 
 ---
 
+## 🌐 운영 서버 다중 서비스 공존 & Nginx 리버스 프록시 연동 가이드 (2026-09-10)
+
+### 📌 1. 현재 운영 서버 배포 상태
+- **다중 서비스 운영 환경**: 배포 서버에 이미 3개의 다른 웹 서비스가 가동 중이므로, 호스트 80번 포트 충돌을 피하기 위해 APEX SCM Suite는 **포트 `8080`**으로 격리 배포되었습니다.
+- **현재 정상 가동 중인 컨테이너**:
+  - `apex_frontend`: `0.0.0.0:8080->80/tcp` (Nginx + React SPA, `Cache-Control: no-cache` 적용)
+  - `apex_backend`: `4000/tcp` (Express API)
+  - `apex_db`: `3306/tcp` (MySQL 8.0, healthy)
+- **임시 접속 주소**: `http://<서버IP>:8080`
+
+---
+
+### 🚀 2. 주소에서 `:8080` 제거 (호스트 Nginx 리버스 프록시 연동 절차)
+서버 호스트 OS에 설치된 메인 Nginx를 통해 80번(또는 443 HTTPS) 요청을 내부 컨테이너(`127.0.0.1:8080`)로 무중단 전달하는 방법입니다. 기존 3개 서비스와의 간섭을 없애기 위해 **독립 설정 파일 분리 방식**을 준수합니다.
+
+#### Step 1. 전용 설정 파일 생성
+```bash
+sudo nano /etc/nginx/sites-available/apex-scm.conf
+```
+
+#### Step 2. Nginx 프록시 블록 작성
+
+**[옵션 A. 도메인/서브도메인 기반 라우팅 - 가장 추천 👍]**
+> 예: `scm.yourdomain.com` 또는 `apex.yourdomain.com`
+```nginx
+server {
+    listen 80;
+    server_name scm.yourdomain.com;  # 사용하실 실제 도메인 또는 서브도메인
+
+    client_max_body_size 50M;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+**[옵션 B. 도메인 없이 서버 IP로 기본 접속하게 할 경우]**
+> 기존 3개 서비스 중 IP 기본 접속(`default_server`)을 점유한 서비스가 없을 때 적용
+```nginx
+server {
+    listen 80 default_server;
+    server_name _;
+
+    client_max_body_size 50M;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+#### Step 3. 설정 활성화 및 무중단 리로드
+```bash
+# 1. 사이트 활성화 (심볼릭 링크)
+sudo ln -s /etc/nginx/sites-available/apex-scm.conf /etc/nginx/sites-enabled/
+
+# 2. ★ 문법 사전 검사 (기존 3개 서비스 중단 방지 필수 단계)
+sudo nginx -t
+
+# 3. 문법 통과(syntax is ok) 확인 후 Nginx 무중단 리로드
+sudo systemctl reload nginx
+```
+
+#### Step 4. (선택) Let's Encrypt 무료 SSL (HTTPS) 적용
+도메인이 연결된 경우, 단 1줄로 HTTPS(443) 암호화 인증서를 자동 설치할 수 있습니다:
+```bash
+sudo certbot --nginx -d scm.yourdomain.com
+```
+
+---
+
 ## 💡 최종 완료 후 전환 방법
 모든 작업이 완료되어 최종 푸시되면, 기존 작업 폴더 대신:
 ```bash
 git clone https://github.com/gahz8212/apex-scm-suite.git
 ```
 한 번만 실행하시면 완전히 새롭고 깨끗한 **`apex-scm-suite`** 환경에서 최종 결과물을 영구 소장 및 시연하실 수 있습니다.
+
