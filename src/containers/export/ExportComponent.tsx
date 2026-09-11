@@ -98,9 +98,9 @@ const ExportComponent: React.FC<Props> = ({
     palletData
 }) => {
     const [formZIndex, setFormZIndex] = useState<{ [key: string]: number }>({
-        invoice: 30,
-        packing: 32,
-        pallet: 34,
+        invoice: 1000,
+        packing: 1002,
+        pallet: 1004,
     });
 
     type MonthShippingInfo = {
@@ -211,8 +211,8 @@ const ExportComponent: React.FC<Props> = ({
     };
     const bringToFront = (form: string) => {
         setFormZIndex(prev => {
-            const currentZ = prev[form] || 30;
-            const maxZ = Math.max(...Object.values(prev));
+            const currentZ = prev[form] || 1000;
+            const maxZ = Math.max(...Object.values(prev), 1000);
             if (currentZ === maxZ) return prev;
             return {
                 ...prev,
@@ -223,21 +223,21 @@ const ExportComponent: React.FC<Props> = ({
     const invoicePos = useDrag(({ movement: [mx, my], memo = [invoiceForm.position.x, invoiceForm.position.y] }) => {
         bringToFront('invoice');
         const nextX = Math.max(10, Math.min(window.innerWidth - 530, memo[0] + mx));
-        const nextY = Math.max(50, Math.min(window.innerHeight - 100, memo[1] + my));
+        const nextY = Math.max(10, Math.min(window.innerHeight - 100, memo[1] + my));
         changePosition('invoice', { x: nextX, y: nextY });
         return memo;
     });
     const packingPos = useDrag(({ movement: [mx, my], memo = [packingForm.position.x, packingForm.position.y] }) => {
         bringToFront('packing');
         const nextX = Math.max(10, Math.min(window.innerWidth - 530, memo[0] + mx));
-        const nextY = Math.max(50, Math.min(window.innerHeight - 100, memo[1] + my));
+        const nextY = Math.max(10, Math.min(window.innerHeight - 100, memo[1] + my));
         changePosition('packing', { x: nextX, y: nextY });
         return memo;
     });
     const palletPos = useDrag(({ movement: [mx, my], memo = [palletForm.position.x, palletForm.position.y] }) => {
         bringToFront('pallet');
         const nextX = Math.max(10, Math.min(window.innerWidth - 660, memo[0] + mx));
-        const nextY = Math.max(50, Math.min(window.innerHeight - 100, memo[1] + my));
+        const nextY = Math.max(10, Math.min(window.innerHeight - 100, memo[1] + my));
         changePosition('pallet', { x: nextX, y: nextY });
         return memo;
     });
@@ -581,21 +581,29 @@ const ExportComponent: React.FC<Props> = ({
     // }
     return (
         <div className='export-wrapper'>
-            {invoiceForm.visible && <div onMouseDown={() => bringToFront('invoice')}>
-                <div {...invoicePos()} style={{
-                    color: 'black',
-                    position: 'fixed',
-                    top: invoiceForm.position.y,
-                    left: invoiceForm.position.x,
-                    zIndex: formZIndex.invoice + 1,
-                    textAlign: 'center',
-                    width: '520px',
-                    boxSizing: 'border-box',
-                    cursor: 'grab'
-                }}>
-                    <div style={{ width: '520px', padding: '1rem', userSelect: 'none' }}></div>
-                </div>
-                <div style={{ position: 'fixed', top: invoiceForm.position.y, left: invoiceForm.position.x, zIndex: formZIndex.invoice }}>
+            {invoiceForm.visible && (
+                <div
+                    onMouseDown={() => bringToFront('invoice')}
+                    style={{
+                        position: 'fixed',
+                        top: invoiceForm.position.y,
+                        left: invoiceForm.position.x,
+                        zIndex: formZIndex.invoice,
+                    }}
+                >
+                    <div
+                        {...invoicePos()}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: 'calc(100% - 50px)',
+                            height: '44px',
+                            zIndex: 10,
+                            cursor: 'grab',
+                            userSelect: 'none',
+                        }}
+                    />
                     <InvoiceContainer
                         selectedMonth={activeMonth}
                         exportData={currentExportData}
@@ -608,55 +616,65 @@ const ExportComponent: React.FC<Props> = ({
                         } : (vesselVoy ? { vesselVoy } : undefined)}
                     />
                 </div>
-            </div>}
-            {packingForm.visible && <div onMouseDown={() => bringToFront('packing')}>
-                <div {...packingPos()} style={{
-                    color: 'black',
-                    width: '520px',
-                    position: 'fixed',
-                    top: packingForm.position.y,
-                    left: packingForm.position.x,
-                    zIndex: formZIndex.packing + 1,
-                    textAlign: 'center',
-                    boxSizing: 'border-box',
-                    cursor: 'grab'
-                }}>
-                    <div style={{ width: '520px', padding: '1rem', userSelect: 'none' }}></div>
-                </div>
-                <div style={{ position: 'fixed', top: packingForm.position.y, left: packingForm.position.x, zIndex: formZIndex.packing }}>
+            )}
+            {packingForm.visible && (
+                <div
+                    onMouseDown={() => bringToFront('packing')}
+                    style={{
+                        position: 'fixed',
+                        top: packingForm.position.y,
+                        left: packingForm.position.x,
+                        zIndex: formZIndex.packing,
+                    }}
+                >
+                    <div
+                        {...packingPos()}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: 'calc(100% - 50px)',
+                            height: '44px',
+                            zIndex: 10,
+                            cursor: 'grab',
+                            userSelect: 'none',
+                        }}
+                    />
                     <PackingContainer
                         selectedMonth={activeMonth}
                         exportData={currentExportData}
                     />
                 </div>
-            </div>}
-            {palletForm.visible && <div onMouseDown={() => bringToFront('pallet')}>
-                <div {...palletPos()} style={{
-                    color: 'black',
-                    width: '650px',
-                    position: 'fixed',
-                    top: palletForm.position.y,
-                    left: palletForm.position.x,
-                    zIndex: formZIndex.pallet + 1,
-                    textAlign: 'center',
-                    boxSizing: 'border-box',
-                    cursor: 'grab'
-
-                }}>
-                    <div style={{
-                        width: '650px',
-                        padding: '1rem',
-                        userSelect: 'none',
-
-                    }}></div>
-                </div>
-                <div style={{ position: 'fixed', top: palletForm.position.y, left: palletForm.position.x, zIndex: formZIndex.pallet }}>
+            )}
+            {palletForm.visible && (
+                <div
+                    onMouseDown={() => bringToFront('pallet')}
+                    style={{
+                        position: 'fixed',
+                        top: palletForm.position.y,
+                        left: palletForm.position.x,
+                        zIndex: formZIndex.pallet,
+                    }}
+                >
+                    <div
+                        {...palletPos()}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: 'calc(100% - 50px)',
+                            height: '44px',
+                            zIndex: 10,
+                            cursor: 'grab',
+                            userSelect: 'none',
+                        }}
+                    />
                     <PalletContainer
                         selectedMonth={activeMonth}
                         exportData={currentExportData}
                     />
                 </div>
-            </div>}
+            )}
             {/* {addItemForm.visible && <div>
                 <div {...addItemPos()} style={{ color: 'black', position: 'fixed', top: addItemForm.position.y, left: addItemForm.position.x, zIndex: 3, textAlign: 'center', width: '300px' }}>
                     <span style={{ display: 'inline-block', width: '500px', fontWeight: '700', paddingTop: '0.5rem', userSelect: 'none', textAlign: "center" }}>ADD</span>

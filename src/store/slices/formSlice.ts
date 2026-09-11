@@ -45,11 +45,11 @@ export const getCenterPosition = (form: string) => {
     const totalW = 520 + 20 + 650; // 1190px
     if (window.innerWidth >= 1200) {
       const startX = Math.max(10, Math.floor((window.innerWidth - totalW) / 2));
-      const y = Math.max(50, Math.floor((window.innerHeight - 600) / 2));
+      const y = Math.max(80, Math.floor((window.innerHeight - 600) / 2));
       return { x: startX, y };
     } else {
       const x = Math.max(10, Math.floor((window.innerWidth - 520) / 2) - 30);
-      const y = Math.max(50, Math.floor((window.innerHeight - 600) / 2));
+      const y = Math.max(80, Math.floor((window.innerHeight - 600) / 2));
       return { x, y };
     }
   }
@@ -59,11 +59,11 @@ export const getCenterPosition = (form: string) => {
     const totalW = 520 + 20 + 650; // 1190px
     if (window.innerWidth >= 1200) {
       const startX = Math.max(10, Math.floor((window.innerWidth - totalW) / 2));
-      const y = Math.max(50, Math.floor((window.innerHeight - 600) / 2));
+      const y = Math.max(80, Math.floor((window.innerHeight - 600) / 2));
       return { x: startX + 540, y };
     } else {
       const x = Math.max(10, Math.floor((window.innerWidth - 650) / 2) + 30);
-      const y = Math.max(50, Math.floor((window.innerHeight - 600) / 2));
+      const y = Math.max(80, Math.floor((window.innerHeight - 600) / 2));
       return { x, y };
     }
   }
@@ -71,7 +71,7 @@ export const getCenterPosition = (form: string) => {
   const w = widthMap[form] || 320;
   const h = heightMap[form] || 500;
   const x = Math.max(10, Math.floor((window.innerWidth - w) / 2));
-  const y = Math.max(50, Math.floor((window.innerHeight - h) / 2));
+  const y = Math.max(80, Math.floor((window.innerHeight - h) / 2));
   return { x, y };
 };
 
@@ -142,7 +142,7 @@ const formSlice = createSlice({
     changePosition: (state, { payload: { form, position } }) => {
       state[form].position = {
         x: Math.max(0, position.x),
-        y: Math.max(40, position.y),
+        y: Math.max(0, position.y),
       };
     },
     initPosition: (state, { payload: form }) => {
